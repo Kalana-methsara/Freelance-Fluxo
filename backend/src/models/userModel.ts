@@ -1,5 +1,6 @@
 import { Document, model, Schema } from 'mongoose';
 import { UserRole } from "./enums/userRole";
+import { ApprovalStatus } from "./enums/approvalStatus";
 import locationSchema from './locationsModel';
 
 export interface IUser extends Document {
@@ -10,6 +11,7 @@ export interface IUser extends Document {
     profileImage?: string;
     userRole: UserRole[];
     approved: boolean;
+    approvalStatus: ApprovalStatus;
     location: {
         coordinates: { lat: number; lng: number };
         address: string;
@@ -31,10 +33,15 @@ const userSchema = new Schema<IUser>({
         default: [UserRole.FREELANCER]
     },
     approved: { type: Boolean, default: false },
+    approvalStatus: {
+        type: String,
+        enum: Object.values(ApprovalStatus),
+        default: ApprovalStatus.PENDING
+    },
     location: {
         type: locationSchema,
         default: () => ({})
     }
-});
+}, { timestamps: true });
 
 export const UserModel = model<IUser>('user', userSchema);
