@@ -1,6 +1,6 @@
 import { Document, model, Schema } from 'mongoose';
-import { UserRole } from "./enums/userRole";
-import { ApprovalStatus } from "./enums/approvalStatus";
+import { UserRole } from "../enums/userRole";
+import { ApprovalStatus } from "../enums/approvalStatus";
 import locationSchema from './locationsModel';
 
 export interface IUser extends Document {
