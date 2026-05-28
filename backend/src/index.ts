@@ -1,9 +1,11 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import userRouter from "./routes/userRouter";
 import mongoDB from "./config/db";
 import { errorHandler } from "./middleware/errorMiddleware";
-  
+
 const PORT = process.env.PORT || 5000; 
 
 const app = express();
