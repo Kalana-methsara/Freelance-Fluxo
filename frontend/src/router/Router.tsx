@@ -1,20 +1,26 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import MainLayout from "../layouts/MainLayout";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import Home from "../pages/Home";
+import Signup from "../pages/Signup";
 import LoginPage from "../pages/LoginPage";
-import RegisterPage from "../pages/RegisterPage";
-import DashboardPage from "../pages/DashboardPage";
-import CustomerPage from "../pages/CustomerPage";
-import ItemPage from "../pages/ItemPage";
-import OrderPage from "../pages/OrderPage";
-import BlogPage from "../pages/BlogPage";
-import { RequireAuth } from "../components/RequireAuth";
+// import MainLayout from "../layouts/MainLayout";
+// import LoginPage from "../pages/LoginPage";
+// import RegisterPage from "../pages/RegisterPage";
+// import DashboardPage from "../pages/DashboardPage";
+// import CustomerPage from "../pages/CustomerPage";
+// import ItemPage from "../pages/ItemPage";
+// import OrderPage from "../pages/OrderPage";
+// import BlogPage from "../pages/BlogPage";
+// import { RequireAuth } from "../components/RequireAuth";
 
 const Router = () => {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        
+        {/* <Route path="/register" element={<RegisterPage />} />
 
         <Route element={<MainLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -57,8 +63,8 @@ const Router = () => {
                 <BlogPage />
               </RequireAuth>
             }
-          />
-        </Route>
+          /> 
+        </Route>*/}
       </Routes>
     </BrowserRouter>
   );
