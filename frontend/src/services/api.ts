@@ -90,7 +90,7 @@ import axios from "axios";
 import { STORAGE_KEYS } from "../utils/storageKeys";
 
 const api = axios.create({
-  baseURL: "https://complete-backend-react.vercel.app/api/v1",
+  baseURL: "http://localhost:5000/api/v1",
   headers: {
     "Content-Type": "application/json",
   },

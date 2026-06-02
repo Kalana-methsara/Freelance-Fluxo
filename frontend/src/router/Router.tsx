@@ -1,10 +1,8 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import Home from "../pages/Home";
-import Signup from "../pages/Signup";
+import FreelancerPlatform from "../pages/FreelancerPlatform";
+import Signupflow from "../pages/Signupflow";
 import LoginPage from "../pages/LoginPage";
 // import MainLayout from "../layouts/MainLayout";
-// import LoginPage from "../pages/LoginPage";
-// import RegisterPage from "../pages/RegisterPage";
 // import DashboardPage from "../pages/DashboardPage";
 // import CustomerPage from "../pages/CustomerPage";
 // import ItemPage from "../pages/ItemPage";
@@ -16,8 +14,8 @@ const Router = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/signup" element={<Signup />} />
+        <Route path="/" element={<FreelancerPlatform />} />
+        <Route path="/signup" element={<Signupflow />} />
         <Route path="/login" element={<LoginPage />} />
         
         {/* <Route path="/register" element={<RegisterPage />} />

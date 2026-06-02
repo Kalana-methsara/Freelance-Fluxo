@@ -10,9 +10,8 @@ export interface IUser extends Document {
     password: string;
     profileImage?: string;
     userRole: UserRole[];
-    approved: boolean;
     approvalStatus: ApprovalStatus;
-    location: {
+    location?: {
         coordinates: { lat: number; lng: number };
         address: string;
         city: string;
@@ -32,16 +31,24 @@ const userSchema = new Schema<IUser>({
         enum: Object.values(UserRole),
         default: [UserRole.FREELANCER]
     },
-    approved: { type: Boolean, default: false },
     approvalStatus: {
         type: String,
         enum: Object.values(ApprovalStatus),
-        default: ApprovalStatus.PENDING
+        default: ApprovalStatus.PENDING,
+        index: true
     },
     location: {
         type: locationSchema,
-        default: () => ({})
+        required: false
     }
-}, { timestamps: true });
+}, { 
+    timestamps: true,
+    toJSON: {
+    transform: (_, res) => {
+        delete (res as Partial<IUser>).password;
+        return res;
+    }
+}
+});
 
 export const UserModel = model<IUser>('user', userSchema);
