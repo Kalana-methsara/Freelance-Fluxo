@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import authService from "../services/authService";
+import type { RegisterUserPayload } from "../types";
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -206,37 +208,40 @@ export default function SignupFlow() {
     setForm((prev) => ({ ...prev, [target.name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.agreeTerms) return;
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!form.agreeTerms) return;
 
-    setIsSubmitting(true);
-    try {
-      const payload = {
-        firstName: form.firstName,
-        lastName: form.lastName,
-        email: form.email,
-        password: form.password,
-        userRole: role === "client" ? ["CLIENT"] : ["FREELANCER"],
-        location: { country: form.country },
-        receiveEmails: form.receiveEmails,
-      };
-      // Replace with your actual API call
-      // await authService.register(payload);
-      console.log("Registration payload:", payload);
-      alert("Account created! Redirecting to login...");
-      navigate("/login", { state: { message: "Account created! Please sign in." } });
-    } catch (error: unknown) {
-      console.error(error);
-      const message =
-        error && typeof error === "object" && "response" in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : undefined;
-      alert(message || "Registration failed. Please try again.");
-    } finally {
-      setIsSubmitting(false);
+  setIsSubmitting(true);
+  try {
+    const payload: RegisterUserPayload = {
+      firstName: form.firstName,
+      lastName: form.lastName,
+      email: form.email,
+      password: form.password,
+      location: { country: form.country },
+    };
+
+    if (role === "client") {
+      await authService.registerClient(payload);
+    } else {
+      await authService.registerFreelancer(payload);
     }
-  };
+
+    navigate("/login", {
+      state: { message: "Account created! Please sign in." }
+    });
+  } catch (error: unknown) {
+    const message =
+      error && typeof error === "object" && "response" in error
+        ? (error as { response?: { data?: { message?: string } } })
+            .response?.data?.message
+        : undefined;
+    alert(message || "Registration failed. Please try again.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   // ── Step 1: Role selection (consistent container with LoginPage) ──────
   if (step === 1) {

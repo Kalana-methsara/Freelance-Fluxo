@@ -2,36 +2,39 @@ import api from "./api";
 import type { AuthUser, LoginCredentials, RegisterUserPayload } from "../types/auth";
 
 const authService = {
-  /** Public signup — backend always creates USER role */
-  registerUser: async (payload: RegisterUserPayload) => {
-    const response = await api.post("/auth/register", payload);
+  // ✅ /auth/register/freelancer
+  registerFreelancer: async (payload: RegisterUserPayload) => {
+    const response = await api.post("/auth/register/freelancer", payload);
     return response.data;
   },
 
+  // ✅ /auth/register/client
+  registerClient: async (payload: RegisterUserPayload) => {
+    const response = await api.post("/auth/register/client", payload);
+    return response.data;
+  },
+
+  // ✅ /auth/login
   login: async (credentials: LoginCredentials) => {
     const response = await api.post("/auth/login", credentials);
     return response.data;
   },
 
+  // ✅ /auth/me
   getProfile: async (): Promise<AuthUser> => {
-    const response = await api.get("/auth/profile");
+    const response = await api.get("/auth/me");
     return response.data?.data ?? response.data;
   },
 
-  /** Admin only — not used on public register page */
+  // ✅ /auth/register/admin — admin only
   registerAdmin: async (payload: RegisterUserPayload) => {
-    const response = await api.post("/auth/admin/register", payload);
+    const response = await api.post("/auth/register/admin", payload);
     return response.data;
   },
 
-  /** Admin or Manager only */
-  registerManager: async (payload: RegisterUserPayload) => {
-    const response = await api.post("/auth/manager/register", payload);
-    return response.data;
-  },
-
-  getAdminUsers: async () => {
-    const response = await api.get("/auth/admin/users");
+  // ✅ /auth/  — admin only
+  getUsers: async () => {
+    const response = await api.get("/auth/");
     return response.data;
   },
 };

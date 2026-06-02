@@ -1,21 +1,25 @@
 import { Router } from "express";
-import { 
-  registerUser, 
-  loginUser, 
-  getMyDetails, 
-  registerAdmin, 
-  getUsers,
-  registerManager 
-} from "../controller/userController"; 
+import {
+    loginUser,
+    getMyDetails,
+    registerAdmin,
+    getUsers,
+    registerFreelancer,
+    registerClient
+} from "../controller/userController";
 import { validate } from "../middleware/validateMiddleware";
-import { loginSchema, registerSchema} from "../schemas/authSchema";
+import { loginSchema, registerSchema, registerAdminSchema } from "../schemas/authSchema";
 
 const router = Router();
 
-router.post("/register", validate(registerSchema), registerUser);
-
+// Public routes
+router.post("/register/freelancer", validate(registerSchema), registerFreelancer);
+router.post("/register/client", validate(registerSchema), registerClient);
 router.post("/login", validate(loginSchema), loginUser);
 
+// Protected routes
+router.get("/me", getMyDetails);
+router.get("/", getUsers);
+router.post("/register/admin", validate(registerAdminSchema), registerAdmin);
+
 export default router;
-
-

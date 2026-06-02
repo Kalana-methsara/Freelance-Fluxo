@@ -15,9 +15,12 @@ export interface AuthUser {
 }
 
 export interface RegisterUserPayload {
-  name: string;
+  firstName: string;
+  lastName: string;  
   email: string;
   password: string;
+  userRole?: string[];
+  location?: { country: string };
 }
 
 export interface LoginCredentials {
