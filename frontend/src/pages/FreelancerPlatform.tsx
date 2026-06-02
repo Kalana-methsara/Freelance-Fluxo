@@ -127,7 +127,10 @@ const FreelancerPlatform: React.FC = () => {
 
         {/* Auth buttons - wrap on mobile */}
         <div className="flex flex-wrap items-center gap-2 ml-auto">
-          <button className="px-3 py-1.5 text-sm font-medium text-gray-800 rounded-md hover:bg-gray-100">
+          <button
+            className="px-3 py-1.5 text-sm font-medium text-gray-800 rounded-md hover:bg-gray-100"
+            onClick={() => navigate("/login")}
+          >
             Log in
           </button>
           <button
