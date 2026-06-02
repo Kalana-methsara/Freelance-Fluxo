@@ -12,42 +12,25 @@ interface FormState {
   lastName: string;
   email: string;
   password: string;
-  country: string;
+  confirmPassword: string; // ✅ added
   receiveEmails: boolean;
   agreeTerms: boolean;
+  // ✅ country ඉවත් කළා
 }
 
 // ─── Constants ──────────────────────────────────────────────────────────
-
-const COUNTRIES = [
-  "Sri Lanka",
-  "United States",
-  "United Kingdom",
-  "India",
-  "Australia",
-  "Canada",
-  "Germany",
-  "France",
-  "Singapore",
-  "Japan",
-  "Netherlands",
-  "Sweden",
-  "Norway",
-  "Denmark",
-  "New Zealand",
-] as const;
 
 const INITIAL_FORM: FormState = {
   firstName: "",
   lastName: "",
   email: "",
   password: "",
-  country: "Sri Lanka",
+  confirmPassword: "", // ✅ added
   receiveEmails: false,
   agreeTerms: false,
 };
 
-// ─── Icons (reused from LoginPage) ─────────────────────────────────────
+// ─── Icons ─────────────────────────────────────────────────────────────
 
 function EyeIcon() {
   return (
@@ -95,7 +78,7 @@ function AppleIcon() {
   );
 }
 
-// ─── Role Card Component (unchanged, but styled to match) ───────────────
+// ─── Role Card ──────────────────────────────────────────────────────────
 
 interface RoleCardProps {
   icon: string;
@@ -111,30 +94,26 @@ function RoleCard({ icon, title, description, selected, onSelect }: RoleCardProp
       role="radio"
       aria-checked={selected}
       tabIndex={0}
-      className={`
-        flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all
-        ${selected
+      className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${
+        selected
           ? "border-emerald-700 bg-emerald-50 ring-2 ring-emerald-700/10"
           : "border-gray-200 hover:border-emerald-300 hover:bg-white/80"
-        }
-      `}
+      }`}
       onClick={onSelect}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onSelect()}
     >
-      <div className={`
-        w-11 h-11 rounded-lg flex items-center justify-center text-xl shrink-0 transition-colors
-        ${selected ? "bg-emerald-100/80" : "bg-gray-50"}
-      `}>
+      <div className={`w-11 h-11 rounded-lg flex items-center justify-center text-xl shrink-0 transition-colors ${
+        selected ? "bg-emerald-100/80" : "bg-gray-50"
+      }`}>
         {icon}
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-medium text-gray-900 text-sm mb-0.5">{title}</div>
         <div className="text-xs text-gray-500">{description}</div>
       </div>
-      <div className={`
-        w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all
-        ${selected ? "border-emerald-700 bg-emerald-700" : "border-gray-300"}
-      `}>
+      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+        selected ? "border-emerald-700 bg-emerald-700" : "border-gray-300"
+      }`}>
         <svg width="10" height="8" viewBox="0 0 10 8" fill="none" className="text-white">
           <path d="M1 4l2.5 2.5L9 1" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -143,7 +122,7 @@ function RoleCard({ icon, title, description, selected, onSelect }: RoleCardProp
   );
 }
 
-// ─── Reusable OAuth Buttons (same order + styling as LoginPage) ────────
+// ─── OAuth Buttons ──────────────────────────────────────────────────────
 
 function OAuthButtons() {
   const handleOAuth = (provider: "github" | "google" | "apple") => {
@@ -157,24 +136,21 @@ function OAuthButtons() {
         onClick={() => handleOAuth("apple")}
         type="button"
       >
-        <AppleIcon />
-        Continue with Apple
+        <AppleIcon /> Continue with Apple
       </button>
       <button
         className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 bg-white border border-gray-300 rounded-full font-medium text-sm text-gray-800 transition-all hover:bg-gray-50 hover:border-gray-400"
         onClick={() => handleOAuth("github")}
         type="button"
       >
-        <GithubIcon />
-        Continue with GitHub
+        <GithubIcon /> Continue with GitHub
       </button>
       <button
         className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 bg-white border border-gray-300 rounded-full font-medium text-sm text-gray-800 transition-all hover:bg-gray-50 hover:border-gray-400"
         onClick={() => handleOAuth("google")}
         type="button"
       >
-        <GoogleIcon />
-        Continue with Google
+        <GoogleIcon /> Continue with Google
       </button>
     </div>
   );
@@ -187,6 +163,7 @@ export default function SignupFlow() {
   const [step, setStep] = useState<1 | 2>(1);
   const [role, setRole] = useState<Role>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // ✅ added
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const firstInputRef = useRef<HTMLInputElement>(null);
@@ -197,9 +174,7 @@ export default function SignupFlow() {
     }
   }, [step]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const target = e.target;
     const value =
       target.type === "checkbox"
@@ -208,64 +183,65 @@ export default function SignupFlow() {
     setForm((prev) => ({ ...prev, [target.name]: value }));
   };
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!form.agreeTerms) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.agreeTerms) return;
 
-  setIsSubmitting(true);
-  try {
-    const payload: RegisterUserPayload = {
-      firstName: form.firstName,
-      lastName: form.lastName,
-      email: form.email,
-      password: form.password,
-      location: { country: form.country },
-    };
-
-    if (role === "client") {
-      await authService.registerClient(payload);
-    } else {
-      await authService.registerFreelancer(payload);
+    // ✅ password match validation
+    if (form.password !== form.confirmPassword) {
+      alert("Passwords do not match");
+      return;
     }
 
-    navigate("/login", {
-      state: { message: "Account created! Please sign in." }
-    });
-  } catch (error: unknown) {
-    const message =
-      error && typeof error === "object" && "response" in error
-        ? (error as { response?: { data?: { message?: string } } })
-            .response?.data?.message
-        : undefined;
-    alert(message || "Registration failed. Please try again.");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+    setIsSubmitting(true);
+    try {
+      const payload: RegisterUserPayload = {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        password: form.password,
+        // ✅ location නෑ — backend optional
+      };
 
-  // ── Step 1: Role selection (consistent container with LoginPage) ──────
+      if (role === "client") {
+        await authService.registerClient(payload);
+      } else {
+        await authService.registerFreelancer(payload);
+      }
+
+      navigate("/login", {
+        state: { message: "Account created! Please sign in." },
+      });
+    } catch (error: unknown) {
+      const message =
+        error && typeof error === "object" && "response" in error
+          ? (error as { response?: { data?: { message?: string } } })
+              .response?.data?.message
+          : undefined;
+      alert(message || "Registration failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ── Step 1 ───────────────────────────────────────────────────────────
   if (step === 1) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 font-sans">
         <div className="max-w-md w-full bg-white border border-gray-200 rounded-2xl shadow-xl p-8">
-          {/* Logo */}
           <div className="text-center mb-6 font-serif text-xl font-light tracking-tight text-gray-900">
             freelance<em className="italic text-emerald-700">fluxo</em>
           </div>
-
-          {/* Step indicators */}
           <div className="flex items-center justify-center gap-2 mb-6">
             <div className="w-5 h-1.5 rounded-full bg-emerald-700 transition-all" />
             <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
           </div>
-
           <h1 className="font-serif text-2xl font-normal text-center tracking-tight text-gray-900 mb-2">
             Welcome to freelancefluxo
           </h1>
           <p className="text-sm text-gray-500 text-center mb-6">
             How will you be using the platform?
           </p>
-
           <div className="flex flex-col gap-3 mb-6">
             <RoleCard
               icon="💼"
@@ -282,7 +258,6 @@ const handleSubmit = async (e: React.FormEvent) => {
               onSelect={() => setRole("freelancer")}
             />
           </div>
-
           <button
             className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-3 rounded-full transition duration-300 active:scale-[0.98] disabled:opacity-45 disabled:cursor-not-allowed"
             disabled={!role}
@@ -290,7 +265,6 @@ const handleSubmit = async (e: React.FormEvent) => {
           >
             Continue
           </button>
-
           <p className="mt-6 text-center text-sm text-gray-600">
             Already have an account?{" "}
             <a href="/login" className="text-emerald-700 font-semibold hover:underline">
@@ -302,15 +276,14 @@ const handleSubmit = async (e: React.FormEvent) => {
     );
   }
 
-  // ── Step 2: Registration form (consistent styling with LoginPage) ─────
+  // ── Step 2 ───────────────────────────────────────────────────────────
   const isClient = role === "client";
+  const passwordMismatch = form.confirmPassword.length > 0 && form.password !== form.confirmPassword;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 font-sans">
       <div className="max-w-md w-full bg-white border border-gray-200 rounded-2xl shadow-xl p-8">
-        {/* Logo */}
         <div className="grid grid-cols-3 items-center mb-5">
-          {/* Back Button (Left) */}
           <button
             className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors w-max"
             onClick={() => setStep(1)}
@@ -321,23 +294,16 @@ const handleSubmit = async (e: React.FormEvent) => {
             </svg>
             Back
           </button>
-
-          {/* Logo (Center) */}
           <div className="text-center font-serif text-xl font-light tracking-tight text-gray-900">
             freelance<em className="italic text-emerald-700">fluxo</em>
           </div>
-
           <div />
         </div>
 
-        {/* Step indicators */}
         <div className="flex items-center justify-center gap-2 mb-5">
           <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
           <div className="w-5 h-1.5 rounded-full bg-emerald-700 transition-all" />
         </div>
-
-        {/* Back button */}
-
 
         <h1 className="font-serif text-2xl font-normal tracking-tight text-gray-900 mb-1">
           {isClient ? "Hire exceptional talent" : "Find work you love"}
@@ -348,7 +314,6 @@ const handleSubmit = async (e: React.FormEvent) => {
             : "Join thousands of freelancers on the platform"}
         </p>
 
-        {/* OAuth Buttons – same order as LoginPage */}
         <OAuthButtons />
 
         <div className="flex items-center gap-3 my-5">
@@ -357,13 +322,11 @@ const handleSubmit = async (e: React.FormEvent) => {
           <div className="flex-1 h-px bg-gray-200" />
         </div>
 
-        {/* Email/Password Form */}
         <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+          {/* Name */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                First name
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">First name</label>
               <input
                 ref={firstInputRef}
                 name="firstName"
@@ -377,9 +340,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Last name
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Last name</label>
               <input
                 name="lastName"
                 type="text"
@@ -393,6 +354,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             </div>
           </div>
 
+          {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {isClient ? "Work email" : "Email address"}
@@ -409,10 +371,9 @@ const handleSubmit = async (e: React.FormEvent) => {
             />
           </div>
 
+          {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <div className="relative">
               <input
                 name="password"
@@ -436,29 +397,40 @@ const handleSubmit = async (e: React.FormEvent) => {
             </div>
           </div>
 
+          {/* ✅ Confirm Password — country ඉවත් කරලා මේක දාන්න */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Country
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm password</label>
             <div className="relative">
-              <select
-                name="country"
-                value={form.country}
+              <input
+                name="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Re-enter your password"
+                value={form.confirmPassword}
                 onChange={handleChange}
-                className="w-full appearance-none px-3.5 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10 transition-all"
+                className={`w-full px-3.5 py-2 pr-10 border rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                  passwordMismatch
+                    ? "border-red-400 focus:border-red-400 focus:ring-red-400/10"
+                    : "border-gray-300 focus:border-emerald-700 focus:ring-emerald-700/10"
+                }`}
+                autoComplete="new-password"
+                required
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
               >
-                {COUNTRIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
+                {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
             </div>
+            {/* ✅ real-time error message */}
+            {passwordMismatch && (
+              <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+            )}
           </div>
 
+          {/* Checkboxes */}
           <div className="flex flex-col gap-3">
             <label className="flex items-start gap-2.5 text-xs text-gray-600 cursor-pointer">
               <input
@@ -474,7 +446,6 @@ const handleSubmit = async (e: React.FormEvent) => {
                   : "Send me helpful emails about rewarding work and opportunities."}
               </span>
             </label>
-
             <label className="flex items-start gap-2.5 text-xs text-gray-600 cursor-pointer">
               <input
                 type="checkbox"
@@ -496,7 +467,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           <button
             type="submit"
             className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-3 rounded-full transition duration-300 active:scale-[0.98] disabled:opacity-45 disabled:cursor-not-allowed"
-            disabled={!form.agreeTerms || isSubmitting}
+            disabled={!form.agreeTerms || isSubmitting || passwordMismatch}
           >
             {isSubmitting ? "Creating account…" : "Create my account"}
           </button>
