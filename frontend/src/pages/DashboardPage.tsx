@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 // 1. TYPES & INTERFACES
 interface Order {
@@ -51,7 +51,7 @@ function DashboardPage() {
     <div className="flex min-h-screen bg-slate-50 font-sans text-slate-800">
       
       {/* SIDEBAR */}
-      <aside className="w-64 bg-slate-900 text-white p-6 flex flex-col hidden md:flex">
+      <aside className="w-64 bg-slate-900 text-white p-6 flex-col hidden md:flex">
         <div className="text-2xl font-bold mb-10 tracking-wider text-sky-400">
           CoreDash
         </div>
@@ -130,7 +130,7 @@ function DashboardPage() {
         {/* DATA TABLE SECTION */}
         <section className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 overflow-x-auto">
           <h2 className="text-lg font-bold text-slate-900 mb-4">Recent Orders</h2>
-          <table className="w-full text-left border-collapse min-w-[600px]">
+          <table className="w-full text-left border-collapse min-w-150">
             <thead>
               <tr className="border-b border-slate-100 text-xs font-semibold text-slate-400 uppercase tracking-wider">
                 <th className="pb-3 px-4">Order ID</th>

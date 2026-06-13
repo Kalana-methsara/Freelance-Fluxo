@@ -56,18 +56,16 @@ function html(title: string, message: string): string {
       }
     </style>
     <div class="flex flex-col items-start text-left gap-1 min-w-0 flex-1">
-      <span class="text-white text-[13px] font-semibold tracking-[.1em] uppercase leading-tight">
+      <span class="text-white text-[13px] font-semibold tracking-widest uppercase leading-tight">
         ${title}
       </span>
-      <span class="text-white/50 text-[13px] leading-snug break-words w-full">
+      <span class="text-white/50 text-[13px] leading-snug wrap-break-word w-full">
         ${message}
       </span>
     </div>`;
 }
 
 const ICON_CLASS = "swal2-icon-custom-fix";
-
-// ─── Alert (Success Only) ─────────────────────────────────────────────────────
 export class Alert {
   static success(
     message: string,
