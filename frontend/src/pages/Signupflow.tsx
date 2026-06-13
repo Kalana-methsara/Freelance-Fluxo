@@ -12,10 +12,9 @@ interface FormState {
   lastName: string;
   email: string;
   password: string;
-  confirmPassword: string; // ✅ added
+  confirmPassword: string; 
   receiveEmails: boolean;
   agreeTerms: boolean;
-  // ✅ country ඉවත් කළා
 }
 
 // ─── Constants ──────────────────────────────────────────────────────────
@@ -25,7 +24,7 @@ const INITIAL_FORM: FormState = {
   lastName: "",
   email: "",
   password: "",
-  confirmPassword: "", // ✅ added
+  confirmPassword: "", 
   receiveEmails: false,
   agreeTerms: false,
 };
@@ -70,14 +69,6 @@ function GithubIcon() {
   );
 }
 
-function AppleIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-    </svg>
-  );
-}
-
 // ─── Role Card ──────────────────────────────────────────────────────────
 
 interface RoleCardProps {
@@ -94,26 +85,23 @@ function RoleCard({ icon, title, description, selected, onSelect }: RoleCardProp
       role="radio"
       aria-checked={selected}
       tabIndex={0}
-      className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${
-        selected
+      className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${selected
           ? "border-emerald-700 bg-emerald-50 ring-2 ring-emerald-700/10"
           : "border-gray-200 hover:border-emerald-300 hover:bg-white/80"
-      }`}
+        }`}
       onClick={onSelect}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onSelect()}
     >
-      <div className={`w-11 h-11 rounded-lg flex items-center justify-center text-xl shrink-0 transition-colors ${
-        selected ? "bg-emerald-100/80" : "bg-gray-50"
-      }`}>
+      <div className={`w-11 h-11 rounded-lg flex items-center justify-center text-xl shrink-0 transition-colors ${selected ? "bg-emerald-100/80" : "bg-gray-50"
+        }`}>
         {icon}
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-medium text-gray-900 text-sm mb-0.5">{title}</div>
         <div className="text-xs text-gray-500">{description}</div>
       </div>
-      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-        selected ? "border-emerald-700 bg-emerald-700" : "border-gray-300"
-      }`}>
+      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${selected ? "border-emerald-700 bg-emerald-700" : "border-gray-300"
+        }`}>
         <svg width="10" height="8" viewBox="0 0 10 8" fill="none" className="text-white">
           <path d="M1 4l2.5 2.5L9 1" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -124,20 +112,15 @@ function RoleCard({ icon, title, description, selected, onSelect }: RoleCardProp
 
 // ─── OAuth Buttons ──────────────────────────────────────────────────────
 
-function OAuthButtons() {
-  const handleOAuth = (provider: "github" | "google" | "apple") => {
-    window.location.href = `${process.env.REACT_APP_API_URL}/auth/${provider}`;
+function OAuthButtons({ role }: { role: "client" | "freelancer" | null }) {
+  const handleOAuth = (provider: "github" | "google") => {
+    // 💡 FIX: මෙතන තිබ්බ process.env එක වෙනුවට import.meta.env.VITE_API_URL දැම්මා!
+    window.location.href = `${import.meta.env.VITE_API_URL}/auth/${provider}?role=${role}`;
   };
 
   return (
     <div className="flex flex-col gap-2.5 mb-5">
-      <button
-        className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 bg-white border border-gray-300 rounded-full font-medium text-sm text-gray-800 transition-all hover:bg-gray-50 hover:border-gray-400"
-        onClick={() => handleOAuth("apple")}
-        type="button"
-      >
-        <AppleIcon /> Continue with Apple
-      </button>
+      {/* 💡 Apple Button එක සදහටම අයින් කළා */}
       <button
         className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 bg-white border border-gray-300 rounded-full font-medium text-sm text-gray-800 transition-all hover:bg-gray-50 hover:border-gray-400"
         onClick={() => handleOAuth("github")}
@@ -163,7 +146,7 @@ export default function SignupFlow() {
   const [step, setStep] = useState<1 | 2>(1);
   const [role, setRole] = useState<Role>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // ✅ added
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false); 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const firstInputRef = useRef<HTMLInputElement>(null);
@@ -187,7 +170,6 @@ export default function SignupFlow() {
     e.preventDefault();
     if (!form.agreeTerms) return;
 
-    // ✅ password match validation
     if (form.password !== form.confirmPassword) {
       alert("Passwords do not match");
       return;
@@ -200,7 +182,6 @@ export default function SignupFlow() {
         lastName: form.lastName,
         email: form.email,
         password: form.password,
-        // ✅ location නෑ — backend optional
       };
 
       if (role === "client") {
@@ -216,7 +197,7 @@ export default function SignupFlow() {
       const message =
         error && typeof error === "object" && "response" in error
           ? (error as { response?: { data?: { message?: string } } })
-              .response?.data?.message
+            .response?.data?.message
           : undefined;
       alert(message || "Registration failed. Please try again.");
     } finally {
@@ -314,7 +295,7 @@ export default function SignupFlow() {
             : "Join thousands of freelancers on the platform"}
         </p>
 
-        <OAuthButtons />
+        <OAuthButtons role={role} />
 
         <div className="flex items-center gap-3 my-5">
           <div className="flex-1 h-px bg-gray-200" />
@@ -397,7 +378,7 @@ export default function SignupFlow() {
             </div>
           </div>
 
-          {/* ✅ Confirm Password — country ඉවත් කරලා මේක දාන්න */}
+          {/* Confirm Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Confirm password</label>
             <div className="relative">
@@ -407,11 +388,10 @@ export default function SignupFlow() {
                 placeholder="Re-enter your password"
                 value={form.confirmPassword}
                 onChange={handleChange}
-                className={`w-full px-3.5 py-2 pr-10 border rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 transition-all ${
-                  passwordMismatch
+                className={`w-full px-3.5 py-2 pr-10 border rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 transition-all ${passwordMismatch
                     ? "border-red-400 focus:border-red-400 focus:ring-red-400/10"
                     : "border-gray-300 focus:border-emerald-700 focus:ring-emerald-700/10"
-                }`}
+                  }`}
                 autoComplete="new-password"
                 required
               />
@@ -424,7 +404,6 @@ export default function SignupFlow() {
                 {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
             </div>
-            {/* ✅ real-time error message */}
             {passwordMismatch && (
               <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
             )}

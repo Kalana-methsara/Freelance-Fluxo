@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import FreelancerPlatform from "../pages/FreelancerPlatform";
 import Signupflow from "../pages/Signupflow";
 import LoginPage from "../pages/LoginPage";
+// import OAuthCallback from "../pages/OAuthCallback";
 // import MainLayout from "../layouts/MainLayout";
 // import DashboardPage from "../pages/DashboardPage";
 // import CustomerPage from "../pages/CustomerPage";
@@ -17,6 +18,7 @@ const Router = () => {
         <Route path="/" element={<FreelancerPlatform />} />
         <Route path="/signup" element={<Signupflow />} />
         <Route path="/login" element={<LoginPage />} />
+        {/* <Route path="/oauth-callback" element={<OAuthCallback />} /> */}
         
         {/* <Route path="/register" element={<RegisterPage />} />
 
