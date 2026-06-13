@@ -5,6 +5,8 @@ import { STORAGE_KEYS } from "../utils/storageKeys";
 import { setCredentials } from "../features/authSlice";
 import authService from "../services/authService";
 import type { AuthUser } from "../types";
+import { Alert } from "../components/SuccessAlert";
+// import { Alert } from "../components/ErrorAlert";
 
 // ─── Icons (matching SignupFlow) ──────────────────────────────────────────────
 
@@ -72,7 +74,13 @@ const LoginPage = () => {
         localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(userData));
 
         dispatch(setCredentials(userData));
-        alert("Login successful!");
+        // alert("Login successful!");
+        // Alert.loading("Processing your files...", "Uploading");
+        Alert.success("Post uploaded successfully. #react #nextjs");
+  //       Alert.error(
+  //   "Failed to fetch data from the server. Please check your connection.",
+  //   "Connection Error"
+  // );
         navigate("/dashboard");
       }
     } catch (error: unknown) {
