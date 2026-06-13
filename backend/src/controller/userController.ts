@@ -2,10 +2,10 @@ import { Request, Response } from "express";
 import { UserModel } from "../models/userModel";
 import bcrypt from "bcryptjs";
 import { signAccessToken, signRefreshToken } from "../utils/generateToken";
-import { AuthRequest } from "../middleware/authMiddleware";
 import { UserRole } from "../enums/userRole";
 import { ApprovalStatus } from "../enums/approvalStatus";
 import { asyncHandler } from "../middleware/asyncHandler";
+import { AuthRequest } from "../middleware/authMiddleware";
 
 const createUserWithTokens = async (
     data: { firstName: string; lastName: string; email: string; password: string },
@@ -74,8 +74,9 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
 });
 
 // 4. Get My Details
-export const getMyDetails = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const user = await UserModel.findById(req.user?._id);
+export const getMyDetails = asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthRequest;
+    const user = await UserModel.findById(authReq.user?._id);
     if (!user) return res.status(404).json({ message: "User not found" });
     res.status(200).json({ success: true, data: user });
 });
