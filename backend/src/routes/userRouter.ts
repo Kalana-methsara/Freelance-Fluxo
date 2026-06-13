@@ -13,7 +13,6 @@ import passport from "../config/passport";
 import { signAccessToken, signRefreshToken } from "../utils/generateToken";
 
 const router = Router();
-console.log('--------router--------------')
 
 // Public routes
 router.post("/register/freelancer", validate(registerSchema), registerFreelancer);
