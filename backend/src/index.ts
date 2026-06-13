@@ -10,9 +10,7 @@ import passport from 'passport';
 const PORT = process.env.PORT || 5000; 
 
 const app = express();
- 
 // Middleware
-
 app.use(
   cors({
     origin: "https://freelancefluxo-web.vercel.app", // ඔයාගේ Frontend Live URL එක විතරක් දෙන්න
