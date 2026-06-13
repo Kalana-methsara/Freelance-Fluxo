@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
 
 interface Category {
   id: number;
@@ -77,6 +77,7 @@ const popularTags = ['Web Design', 'React Developer', 'UI/UX Design', 'Node.js',
 
 const FreelancerPlatform: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleSearch = () => {
@@ -87,122 +88,165 @@ const FreelancerPlatform: React.FC = () => {
     setSearchQuery(tag);
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
-  };
+  const getInitials = (name: string) =>
+    name.split(' ').map((n) => n[0]).join('').toUpperCase();
 
-  const renderStars = (rating: number) => {
-    const fullStars = '★'.repeat(rating);
-    const emptyStars = '☆'.repeat(5 - rating);
-    return fullStars + emptyStars;
-  };
+  const renderStars = (rating: number) =>
+    '★'.repeat(rating) + '☆'.repeat(5 - rating);
 
   return (
     <>
-      {/* Navbar - Responsive: wraps on mobile, scrolls if needed */}
-      <nav className="flex flex-wrap items-center gap-4 px-4 sm:px-6 lg:px-10 py-3 border-b border-gray-200 bg-white sticky top-0 z-50">
-        <div className="text-2xl font-bold text-green-600 tracking-tight">
-          freelance<span className="text-gray-900">fluxo</span>
+      {/* ── NAVBAR ── */}
+      <nav className="sticky top-0 z-50 bg-white border-b border-gray-200">
+        <div className="flex items-center justify-between px-4 sm:px-6 lg:px-10 py-3">
+          {/* Logo */}
+          <div className="text-xl sm:text-2xl font-bold text-green-600 tracking-tight shrink-0">
+            freelance<span className="text-gray-900">fluxo</span>
+          </div>
+
+          {/* Desktop nav links */}
+          <div className="hidden md:flex items-center gap-1 mx-4">
+            {['Find talent', 'Find work', 'Why us', 'Enterprise'].map((label) => (
+              <button
+                key={label}
+                className="px-3 py-1.5 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 transition-colors whitespace-nowrap"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Desktop auth buttons */}
+          <div className="hidden md:flex items-center gap-2 shrink-0">
+            <button
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100"
+              onClick={() => navigate('/login')}
+            >
+              Log in
+            </button>
+            <button
+              className="px-4 py-2 border-2 border-green-600 text-green-600 rounded-full text-sm font-medium hover:bg-green-50 transition-all"
+              onClick={() => navigate('/signup')}
+            >
+              Sign up
+            </button>
+            <button className="px-4 py-2 bg-green-600 text-white rounded-full text-sm font-medium hover:bg-green-700 transition-colors">
+              Post a job
+            </button>
+          </div>
+
+          {/* Mobile: Log in + hamburger */}
+          <div className="flex md:hidden items-center gap-2">
+            <button
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100"
+              onClick={() => navigate('/login')}
+            >
+              Log in
+            </button>
+            <button
+              className="p-2 rounded-md hover:bg-gray-100 transition-colors"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              aria-label="Toggle menu"
+            >
+              {/* Hamburger / X icon */}
+              {mobileMenuOpen ? (
+                <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
 
-        {/* Navigation links - wrap on small screens */}
-        <div className="hidden md:flex flex-wrap gap-1.5 flex-1 min-w-50">
-          <button className="px-3 py-1.5 text-sm font-medium text-gray-800 rounded-md hover:bg-gray-100 transition-colors">
-            Find talent
-          </button>
-          <button className="px-3 py-1.5 text-sm font-medium text-gray-800 rounded-md hover:bg-gray-100 transition-colors">
-            Find work
-          </button>
-          <button className="px-3 py-1.5 text-sm font-medium text-gray-800 rounded-md hover:bg-gray-100 transition-colors">
-            Why us
-          </button>
-          <button className="px-3 py-1.5 text-sm font-medium text-gray-800 rounded-md hover:bg-gray-100 transition-colors">
-            Enterprise
-          </button>
-        </div>
-
-        {/* Auth buttons - wrap on mobile */}
-        <div className="flex flex-wrap items-center gap-2 ml-auto">
-          <button
-            className="px-3 py-1.5 text-sm font-medium text-gray-800 rounded-md hover:bg-gray-100"
-            onClick={() => navigate("/login")}
-          >
-            Log in
-          </button>
-          <button
-            className="px-4 py-2 border-2 border-green-600 bg-transparent text-green-600 rounded-full text-sm font-medium hover:bg-green-50 transition-all"
-            onClick={() => navigate("/signup")}
-          >
-            Sign up
-          </button>
-          <button className="px-5 py-2 bg-green-600 text-white rounded-full text-sm font-medium hover:bg-green-700 transition-colors">
-            Post a job
-          </button>
-        </div>
+        {/* Mobile dropdown menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-gray-100 bg-white px-4 pb-4 pt-2 flex flex-col gap-1">
+            {['Find talent', 'Find work', 'Why us', 'Enterprise'].map((label) => (
+              <button
+                key={label}
+                className="w-full text-left px-3 py-2.5 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+              >
+                {label}
+              </button>
+            ))}
+            <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+              <button
+                className="flex-1 py-2 border-2 border-green-600 text-green-600 rounded-full text-sm font-medium hover:bg-green-50 transition-all"
+                onClick={() => navigate('/signup')}
+              >
+                Sign up
+              </button>
+              <button
+                className="flex-1 py-2 bg-green-600 text-white rounded-full text-sm font-medium hover:bg-green-700 transition-colors"
+              >
+                Post a job
+              </button>
+            </div>
+          </div>
+        )}
       </nav>
 
-      {/* Hero Section - responsive padding & text */}
-      <section className="bg-[#001e00] py-12 sm:py-16 px-4 sm:px-6 lg:px-10 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-radial from-[#0d3b00] to-transparent opacity-80 pointer-events-none"></div>
+      {/* ── HERO ── */}
+      <section className="bg-[#001e00] py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-10 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-radial from-[#0d3b00] to-transparent opacity-80 pointer-events-none" />
         <div className="max-w-4xl mx-auto relative">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-white leading-tight max-w-xl mb-6 sm:mb-7">
-            How work<br />should <em className="text-green-600 not-italic">work.</em>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-white leading-tight mb-6">
+            How work<br />should <em className="text-green-500 not-italic">work.</em>
           </h1>
 
-          {/* Search bar - stack on mobile, row on tablet+ */}
-          <div className="flex flex-col sm:flex-row bg-white rounded-md overflow-hidden max-w-md sm:max-w-lg lg:max-w-xl shadow-lg">
+          {/* Search bar */}
+          <div className="flex flex-col xs:flex-row bg-white rounded-lg overflow-hidden max-w-xl shadow-lg">
             <input
               type="text"
               placeholder="Search for any skill or service..."
-              className="flex-1 border-none outline-none px-4 py-3.5 text-base text-gray-800"
+              className="flex-1 border-none outline-none px-4 py-3.5 text-sm sm:text-base text-gray-800 min-w-0"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
             <button
               onClick={handleSearch}
-              className="px-6 py-3 bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors sm:rounded-none rounded-md"
+              className="px-5 py-3 sm:py-3.5 bg-green-600 text-white font-semibold text-sm sm:text-base hover:bg-green-700 transition-colors shrink-0"
             >
               Search
             </button>
           </div>
 
-          {/* Popular tags - wrap */}
+          {/* Popular tags */}
           <div className="flex gap-2 flex-wrap items-center mt-4">
-            <span className="text-sm text-gray-400">Popular:</span>
+            <span className="text-xs sm:text-sm text-gray-400">Popular:</span>
             {popularTags.map((tag) => (
-              <span
+              <button
                 key={tag}
-                className="px-3 py-1 border border-white/25 rounded-full text-xs sm:text-sm text-gray-200 bg-white/10 cursor-pointer hover:border-green-600 hover:text-green-600 transition-all"
+                className="px-3 py-1 border border-white/25 rounded-full text-xs text-gray-200 bg-white/10 cursor-pointer hover:border-green-500 hover:text-green-400 transition-all"
                 onClick={() => handleTagClick(tag)}
               >
                 {tag}
-              </span>
+              </button>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Trusted by - responsive wrap */}
-      <div className="flex flex-wrap items-center gap-4 sm:gap-8 py-4 sm:py-5 px-4 sm:px-6 lg:px-10 border-b border-gray-200">
-        <span className="text-sm text-gray-500 font-medium">Trusted by</span>
-        <div className="flex flex-wrap gap-5 sm:gap-7 items-center">
-          <span className="text-sm sm:text-base font-semibold text-gray-400 tracking-tight">Microsoft</span>
-          <span className="text-sm sm:text-base font-semibold text-gray-400 tracking-tight">Airbnb</span>
-          <span className="text-sm sm:text-base font-semibold text-gray-400 tracking-tight">Bisler</span>
-          <span className="text-sm sm:text-base font-semibold text-gray-400 tracking-tight">GE</span>
-          <span className="text-sm sm:text-base font-semibold text-gray-400 tracking-tight">Nasdaq</span>
-          <span className="text-sm sm:text-base font-semibold text-gray-400 tracking-tight">Automatic</span>
+      {/* ── TRUSTED BY ── */}
+      <div className="overflow-x-auto border-b border-gray-200">
+        <div className="flex items-center gap-5 sm:gap-8 py-4 px-4 sm:px-6 lg:px-10 min-w-max sm:min-w-0 sm:flex-wrap">
+          <span className="text-xs sm:text-sm text-gray-500 font-medium shrink-0">Trusted by</span>
+          {['Microsoft', 'Airbnb', 'Bisler', 'GE', 'Nasdaq', 'Automatic'].map((brand) => (
+            <span key={brand} className="text-sm sm:text-base font-semibold text-gray-400 tracking-tight shrink-0">
+              {brand}
+            </span>
+          ))}
         </div>
       </div>
 
-      {/* Categories Section - responsive grid already good, adjust padding */}
+      {/* ── CATEGORIES ── */}
       <section className="py-10 sm:py-14 px-4 sm:px-6 lg:px-10 bg-white">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <div className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide mb-3">
             Browse categories
           </div>
@@ -212,23 +256,23 @@ const FreelancerPlatform: React.FC = () => {
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
             {categories.map((cat) => (
-              <div
+              <button
                 key={cat.id}
-                className="bg-gray-50 rounded-xl p-4 sm:p-6 cursor-pointer border-2 border-transparent hover:border-green-600 hover:bg-white hover:-translate-y-0.5 hover:shadow-md transition-all"
+                className="bg-gray-50 rounded-xl p-4 sm:p-5 text-left border-2 border-transparent hover:border-green-600 hover:bg-white hover:-translate-y-0.5 hover:shadow-md transition-all active:scale-95"
                 onClick={() => alert(`Browse ${cat.title} category`)}
               >
-                <div className="text-2xl sm:text-3xl mb-2 sm:mb-3">{cat.icon}</div>
-                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-0.5 sm:mb-1">{cat.title}</h3>
+                <div className="text-2xl sm:text-3xl mb-2">{cat.icon}</div>
+                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-0.5 leading-snug">{cat.title}</h3>
                 <span className="text-[11px] sm:text-xs text-gray-500">{cat.skills}</span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Top Freelancers Section - responsive grid */}
+      {/* ── TOP FREELANCERS ── */}
       <section className="py-10 sm:py-14 px-4 sm:px-6 lg:px-10 bg-gray-50">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <div className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide mb-3">
             Top freelancers
           </div>
@@ -236,26 +280,27 @@ const FreelancerPlatform: React.FC = () => {
           <p className="text-sm sm:text-base text-gray-500 mb-6 sm:mb-8 max-w-lg">
             Handpicked professionals with verified skills and top-rated reviews.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+          {/* Mobile: horizontal scroll; sm+: 2-col; lg+: 4-col */}
+          <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-4">
             {freelancers.map((fl) => (
-              <div
+              <button
                 key={fl.id}
-                className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 cursor-pointer hover:border-green-600 hover:shadow-md hover:-translate-y-0.5 transition-all"
+                className="snap-start shrink-0 w-[72vw] xs:w-64 sm:w-auto bg-white border border-gray-200 rounded-xl p-4 sm:p-5 text-left cursor-pointer hover:border-green-600 hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95"
                 onClick={() => alert(`View profile of ${fl.name}`)}
               >
                 <div
-                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-lg sm:text-xl font-bold text-white mb-3"
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-white mb-3 shrink-0"
                   style={{ background: fl.avatarBg }}
                 >
                   {getInitials(fl.name)}
                 </div>
-                <div className="font-semibold text-gray-900 text-sm sm:text-base mb-0.5">{fl.name}</div>
-                <div className="text-xs sm:text-sm text-gray-500 mb-2">{fl.title}</div>
-                <div className="text-amber-500 text-xs sm:text-sm mb-1.5">
+                <div className="font-semibold text-gray-900 text-sm mb-0.5">{fl.name}</div>
+                <div className="text-xs text-gray-500 mb-2">{fl.title}</div>
+                <div className="text-amber-500 text-xs mb-1.5">
                   {renderStars(fl.rating)}{' '}
-                  <span className="text-gray-500 text-xs">({fl.reviews})</span>
+                  <span className="text-gray-500">({fl.reviews})</span>
                 </div>
-                <div className="font-semibold text-gray-800 text-sm sm:text-base">${fl.rate}/hr</div>
+                <div className="font-semibold text-gray-800 text-sm">${fl.rate}/hr</div>
                 <div className="flex gap-1.5 flex-wrap mt-2">
                   {fl.skills.map((skill) => (
                     <span key={skill} className="px-2 py-0.5 bg-gray-100 rounded-full text-xs text-gray-500 font-medium">
@@ -263,61 +308,64 @@ const FreelancerPlatform: React.FC = () => {
                     </span>
                   ))}
                 </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ── */}
+      <section className="py-10 sm:py-14 px-4 sm:px-6 lg:px-10 bg-white">
+        <div className="max-w-4xl mx-auto">
+          <div className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide mb-3">
+            How it works
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 text-center mb-2">
+            Get started in minutes
+          </h2>
+          <p className="text-sm sm:text-base text-gray-500 text-center max-w-md mx-auto mb-8 sm:mb-10">
+            Three simple steps to find the talent your project needs.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {[
+              {
+                n: '1',
+                title: 'Post your job',
+                desc: 'Tell us about your project requirements, timeline, and budget in just a few minutes.',
+              },
+              {
+                n: '2',
+                title: 'Browse proposals',
+                desc: 'Review profiles and proposals from top-rated freelancers who match your needs.',
+              },
+              {
+                n: '3',
+                title: 'Hire & collaborate',
+                desc: 'Work securely with built-in tools for messaging, payments, and progress tracking.',
+              },
+            ].map(({ n, title, desc }) => (
+              <div key={n} className="flex sm:flex-col items-start sm:items-center gap-4 sm:gap-0 sm:text-center p-4 sm:p-6">
+                <div className="w-10 h-10 shrink-0 rounded-full bg-green-100 text-green-700 text-base font-bold flex items-center justify-center sm:mx-auto sm:mb-4">
+                  {n}
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">{title}</h3>
+                  <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">{desc}</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works - responsive */}
-      <section className="py-10 sm:py-14 px-4 sm:px-6 lg:px-10 bg-white">
-        <div className="max-w-4xl mx-auto">
-          <div className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide mb-3">
-            How it works
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 text-center mb-2">Get started in minutes</h2>
-          <p className="text-sm sm:text-base text-gray-500 text-center max-w-md mx-auto mb-6 sm:mb-10">
-            Three simple steps to find the talent your project needs.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-4 sm:p-8">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-green-100 text-green-700 text-base sm:text-lg font-bold flex items-center justify-center mx-auto mb-4">
-                1
-              </div>
-              <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">Post your job</h3>
-              <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
-                Tell us about your project requirements, timeline, and budget in just a few minutes.
-              </p>
-            </div>
-            <div className="text-center p-4 sm:p-8">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-green-100 text-green-700 text-base sm:text-lg font-bold flex items-center justify-center mx-auto mb-4">
-                2
-              </div>
-              <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">Browse proposals</h3>
-              <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
-                Review profiles and proposals from top-rated freelancers who match your needs.
-              </p>
-            </div>
-            <div className="text-center p-4 sm:p-8">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-green-100 text-green-700 text-base sm:text-lg font-bold flex items-center justify-center mx-auto mb-4">
-                3
-              </div>
-              <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">Hire & collaborate</h3>
-              <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
-                Work securely with built-in tools for messaging, payments, and progress tracking.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Strip - responsive stacking */}
+      {/* ── CTA STRIP ── */}
       <div className="bg-[#001e00] py-10 sm:py-14 px-4 sm:px-6 lg:px-10">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-8">
           <h2 className="text-2xl sm:text-3xl font-semibold text-white leading-tight text-center sm:text-left">
-            Ready to find the <em className="text-green-600 not-italic">perfect</em> freelancer for your project?
+            Ready to find the{' '}
+            <em className="text-green-500 not-italic">perfect</em> freelancer for your project?
           </h2>
-          <div className="flex gap-3 flex-wrap justify-center">
+          <div className="flex gap-3 shrink-0">
             <button className="px-5 sm:px-7 py-2.5 sm:py-3 bg-white text-gray-900 rounded-full text-sm sm:text-base font-semibold hover:opacity-85 transition-opacity">
               Post a job
             </button>
@@ -328,43 +376,45 @@ const FreelancerPlatform: React.FC = () => {
         </div>
       </div>
 
-      {/* Footer - responsive grid */}
+      {/* ── FOOTER ── */}
       <footer className="bg-gray-50 py-8 sm:py-10 px-4 sm:px-6 lg:px-10 border-t border-gray-200">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8">
-            <div>
-              <h4 className="text-xs sm:text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">For clients</h4>
-              <a className="block text-xs sm:text-sm text-gray-500 mb-2 cursor-pointer hover:text-green-600">How to hire</a>
-              <a className="block text-xs sm:text-sm text-gray-500 mb-2 cursor-pointer hover:text-green-600">Talent marketplace</a>
-              <a className="block text-xs sm:text-sm text-gray-500 mb-2 cursor-pointer hover:text-green-600">Post a job</a>
-              <a className="block text-xs sm:text-sm text-gray-500 mb-2 cursor-pointer hover:text-green-600">Enterprise</a>
-            </div>
-            <div>
-              <h4 className="text-xs sm:text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">For freelancers</h4>
-              <a className="block text-xs sm:text-sm text-gray-500 mb-2 cursor-pointer hover:text-green-600">How to find work</a>
-              <a className="block text-xs sm:text-sm text-gray-500 mb-2 cursor-pointer hover:text-green-600">Profile best practices</a>
-              <a className="block text-xs sm:text-sm text-gray-500 mb-2 cursor-pointer hover:text-green-600">Connects</a>
-              <a className="block text-xs sm:text-sm text-gray-500 mb-2 cursor-pointer hover:text-green-600">Resources</a>
-            </div>
-            <div>
-              <h4 className="text-xs sm:text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">Resources</h4>
-              <a className="block text-xs sm:text-sm text-gray-500 mb-2 cursor-pointer hover:text-green-600">Help center</a>
-              <a className="block text-xs sm:text-sm text-gray-500 mb-2 cursor-pointer hover:text-green-600">Blog</a>
-              <a className="block text-xs sm:text-sm text-gray-500 mb-2 cursor-pointer hover:text-green-600">Community</a>
-              <a className="block text-xs sm:text-sm text-gray-500 mb-2 cursor-pointer hover:text-green-600">Affiliate program</a>
-            </div>
-            <div>
-              <h4 className="text-xs sm:text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">Company</h4>
-              <a className="block text-xs sm:text-sm text-gray-500 mb-2 cursor-pointer hover:text-green-600">About us</a>
-              <a className="block text-xs sm:text-sm text-gray-500 mb-2 cursor-pointer hover:text-green-600">Careers</a>
-              <a className="block text-xs sm:text-sm text-gray-500 mb-2 cursor-pointer hover:text-green-600">Press</a>
-              <a className="block text-xs sm:text-sm text-gray-500 mb-2 cursor-pointer hover:text-green-600">Contact us</a>
-            </div>
+            {[
+              {
+                heading: 'For clients',
+                links: ['How to hire', 'Talent marketplace', 'Post a job', 'Enterprise'],
+              },
+              {
+                heading: 'For freelancers',
+                links: ['How to find work', 'Profile best practices', 'Connects', 'Resources'],
+              },
+              {
+                heading: 'Resources',
+                links: ['Help center', 'Blog', 'Community', 'Affiliate program'],
+              },
+              {
+                heading: 'Company',
+                links: ['About us', 'Careers', 'Press', 'Contact us'],
+              },
+            ].map(({ heading, links }) => (
+              <div key={heading}>
+                <h4 className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-3">{heading}</h4>
+                {links.map((link) => (
+                  <a key={link} className="block text-xs sm:text-sm text-gray-500 mb-2 cursor-pointer hover:text-green-600 transition-colors">
+                    {link}
+                  </a>
+                ))}
+              </div>
+            ))}
           </div>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 mt-6 border-t border-gray-200 text-xs sm:text-sm text-gray-500">
-            <span className="text-2xl font-bold text-green-600 tracking-tight">
-              freelance<span className="text-gray-900">fluxo</span></span>
-            <span>© 2026 Freelancer Platform. All rights reserved.</span>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 mt-6 border-t border-gray-200">
+            <span className="text-xl sm:text-2xl font-bold text-green-600 tracking-tight">
+              freelance<span className="text-gray-900">fluxo</span>
+            </span>
+            <span className="text-xs sm:text-sm text-gray-500 text-center">
+              © 2026 Freelancer Platform. All rights reserved.
+            </span>
           </div>
         </div>
       </footer>
