@@ -19,6 +19,8 @@ app.use(
     credentials: true, // Cookies හෝ Auth Headers යවනවා නම් මේක අනිවාර්යයි
   })
 );
+// Handle preflight requests explicitly
+app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
