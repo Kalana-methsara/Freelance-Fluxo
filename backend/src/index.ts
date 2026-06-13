@@ -13,12 +13,14 @@ const app = express();
  
 // Middleware
 
-app.use(cors({
-  origin: 'https://freelancefluxo-web.vercel.app', 
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(
+  cors({
+    origin: "https://freelancefluxo-web.vercel.app", // ඔයාගේ Frontend Live URL එක විතරක් දෙන්න
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true, // Cookies හෝ Auth Headers යවනවා නම් මේක අනිවාර්යයි
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
