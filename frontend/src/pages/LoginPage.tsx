@@ -1,14 +1,12 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { STORAGE_KEYS } from "../utils/storageKeys";
 import { setCredentials } from "../features/authSlice";
 import authService from "../services/authService";
 import type { AuthUser } from "../types";
-import { Alert } from "../components/SuccessAlert";
-// import { Alert } from "../components/ErrorAlert";
 
-// ─── Icons (matching SignupFlow) ──────────────────────────────────────────────
+// ─── Icons ───────────────────────────────────────────────────────────────────
 
 function EyeIcon() {
   return (
@@ -48,92 +46,142 @@ function GithubIcon() {
   );
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function extractErrorMessage(error: unknown): string {
+  if (error && typeof error === "object" && "response" in error) {
+    const axiosError = error as { response?: { data?: { message?: string; error?: string } } };
+    return (
+      axiosError.response?.data?.message ??
+      axiosError.response?.data?.error ??
+      "Invalid credentials. Please try again."
+    );
+  }
+  if (error instanceof Error) return error.message;
+  return "Something went wrong. Please try again.";
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const location = useLocation();
+
   const successMessage = (location.state as { message?: string } | null)?.message;
 
+  useEffect(() => {
+    if (!errorMessage) return;
+    const timer = setTimeout(() => setErrorMessage(null), 8000);
+    return () => clearTimeout(timer);
+  }, [errorMessage]);
+
   const handleOAuth = (provider: "github" | "google") => {
-    // 💡 FIX: process.env වෙනුවට import.meta.env භාවිත කර ඇත
     window.location.href = `${import.meta.env.VITE_API_URL}/auth/${provider}`;
   };
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setErrorMessage(null);
+    setIsLoading(true);
+
     try {
       const response = await authService.login({ email, password });
       const userData = (response?.data ?? response) as AuthUser;
+      const token = userData?.accessToken;
 
-      if (userData?.accessToken) {
-        localStorage.setItem(STORAGE_KEYS.accessToken, userData.accessToken);
-        localStorage.setItem(STORAGE_KEYS.refreshToken, userData.refreshToken);
-        localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(userData));
-
-        dispatch(setCredentials(userData));
-        // alert("Login successful!");
-        // Alert.loading("Processing your files...", "Uploading");
-        Alert.success("Post uploaded successfully. #react #nextjs");
-  //       Alert.error(
-  //   "Failed to fetch data from the server. Please check your connection.",
-  //   "Connection Error"
-  // );
-        navigate("/dashboard");
+      if (!token) {
+        setErrorMessage("Sign-in failed — no access token received.");
+        return;
       }
-    } catch (error: unknown) {
-      console.error(error);
-      const message =
-        error && typeof error === "object" && "response" in error
-          ? (error as { response?: { data?: { message?: string } } }).response
-            ?.data?.message
-          : undefined;
-      alert(message || "Invalid credentials!");
+
+      localStorage.setItem(STORAGE_KEYS.accessToken, token);
+      localStorage.setItem(STORAGE_KEYS.refreshToken, userData.refreshToken ?? "");
+      localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(userData));
+      dispatch(setCredentials(userData));
+
+      setShowSuccessToast(true);
+      setTimeout(() => {
+        setShowSuccessToast(false);
+        navigate("/dashboard");
+      }, 1200);
+    } catch (error) {
+      setErrorMessage(extractErrorMessage(error));
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 font-sans">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 font-sans relative">
+
+      {/* Success toast */}
+      {showSuccessToast && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 animate-bounce">
+          <div className="bg-emerald-600 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-2.5 font-medium text-sm border border-emerald-500">
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Signed in — redirecting…
+          </div>
+        </div>
+      )}
+
       <div className="max-w-md w-full bg-white border border-gray-200 rounded-2xl shadow-xl p-8">
+
         {/* Logo */}
         <div className="text-center mb-6 font-serif text-xl font-light tracking-tight text-gray-900">
           freelance<em className="italic text-emerald-700">fluxo</em>
         </div>
 
         <h2 className="text-2xl font-serif font-normal text-center tracking-tight text-gray-900 mb-2">
-          Welcome Back
+          Welcome back
         </h2>
 
+        {/* Signup success banner */}
         {successMessage && (
-          <div
-            role="status"
-            className="mb-5 rounded-lg px-4 py-2.5 text-sm bg-green-50 text-green-800 border border-green-200"
-          >
+          <div role="status" className="mb-5 rounded-lg px-4 py-2.5 text-sm bg-green-50 text-green-800 border border-green-200 flex items-center gap-2">
+            <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
             {successMessage}
           </div>
         )}
 
-        {/* OAuth Buttons */}
+        {/* Error alert */}
+        {errorMessage && (
+          <div role="alert" className="mb-5 rounded-xl px-4 py-3 text-sm bg-red-50 text-red-800 border border-red-200 flex items-start gap-2.5 transition-all duration-300">
+            <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span className="flex-1 font-medium">{errorMessage}</span>
+            <button onClick={() => setErrorMessage(null)} className="text-red-500 hover:text-red-800 transition-colors font-bold px-1" aria-label="Dismiss error">
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* OAuth buttons */}
         <div className="flex flex-col gap-2.5 mb-5">
-          {/* 💡 Apple Button එක කෝඩ් එකෙන් ඉවත් කර ඇත */}
-          <button
-            className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 bg-white border border-gray-300 rounded-full font-medium text-sm text-gray-800 transition-all hover:bg-gray-50 hover:border-gray-400"
-            onClick={() => handleOAuth("github")}
-            type="button"
-          >
-            <GithubIcon />
-            Continue with GitHub
-          </button>
-          <button
-            className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 bg-white border border-gray-300 rounded-full font-medium text-sm text-gray-800 transition-all hover:bg-gray-50 hover:border-gray-400"
-            onClick={() => handleOAuth("google")}
-            type="button"
-          >
-            <GoogleIcon />
-            Continue with Google
-          </button>
+          {(["github", "google"] as const).map((provider) => (
+            <button
+              key={provider}
+              type="button"
+              disabled={isLoading}
+              onClick={() => handleOAuth(provider)}
+              className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 bg-white border border-gray-300 rounded-full font-medium text-sm text-gray-800 transition-all hover:bg-gray-50 hover:border-gray-400 disabled:opacity-60"
+            >
+              {provider === "github" ? <GithubIcon /> : <GoogleIcon />}
+              Continue with {provider === "github" ? "GitHub" : "Google"}
+            </button>
+          ))}
         </div>
 
         <div className="flex items-center gap-3 my-5">
@@ -142,42 +190,47 @@ const LoginPage = () => {
           <div className="flex-1 h-px bg-gray-200" />
         </div>
 
-        {/* Email/Password Form */}
-        <form className="flex flex-col gap-5" onSubmit={handleLogin}>
+        {/* Email / password form */}
+        <form className="flex flex-col gap-5" onSubmit={handleLogin} noValidate>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">
               Email
             </label>
             <input
+              id="email"
               type="email"
               placeholder="example@mail.com"
               required
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10 transition-all"
+              disabled={isLoading}
+              className="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10 transition-all disabled:opacity-60"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="password">
               Password
             </label>
             <div className="relative">
               <input
+                id="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 required
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3.5 py-2 pr-10 border border-gray-300 rounded-lg text-sm
-text-gray-900 placeholder:text-gray-400 focus:outline-none
-focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10 transition-all"
+                disabled={isLoading}
+                className="w-full px-3.5 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10 transition-all disabled:opacity-60"
               />
               <button
                 type="button"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
+                disabled={isLoading}
               >
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
@@ -186,18 +239,26 @@ focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10 transition-all"
 
           <button
             type="submit"
-            className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-3 rounded-full transition duration-300 active:scale-[0.98]"
+            disabled={isLoading}
+            className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-3 rounded-full transition duration-300 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            Sign In
+            {isLoading ? (
+              <>
+                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Signing in…
+              </>
+            ) : (
+              "Sign in"
+            )}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-600">
           Don&apos;t have an account?{" "}
-          <Link
-            to="/signup"
-            className="text-emerald-700 font-semibold hover:underline"
-          >
+          <Link to="/signup" className="text-emerald-700 font-semibold hover:underline">
             Sign up
           </Link>
         </p>
