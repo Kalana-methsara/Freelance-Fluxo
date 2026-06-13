@@ -60,7 +60,6 @@ export const registerClient = asyncHandler(async (req: Request, res: Response) =
 
 // 3. Login User
 export const loginUser = asyncHandler(async (req: Request, res: Response) => {
-    console.log('--------hi--------------')
 
     const { email, password } = req.body;
     const user = await UserModel.findOne({ email });
