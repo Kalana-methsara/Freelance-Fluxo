@@ -1,9 +1,7 @@
-// ─── auth/shared.tsx ─────────────────────────────────────────────────────────
 // Shared sub-components used by both LoginPage and SignupFlow.
 
 import { Link } from "react-router-dom";
 
-// ─── Icons ───────────────────────────────────────────────────────────────────
 
 export function EyeIcon() {
   return (
@@ -43,7 +41,6 @@ export function GithubIcon() {
   );
 }
 
-// ─── Layout primitives ───────────────────────────────────────────────────────
 
 export function Logo() {
   return (
@@ -63,7 +60,6 @@ export function Divider() {
   );
 }
 
-// ─── OAuth buttons ───────────────────────────────────────────────────────────
 
 interface OAuthButtonsProps {
   disabled?: boolean;
@@ -94,7 +90,6 @@ export function OAuthButtons({ disabled, role }: OAuthButtonsProps) {
   );
 }
 
-// ─── Error alert ─────────────────────────────────────────────────────────────
 
 interface ErrorAlertProps {
   message: string;
@@ -107,7 +102,7 @@ export function ErrorAlert({ message, onDismiss }: ErrorAlertProps) {
       role="alert"
       className="mb-5 rounded-xl px-4 py-3 text-sm bg-red-50 text-red-800 border border-red-200 flex items-start gap-2.5 transition-all duration-300"
     >
-      <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <svg className="w-5 h-5 text-red-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
       </svg>
       <span className="flex-1 font-medium">{message}</span>
@@ -122,7 +117,6 @@ export function ErrorAlert({ message, onDismiss }: ErrorAlertProps) {
   );
 }
 
-// ─── Password input ───────────────────────────────────────────────────────────
 
 interface PasswordInputProps {
   id: string;
@@ -190,7 +184,6 @@ export function PasswordInput({
   );
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export function extractErrorMessage(error: unknown): string {
   if (error && typeof error === "object" && "response" in error) {
@@ -210,7 +203,6 @@ export function resolveToken(userData: Record<string, unknown>): string | undefi
   return (userData.accessToken ?? userData.token) as string | undefined;
 }
 
-// ─── Auth card shell ─────────────────────────────────────────────────────────
 
 export function AuthCard({ children }: { children: React.ReactNode }) {
   return (
@@ -222,7 +214,6 @@ export function AuthCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ─── Footer link ─────────────────────────────────────────────────────────────
 
 interface AuthFooterProps {
   prompt: string;
