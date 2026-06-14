@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import platformService from "../services/platformService";
 import { getInitials } from "../utils/auth";
+import TechStack from "../components/Skills";
 
 const HOW_IT_WORKS = [
   { n: "1", title: "Post your job", desc: "Tell us about your project requirements, timeline, and budget in just a few minutes." },
@@ -145,6 +146,12 @@ export default function FreelancerPlatform() {
           </div>
         </div>
       </section>
+<section >
+      <img
+        src="../src/assets/web_page.png"
+        alt="Web page preview"
+      />
+</section>
 
       <section className="py-10 sm:py-14 px-4 sm:px-6 lg:px-10 bg-gray-50">
         <div className="max-w-5xl mx-auto">
@@ -172,21 +179,48 @@ export default function FreelancerPlatform() {
           </div>
         </div>
       </section>
-
-      <section className="py-10 sm:py-14 px-4 sm:px-6 lg:px-10 bg-white">
-        <div className="max-w-4xl mx-auto">
-          <SectionBadge label="How it works" />
-          <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 text-center mb-8">Get started in minutes</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {HOW_IT_WORKS.map(({ n, title, desc }) => (
-              <div key={n} className="flex sm:flex-col items-start sm:items-center gap-4 sm:text-center p-4 sm:p-6">
-                <div className="w-10 h-10 shrink-0 rounded-full bg-green-100 text-green-700 text-base font-bold flex items-center justify-center sm:mx-auto sm:mb-4">{n}</div>
-                <div><h3 className="text-sm font-semibold text-gray-900 mb-1">{title}</h3><p className="text-xs sm:text-sm text-gray-500 leading-relaxed">{desc}</p></div>
-              </div>
-            ))}
+      <TechStack />
+    
+<section className="py-10 md:py-14 px-4 sm:px-6 lg:px-6 bg-linear-to-b from-white to-gray-50/50">
+  <div className="max-w-5xl mx-auto">
+       <SectionBadge label="How it works" />  
+    {/* Section heading with refined typography */}
+    <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 text-center mb-10 md:mb-16">
+      Get started in minutes
+      <div className="w-16 h-1 bg-linear-to-b from-green-500 to-emerald-400 rounded-full mx-auto mt-4"></div>
+    </h2>
+    
+    {/* Steps grid */}
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+      {HOW_IT_WORKS.map(({ n, title, desc }) => (
+        <div
+          key={n}
+          className="group flex sm:flex-col items-start sm:items-center gap-5 sm:gap-6 
+                     p-6 sm:p-8 rounded-2xl bg-white border border-gray-100 
+                     shadow-sm hover:shadow-lg hover:border-green-200/60 
+                     transition-all duration-300 hover:-translate-y-1"
+        >
+          {/* Step number with professional gradient */}
+          <div className="w-12 h-12 shrink-0 rounded-full 
+                        bg-linear-to-br from-green-600 to-emerald-500 
+                        text-white text-lg font-bold flex items-center justify-center 
+                        shadow-md shadow-green-500/20 sm:mx-auto sm:mb-1
+                        transition-transform duration-300 group-hover:scale-105">
+            {n}
+          </div>
+          <div className="sm:text-center">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-2">
+              {title}
+            </h3>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              {desc}
+            </p>
           </div>
         </div>
-      </section>
+      ))}
+    </div>
+  </div>
+</section>
 
       <div className="bg-[#001e00] py-10 sm:py-14 px-4 sm:px-6 lg:px-10">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
