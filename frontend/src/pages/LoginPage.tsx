@@ -5,6 +5,7 @@ import { STORAGE_KEYS } from "../utils/storageKeys";
 import { setCredentials } from "../features/authSlice";
 import authService from "../services/authService";
 import type { AuthUser } from "../types";
+import { getDashboardPath } from "../utils/auth";
 import {
   Logo,
   Divider,
@@ -14,20 +15,7 @@ import {
   AuthCard,
   AuthFooter,
   extractErrorMessage,
-  resolveToken,
 } from "../components/AuthShared";
-
-
-// ─── Replace the stub at the top ─────────────────────────────────────────────
-function getDashboardPath(roles: AuthUser["roles"] = []): string {
-  const r = roles.map((role) => String(role).toUpperCase());
-  if (r.includes("ADMIN"))      return "/admin";
-  if (r.includes("CLIENT"))     return "/dashboard/client";
-  if (r.includes("FREELANCER")) return "/dashboard/freelancer";
-  return "/";
-}
-
-// ─── Component ───────────────────────────────────────────────────────────────
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -43,59 +31,51 @@ const LoginPage = () => {
 
   const successMessage = (location.state as { message?: string } | null)?.message;
 
-  // Clear error message after 8 seconds
   useEffect(() => {
     if (!errorMessage) return;
     const timer = setTimeout(() => setErrorMessage(null), 8000);
     return () => clearTimeout(timer);
   }, [errorMessage]);
 
-const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  setErrorMessage(null);
-  setIsLoading(true);
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setIsLoading(true);
 
-  try {
-    // authService.login already returns response.data — don't unwrap again
-    const userData = await authService.login({ email, password }) as AuthUser;
-    const token = resolveToken(userData as unknown as Record<string, unknown>);
+    try {
+      const userData = await authService.login({ email, password }) as AuthUser;
 
-    if (!token) {
-      setErrorMessage("Sign-in failed — no access token received.");
+      if (!userData.accessToken) {
+        setErrorMessage("Sign-in failed — no access token received.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (userData.approvalStatus && userData.approvalStatus !== "approved") {
+        const msg =
+          userData.approvalStatus === "pending"
+            ? "Your account is pending approval. Please wait for an admin to approve it."
+            : "Your account has been rejected. Please contact support.";
+        setErrorMessage(msg);
+        setIsLoading(false);
+        return;
+      }
+
+      localStorage.setItem(STORAGE_KEYS.accessToken, userData.accessToken);
+      localStorage.setItem(STORAGE_KEYS.refreshToken, userData.refreshToken ?? "");
+      localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(userData));
+      dispatch(setCredentials(userData));
+
+      setShowSuccessToast(true);
+      navigate(getDashboardPath(userData.roles), { replace: true });
+    } catch (error) {
+      setErrorMessage(extractErrorMessage(error));
       setIsLoading(false);
-      return;
     }
-
-    // ── ApprovalStatus check ─────────────────────────────────────────────────
-    const approval = (userData as unknown as Record<string, unknown>).approvalStatus as string | undefined;
-    if (approval && approval !== "approved") {
-      const msg =
-        approval === "pending"
-          ? "Your account is pending approval. Please wait for an admin to approve it."
-          : "Your account has been rejected. Please contact support.";
-      setErrorMessage(msg);
-      setIsLoading(false);
-      return;
-    }
-
-    // ── Persist ──────────────────────────────────────────────────────────────
-    localStorage.setItem(STORAGE_KEYS.accessToken, token);
-    localStorage.setItem(STORAGE_KEYS.refreshToken, userData.refreshToken ?? "");
-    localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(userData));
-    dispatch(setCredentials(userData));
-
-    setShowSuccessToast(true);
-    navigate(getDashboardPath(userData.roles), { replace: true });
-
-  } catch (error) {
-    setErrorMessage(extractErrorMessage(error));
-    setIsLoading(false);
-  }
-};
+  };
 
   return (
     <AuthCard>
-      {/* Success toast */}
       {showSuccessToast && (
         <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 animate-pulse">
           <div className="bg-emerald-600 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-2.5 font-medium text-sm border border-emerald-500">

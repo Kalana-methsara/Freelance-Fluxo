@@ -8,12 +8,21 @@ export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 // types/auth.ts
 export interface AuthUser {
+  _id?: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
   name?: string;
   roles: UserRole[] | string[];
-  accessToken: string;
-  refreshToken: string;
-  approvalStatus?: "pending" | "approved" | "rejected"; 
+  accessToken?: string;
+  refreshToken?: string;
+  approvalStatus?: "pending" | "approved" | "rejected";
+  title?: string;
+  skills?: string[];
+  hourlyRate?: number;
+  companyName?: string;
+  rating?: number;
+  reviewCount?: number;
 }
 
 export interface RegisterUserPayload {
