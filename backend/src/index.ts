@@ -1,8 +1,11 @@
 import dotenv from 'dotenv';
 dotenv.config();
-import express, { Request, Response, NextFunction } from "express";
+import express from "express";
 import cors from "cors";
 import userRouter from "./routes/userRouter";
+import jobRouter from "./routes/jobRouter";
+import platformRouter from "./routes/platformRouter";
+import dashboardRouter from "./routes/dashboardRouter";
 import mongoDB from "./config/db";
 import { errorHandler } from "./middleware/errorMiddleware";
 import passport from 'passport';
@@ -10,10 +13,15 @@ import passport from 'passport';
 const PORT = process.env.PORT || 5000; 
 
 const app = express();
-// Middleware
+const allowedOrigins = [
+  "https://freelancefluxo-web.vercel.app",
+  "http://localhost:5173",
+  process.env.CLIENT_URL,
+].filter(Boolean) as string[];
+
 app.use(
   cors({
-    origin: ["https://freelancefluxo-web.vercel.app", "http://localhost:5173"],
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true, 
@@ -24,14 +32,22 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
  
-// Routes
 app.use("/api/v1/auth", userRouter);
+app.use("/api/v1/jobs", jobRouter);
+app.use("/api/v1/platform", platformRouter);
+app.use("/api/v1/dashboard", dashboardRouter);
+
+app.get("/api/v1/health", (_req, res) => {
+  res.json({ success: true, message: "Freelance-Fluxo API is running" });
+});
 
 app.use(errorHandler);
  
-// Database Connection
-mongoDB();
+const start = async () => {
+  await mongoDB();
+  app.listen(PORT, () => {
+    console.log(`Server is running on port : ${PORT}`);
+  });
+};
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port : ${PORT}`);
-});
+start();
