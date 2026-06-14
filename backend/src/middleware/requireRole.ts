@@ -1,13 +1,18 @@
 import { Request, Response, NextFunction } from "express";
 import { UserRole } from "../enums/userRole";
-import { AuthRequest } from "./authMiddleware"; 
+import { AuthRequest } from "./authMiddleware";
 
 export const requireRole = (allowedRoles: UserRole[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.user) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const authReq = req as AuthRequest;
+
+    if (!authReq.user) {
       return res.status(401).json({ message: "Unauthorized: No user found" });
     }
-    const hasRole = req.user.userRole?.some((role) => allowedRoles.includes(role as UserRole));
+
+    const hasRole = authReq.user.userRole?.some(
+      (role) => allowedRoles.includes(role as UserRole)
+    );
 
     if (!hasRole) {
       return res.status(403).json({ message: "Forbidden: You don't have permission" });
@@ -16,5 +21,3 @@ export const requireRole = (allowedRoles: UserRole[]) => {
     next();
   };
 };
-
-

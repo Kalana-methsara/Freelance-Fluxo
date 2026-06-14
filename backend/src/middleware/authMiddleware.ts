@@ -9,9 +9,9 @@ export interface AuthRequest extends Request {
   }
 }
  
-export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
- 
+
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Not authorized, no token" });
   }
@@ -19,14 +19,14 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   try {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
- 
-    req.user = { 
-      _id: decoded.sub, 
-      userRole: decoded.roles || [], 
+
+    (req as AuthRequest).user = {
+      _id: decoded.sub,
+      userRole: decoded.roles || [],
       email: decoded.email
     };
-    
-    return next();  
+
+    return next();
   } catch (error: any) {
     return res.status(401).json({ message: "Not authorized, token failed" });
   }
