@@ -4,7 +4,9 @@ import Signupflow from "../pages/Signupflow";
 import LoginPage from "../pages/LoginPage";
 // import OAuthCallback from "../pages/OAuthCallback";
 // import MainLayout from "../layouts/MainLayout";
-import DashboardPage from "../pages/DashboardPage";
+import FreelancerDashboard from "../pages/FreelancerDashboard";
+import ClientDashboard from "../pages/ClientDashboard";
+import AdminDashboard from "../pages/AdminDashboard";
 // import CustomerPage from "../pages/CustomerPage";
 // import ItemPage from "../pages/ItemPage";
 // import OrderPage from "../pages/OrderPage";
@@ -18,8 +20,9 @@ const Router = () => {
         <Route path="/" element={<FreelancerPlatform />} />
         <Route path="/signup" element={<Signupflow />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-
+        <Route path="/dashboard/freelancer" element={<FreelancerDashboard />} />
+        <Route path="/dashboard/client" element={<ClientDashboard />} />
+        <Route path="/admin" element={<AdminDashboard />} />
         {/* <Route path="/oauth-callback" element={<OAuthCallback />} /> */}
 
         {/* <Route path="/register" element={<RegisterPage />} />
