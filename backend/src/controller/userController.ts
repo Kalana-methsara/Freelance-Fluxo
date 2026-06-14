@@ -6,6 +6,7 @@ import { UserRole } from "../enums/userRole";
 import { ApprovalStatus } from "../enums/approvalStatus";
 import { asyncHandler } from "../middleware/asyncHandler";
 import { AuthRequest } from "../middleware/authMiddleware";
+import jwt from "jsonwebtoken";
 
 const createUserWithTokens = async (
     data: { firstName: string; lastName: string; email: string; password: string },
@@ -101,6 +102,44 @@ export const registerAdmin = asyncHandler(async (req: Request, res: Response) =>
 
 // 6. Get All Users
 export const getUsers = asyncHandler(async (req: Request, res: Response) => {
-    const users = await UserModel.find({});
+    const users = await UserModel.find({}).select("-password");
     res.status(200).json({ success: true, data: users });
+});
+
+// 7. Refresh access token
+export const refreshToken = asyncHandler(async (req: Request, res: Response) => {
+    const { refreshToken: token } = req.body;
+    if (!token) {
+        return res.status(400).json({ message: "Refresh token required" });
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET!) as { sub: string };
+        const user = await UserModel.findById(decoded.sub);
+        if (!user) {
+            return res.status(401).json({ message: "Invalid refresh token" });
+        }
+
+        const accessToken = signAccessToken(user);
+        res.status(200).json({ success: true, data: { accessToken } });
+    } catch {
+        return res.status(401).json({ message: "Invalid or expired refresh token" });
+    }
+});
+
+// 8. Update user approval status (admin)
+export const updateUserApproval = asyncHandler(async (req: Request, res: Response) => {
+    const { status } = req.body;
+    if (!Object.values(ApprovalStatus).includes(status)) {
+        return res.status(400).json({ message: "Invalid approval status" });
+    }
+
+    const user = await UserModel.findByIdAndUpdate(
+        req.params.id,
+        { approvalStatus: status },
+        { new: true }
+    ).select("-password");
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.status(200).json({ success: true, data: user });
 });

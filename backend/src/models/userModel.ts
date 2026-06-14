@@ -11,6 +11,12 @@ export interface IUser extends Document {
     profileImage?: string;
     userRole: UserRole[];
     approvalStatus: ApprovalStatus;
+    title?: string;
+    skills?: string[];
+    hourlyRate?: number;
+    rating?: number;
+    reviewCount?: number;
+    companyName?: string;
     location?: {
         coordinates: { lat: number; lng: number };
         address: string;
@@ -37,6 +43,12 @@ const userSchema = new Schema<IUser>({
         default: ApprovalStatus.PENDING,
         index: true
     },
+    title: { type: String },
+    skills: { type: [String], default: [] },
+    hourlyRate: { type: Number, default: 0 },
+    rating: { type: Number, default: 5, min: 1, max: 5 },
+    reviewCount: { type: Number, default: 0 },
+    companyName: { type: String },
     location: {
         type: locationSchema,
         required: false
