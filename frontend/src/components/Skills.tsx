@@ -152,7 +152,7 @@ const TechStack = () => {
         {/* Header with modern accent */}
         <div className="text-center mb-14">
           <div className="inline-block">
-            <h2 className="text-transparent text-4xl md:text-5xl font-bold tracking-tight mb-3 bg-linear-to-r from-white via-white to-gray-400 bg-clip-text text-transparent">
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-3 bg-linear-to-r from-white via-white to-gray-400 bg-clip-text text-transparent">
               Tech Stack
             </h2>
             <div className="h-1 w-20 bg-linear-to-r from-purple-500 to-cyan-500 mx-auto rounded-full" />

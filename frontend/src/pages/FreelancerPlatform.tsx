@@ -124,7 +124,7 @@ export default function FreelancerPlatform() {
           playsInline
           className="absolute inset-0 w-full h-full object-cover z-0 brightness-[0.75]"
         >
-          <source src="../src/assets/DesktopHeader.webm" type="video/webm" />
+          <source src="/DesktopHeader.webm" type="video/webm" />
           Your browser does not support the video tag.
         </video>
 
