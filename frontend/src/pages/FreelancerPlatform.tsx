@@ -64,9 +64,9 @@ export default function FreelancerPlatform() {
     }
     navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
   };
+
   const toggleVideoPlayback = (): void => {
     if (!videoRef.current) return;
-
     if (isVideoPlaying) {
       videoRef.current.pause();
       setIsVideoPlaying(false);
@@ -75,8 +75,10 @@ export default function FreelancerPlatform() {
       setIsVideoPlaying(true);
     }
   };
+
   return (
     <>
+      {/* ─── NAV ─── */}
       <nav className="sticky top-0 z-50 bg-white border-b border-gray-200">
         <div className="flex items-center justify-between px-4 sm:px-6 lg:px-10 py-3">
           <Link to="/" aria-label="Home"><Logo /></Link>
@@ -114,39 +116,46 @@ export default function FreelancerPlatform() {
         )}
       </nav>
 
-      <section className="relative overflow-hidden min-h-137.5 sm:min-h-155 flex flex-col justify-between py-12 sm:py-16 lg:py-20 px-6 sm:px-12 lg:px-16">
-        {/* Video Background */}
+      {/* ─── HERO ─── */}
+      <section className="relative overflow-hidden min-h-105 sm:min-h-155 lg:min-h-160 flex flex-col justify-between py-8 sm:py-16 lg:py-20 px-6 sm:px-12 lg:px-16">
+
+        {/* Mobile: solid gradient fallback (no video) */}
+        <div className="sm:hidden absolute inset-0 z-0 bg-linear-to-br from-green-900 via-green-700 to-green-600" />
+
+        {/* Desktop: video background */}
         <video
           ref={videoRef}
           autoPlay
           loop
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover z-0 brightness-[0.75]"
+          className="hidden sm:block absolute inset-0 w-full h-full object-cover z-0 brightness-[0.75]"
         >
           <source src="/DesktopHeader.webm" type="video/webm" />
-          Your browser does not support the video tag.
         </video>
+
+        {/* Overlay — subtle dark tint for text legibility on both mobile + desktop */}
+        <div className="absolute inset-0 z-10 bg-black/20" />
 
         {/* Center Content */}
         <div className="max-w-5xl w-full mx-auto relative z-20 flex-1 flex flex-col justify-center">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-light text-white leading-tight mb-8 tracking-tight max-w-3xl">
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-light text-white leading-tight mb-6 sm:mb-8 tracking-tight max-w-3xl">
             Our freelancers <br />will take it from here
           </h1>
 
           {/* Search Bar */}
-          <div className="flex bg-white rounded-lg p-1.5 overflow-hidden max-w-3xl shadow-2xl items-center">
+          <div className="flex bg-white rounded-lg p-1.5 overflow-hidden max-w-xl sm:max-w-3xl shadow-2xl items-center">
             <input
               type="search"
               placeholder="Search for any service..."
-              className="flex-1 border-none outline-none pl-5 pr-4 py-3 text-base text-gray-800 min-w-0 placeholder-gray-400 font-light"
+              className="flex-1 border-none outline-none pl-4 sm:pl-5 pr-3 sm:pr-4 py-2.5 sm:py-3 text-sm sm:text-base text-gray-800 min-w-0 placeholder-gray-400 font-light"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             />
             <button
               onClick={handleSearch}
-              className="w-11 h-11 bg-gray-900 rounded-lg flex items-center justify-center text-white hover:bg-gray-800 transition shrink-0 mr-1"
+              className="w-10 h-10 sm:w-11 sm:h-11 bg-gray-900 rounded-lg flex items-center justify-center text-white hover:bg-gray-800 transition shrink-0 mr-0.5 sm:mr-1"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                 <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 1 5.196 5.196a7.5 7.5 0 0 1 10.603 10.603Z" />
@@ -155,48 +164,47 @@ export default function FreelancerPlatform() {
           </div>
 
           {/* Popular Tags */}
-          <div className="flex gap-2.5 flex-wrap items-center mt-6">
+          <div className="flex gap-2 flex-wrap items-center mt-5 sm:mt-6">
             {POPULAR_TAGS.map((tag) => (
               <button
                 key={tag}
-                className="px-4 py-2 border border-white/40 rounded-md text-xs sm:text-sm font-medium text-white bg-black/10 hover:bg-white hover:text-black transition flex items-center gap-2"
+                className="px-3 sm:px-4 py-1.5 sm:py-2 border border-white/40 rounded-md text-xs sm:text-sm font-medium text-white bg-white/10 backdrop-blur-sm hover:bg-white hover:text-black transition flex items-center gap-1.5 sm:gap-2"
                 onClick={() => {
                   setSearchQuery(tag);
-                  if (handleSearch) handleSearch();
+                  navigate(`/search?q=${encodeURIComponent(tag)}`);
                 }}
               >
-                {tag} <span className="text-xs text-white/65 font-light">→</span>
+                {tag} <span className="text-[10px] sm:text-xs text-white/65 font-light">→</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Bottom Row: Trusted Logos + Pause Button */}
-        <div className="max-w-5xl w-full mx-auto relative z-20 mt-12 flex flex-wrap items-center justify-between gap-6">
-          <div className="flex items-center gap-6 flex-wrap">
-            <span className="text-xs sm:text-sm text-gray-400 font-medium tracking-wide">Trusted by:</span>
-            <div className="flex items-center gap-6 sm:gap-8 flex-wrap font-sans text-sm sm:text-base text-white/70 font-semibold select-none">
+        <div className="max-w-5xl w-full mx-auto relative z-20 mt-8 sm:mt-12 flex flex-wrap items-center justify-between gap-4 sm:gap-6">
+          <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
+            <span className="text-xs text-gray-300 font-medium tracking-wide">Trusted by:</span>
+            <div className="flex items-center gap-4 sm:gap-8 flex-wrap font-sans text-xs sm:text-base text-white/70 font-semibold select-none">
               <span className="tracking-tighter font-bold text-white/80">Meta</span>
               <span className="font-medium text-white/80">Google</span>
-              <span className="font-black tracking-widest text-xs sm:text-sm text-white/80">NETFLIX</span>
+              <span className="font-black tracking-widest text-[10px] sm:text-sm text-white/80">NETFLIX</span>
               <span className="font-bold italic text-white/80">P&G</span>
               <span className="font-bold tracking-tight text-white/80">PayPal</span>
-              <span className="font-medium text-white/80">Payoneer</span>
+              <span className="hidden sm:inline font-medium text-white/80">Payoneer</span>
             </div>
           </div>
 
-          {/* Video Pause Button */}
+          {/* Video Pause Button — desktop only */}
           <button
             onClick={toggleVideoPlayback}
-            className="w-8 h-8 rounded-full border border-white/20 bg-black/30 flex items-center justify-center text-white/80 hover:bg-white/20 transition text-xs"
+            className="hidden sm:flex w-8 h-8 rounded-full border border-white/20 bg-black/30 items-center justify-center text-white/80 hover:bg-white/20 transition text-xs"
           >
             {isVideoPlaying ? 'Ⅱ' : '▶'}
           </button>
         </div>
       </section>
 
-
-
+      {/* ─── CATEGORIES ─── */}
       <section className="py-10 sm:py-14 px-4 sm:px-6 lg:px-10 bg-white">
         <div className="max-w-5xl mx-auto">
           <SectionBadge label="Browse categories" />
@@ -214,13 +222,12 @@ export default function FreelancerPlatform() {
           </div>
         </div>
       </section>
-      <section >
-        <img
-          src="/web_page.png"
-          alt="Web page preview"
-        />
+
+      <section>
+        <img src="/web_page.png" alt="Web page preview" className="w-full" />
       </section>
 
+      {/* ─── FREELANCERS ─── */}
       <section className="py-10 sm:py-14 px-4 sm:px-6 lg:px-10 bg-gray-50">
         <div className="max-w-5xl mx-auto">
           <SectionBadge label="Top freelancers" />
@@ -247,18 +254,17 @@ export default function FreelancerPlatform() {
           </div>
         </div>
       </section>
+
       <TechStack />
 
+      {/* ─── HOW IT WORKS ─── */}
       <section className="py-10 md:py-14 px-4 sm:px-6 lg:px-6 bg-linear-to-b from-white to-gray-50/50">
         <div className="max-w-5xl mx-auto">
           <SectionBadge label="How it works" />
-          {/* Section heading with refined typography */}
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 text-center mb-10 md:mb-16">
             Get started in minutes
             <div className="w-16 h-1 bg-linear-to-b from-green-500 to-emerald-400 rounded-full mx-auto mt-4"></div>
           </h2>
-
-          {/* Steps grid */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
             {HOW_IT_WORKS.map(({ n, title, desc }) => (
               <div
@@ -268,7 +274,6 @@ export default function FreelancerPlatform() {
                      shadow-sm hover:shadow-lg hover:border-green-200/60 
                      transition-all duration-300 hover:-translate-y-1"
               >
-                {/* Step number with professional gradient */}
                 <div className="w-12 h-12 shrink-0 rounded-full 
                         bg-linear-to-br from-green-600 to-emerald-500 
                         text-white text-lg font-bold flex items-center justify-center 
@@ -277,12 +282,8 @@ export default function FreelancerPlatform() {
                   {n}
                 </div>
                 <div className="sm:text-center">
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-2">
-                    {title}
-                  </h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    {desc}
-                  </p>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-2">{title}</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">{desc}</p>
                 </div>
               </div>
             ))}
@@ -290,6 +291,7 @@ export default function FreelancerPlatform() {
         </div>
       </section>
 
+      {/* ─── CTA BANNER ─── */}
       <div className="bg-[#001e00] py-10 sm:py-14 px-4 sm:px-6 lg:px-10">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <h2 className="text-2xl sm:text-3xl font-semibold text-white leading-tight text-center sm:text-left">
@@ -302,6 +304,7 @@ export default function FreelancerPlatform() {
         </div>
       </div>
 
+      {/* ─── FOOTER ─── */}
       <footer className="bg-gray-50 py-8 sm:py-10 px-4 sm:px-6 lg:px-10 border-t border-gray-200">
         <div className="max-w-5xl mx-auto">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8">
