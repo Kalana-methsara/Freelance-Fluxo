@@ -19,6 +19,11 @@ export interface IJob extends Document {
   freelancerId?: Types.ObjectId;
   categoryId?: Types.ObjectId;
   skills: string[];
+  flagged: boolean;
+  flagReason?: string;
+  flaggedAt?: Date;
+  createdAt: Date;   // ✅ from timestamps
+  updatedAt: Date;   // ✅ from timestamps
 }
 
 const jobSchema = new Schema<IJob>(
@@ -37,6 +42,9 @@ const jobSchema = new Schema<IJob>(
     freelancerId: { type: Schema.Types.ObjectId, ref: "user" },
     categoryId: { type: Schema.Types.ObjectId, ref: "category" },
     skills: { type: [String], default: [] },
+    flagged: { type: Boolean, default: false },
+    flagReason: { type: String },
+    flaggedAt: { type: Date },
   },
   { timestamps: true }
 );

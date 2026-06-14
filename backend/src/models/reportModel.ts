@@ -1,6 +1,12 @@
 import { Document, model, Schema, Types } from "mongoose";
 
-export type ReportType = "spam" | "misconduct" | "payment";
+export type ReportType = 
+  | "scam" 
+  | "harassment" 
+  | "spam" 
+  | "payment"
+  | "misconduct" 
+  | "other";
 
 export interface IReport extends Document {
   type: ReportType;
@@ -8,15 +14,25 @@ export interface IReport extends Document {
   jobId?: Types.ObjectId;
   reportedBy?: Types.ObjectId;
   resolved: boolean;
+  resolvedAt?: Date;
+  resolvedBy?: Types.ObjectId;
+  createdAt: Date;   // ✅ added (from timestamps)
+  updatedAt: Date;   // ✅ added (from timestamps)
 }
 
 const reportSchema = new Schema<IReport>(
   {
-    type: { type: String, enum: ["spam", "misconduct", "payment"], required: true },
+    type: {
+      type: String,
+      enum: ["scam", "harassment", "spam", "payment", "misconduct", "other"],
+      required: true,
+    },
     description: { type: String, required: true },
     jobId: { type: Schema.Types.ObjectId, ref: "job" },
     reportedBy: { type: Schema.Types.ObjectId, ref: "user" },
     resolved: { type: Boolean, default: false },
+    resolvedAt: { type: Date },
+    resolvedBy: { type: Schema.Types.ObjectId, ref: "user" },
   },
   { timestamps: true }
 );

@@ -12,6 +12,7 @@ import { errorHandler } from "./middleware/errorMiddleware";
 import passport from 'passport';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
+import authRoutes from './routes/authRoutes';
 
 const PORT = process.env.PORT || 5000; 
 
@@ -34,8 +35,8 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
- 
-app.use("/api/v1/auth", userRouter);
+app.use('/api/v1/auth', authRoutes);
+app.use("/api/v1", userRouter);
 app.use("/api/v1/jobs", jobRouter);
 app.use("/api/v1/platform", platformRouter);
 app.use("/api/v1/dashboard", dashboardRouter);

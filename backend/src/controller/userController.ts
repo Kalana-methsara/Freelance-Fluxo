@@ -1,5 +1,8 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";                      // ← add this
 import { UserModel } from "../models/userModel";
+import { JobModel } from "../models/jobModel";        // ← add this
+import { ReportModel } from "../models/reportModel";  // ← add this
 import bcrypt from "bcryptjs";
 import { signAccessToken, signRefreshToken } from "../utils/generateToken";
 import { UserRole } from "../enums/userRole";
@@ -120,7 +123,14 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
     res.status(200).json({ success: true, data: users });
 });
 
-// 7. Refresh access token
+// 7. Get user by ID (admin)
+export const getUserById = asyncHandler(async (req: Request, res: Response) => {
+    const user = await UserModel.findById(req.params.id).select("-password");
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    res.status(200).json({ success: true, data: user });
+});
+
+// 8. Refresh access token
 export const refreshToken = asyncHandler(async (req: Request, res: Response) => {
     const { refreshToken: token } = req.body;
     if (!token) {
@@ -202,10 +212,14 @@ export const updateUserProfile = asyncHandler(async (req: Request, res: Response
 // 10. Update user role (admin)
 export const updateUserRole = asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
-    const { role } = req.body;
+    const { role, action = "add" } = req.body as { role: UserRole; action?: "add" | "remove" };
 
     if (!Object.values(UserRole).includes(role)) {
         return res.status(400).json({ message: "Invalid user role" });
+    }
+
+    if (!['add', 'remove'].includes(action)) {
+        return res.status(400).json({ message: "Invalid action" });
     }
 
     const requesterRoles = authReq.user?.userRole || [];
@@ -223,20 +237,68 @@ export const updateUserRole = asyncHandler(async (req: Request, res: Response) =
         if (targetIsSuperAdmin) {
             return res.status(403).json({ message: "Only a super admin can modify a super admin account" });
         }
-        if (role === UserRole.SUPER_ADMIN) {
+        if (action === "add" && role === UserRole.SUPER_ADMIN) {
             return res.status(403).json({ message: "Only a super admin can assign super admin role" });
         }
-        if (targetIsAdmin && role !== UserRole.ADMIN) {
+        if (action === "remove" && targetIsAdmin && role === UserRole.ADMIN) {
             return res.status(403).json({ message: "Only a super admin can remove admin privileges" });
         }
     }
 
+    const currentRoles = Array.from(new Set(targetUser.userRole));
+    let updatedRoles = currentRoles;
+
+    if (action === "add") {
+        if (!updatedRoles.includes(role)) {
+            updatedRoles = [...updatedRoles, role];
+        }
+    } else {
+        if (updatedRoles.length <= 1) {
+            return res.status(400).json({ message: "A user must have at least one role" });
+        }
+        updatedRoles = updatedRoles.filter((r) => r !== role);
+    }
+
     const user = await UserModel.findByIdAndUpdate(
         req.params.id,
-        { userRole: [role] },
+        { userRole: updatedRoles },
         { new: true }
     ).select("-password");
 
     if (!user) return res.status(404).json({ message: "User not found" });
     res.status(200).json({ success: true, data: user });
+});
+export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+        const userId = req.params.userId;
+        const user = await UserModel.findById(userId).session(session);
+        if (!user) {
+            await session.abortTransaction();
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        // Prevent self-deletion
+        const authReq = req as AuthRequest;
+        if (userId === authReq.user?._id?.toString()) {
+            await session.abortTransaction();
+            return res.status(400).json({ success: false, message: "Cannot delete your own account" });
+        }
+
+        // Delete related data (jobs, reports, proposals if any)
+        await JobModel.deleteMany({ clientId: userId }).session(session);
+        await ReportModel.deleteMany({ reportedBy: userId }).session(session);
+        // Add ProposalModel.deleteMany({ userId }) if you have proposals
+
+        await user.deleteOne({ session });
+        await session.commitTransaction();
+        res.status(200).json({ success: true, message: "User deleted permanently" });
+    } catch (error) {
+        await session.abortTransaction();
+        console.error(error);
+        res.status(500).json({ success: false, message: "Server error" });
+    } finally {
+        session.endSession();
+    }
 });

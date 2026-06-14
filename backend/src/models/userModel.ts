@@ -25,6 +25,8 @@ export interface IUser extends Document {
         province: string;
         country: string;
     };
+    createdAt: Date;   // ✅ added
+    updatedAt: Date;   // ✅ added
 }
 
 const userSchema = new Schema<IUser>({
@@ -58,11 +60,11 @@ const userSchema = new Schema<IUser>({
 }, { 
     timestamps: true,
     toJSON: {
-    transform: (_, res) => {
-        delete (res as Partial<IUser>).password;
-        return res;
+        transform: (_, res) => {
+            delete (res as Partial<IUser>).password;
+            return res;
+        }
     }
-}
 });
 
 export const UserModel = model<IUser>('user', userSchema);

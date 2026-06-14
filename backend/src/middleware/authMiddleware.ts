@@ -3,7 +3,8 @@ import jwt from "jsonwebtoken";
 
 export interface AuthRequest extends Request {
   user?: { 
-    _id: string;
+    _id: any;
+    id: string;           // ✅ added for convenience
     userRole: string[];
     email: string;
   }
@@ -22,6 +23,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 
     (req as AuthRequest).user = {
       _id: decoded.sub,
+      id: decoded.sub,          // ✅ add id alias (same as _id but string)
       userRole: decoded.roles || [],
       email: decoded.email
     };

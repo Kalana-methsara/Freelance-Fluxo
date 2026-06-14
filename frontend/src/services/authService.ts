@@ -1,9 +1,31 @@
+// services/authService.ts
 import api from "./api";
 import type { AuthUser, LoginCredentials, RegisterUserPayload } from "../types/auth";
 import { normalizeBackendUser } from "../utils/auth";
 import { STORAGE_KEYS } from "../utils/storageKeys";
 
+// Extended response types
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
+
+interface UsersListResponse {
+  users: Array<{
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    userRole: string[];
+    approvalStatus: "approved" | "rejected" | "pending";
+    createdAt: string;
+  }>;
+  total: number;
+}
+
 const authService = {
+  // ─── Authentication ──────────────────────────────────
   registerFreelancer: async (payload: RegisterUserPayload) => {
     const response = await api.post("/auth/register/freelancer", payload);
     return response.data;
@@ -31,14 +53,20 @@ const authService = {
     return normalizeBackendUser(user, { accessToken: token, refreshToken: refresh });
   },
 
+  // ─── Admin: User Management ──────────────────────────
   registerAdmin: async (payload: RegisterUserPayload) => {
     const response = await api.post("/auth/register/admin", payload);
     return response.data;
   },
 
-  getUsers: async () => {
-    const response = await api.get("/auth/");
+  getUsers: async (params?: { page?: number; limit?: number; search?: string }): Promise<UsersListResponse> => {
+    const response = await api.get("/auth/", { params });
     return response.data;
+  },
+
+  getUserById: async (userId: string) => {
+    const response = await api.get(`/auth/users/${userId}`);
+    return response.data.data;
   },
 
   updateUserApproval: async (userId: string, status: "approved" | "rejected" | "pending") => {
@@ -46,8 +74,18 @@ const authService = {
     return response.data;
   },
 
-  updateUserRole: async (userId: string, role: "SUPER_ADMIN" | "ADMIN" | "CLIENT" | "FREELANCER") => {
-    const response = await api.patch(`/auth/users/${userId}/role`, { role });
+  updateUserRole: async (
+    userId: string,
+    role: "SUPER_ADMIN" | "ADMIN" | "CLIENT" | "FREELANCER",
+    action: "add" | "remove" = "add"
+  ) => {
+    const response = await api.patch(`/auth/users/${userId}/role`, { role, action });
+    return response.data;
+  },
+
+  // ⭐ NEW: Delete user (super admin only)
+  deleteUser: async (userId: string): Promise<ApiResponse<null>> => {
+    const response = await api.delete(`/auth/users/${userId}`);
     return response.data;
   },
 };

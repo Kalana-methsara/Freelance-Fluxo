@@ -1,9 +1,11 @@
+// routes/authRoutes.ts
 import { Router } from "express";
 import {
     loginUser,
     getMyDetails,
     registerAdmin,
     getUsers,
+    getUserById,
     registerFreelancer,
     registerClient,
     refreshToken,
@@ -71,8 +73,9 @@ router.get("/github/callback", passport.authenticate("github", { failureRedirect
   }
 );
 
-// ======================== Protected Routes ========================
+// ======================== Protected Routes (user & admin) ========================
 router.get("/me", authenticate, getMyDetails);
+router.get("/users/:id", authenticate, requireRole([UserRole.ADMIN]), getUserById);
 router.patch("/users/:id/profile", authenticate, updateUserProfile);
 
 // ======================== Admin-Only Routes ========================

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authenticate } from "../middleware/authMiddleware";
+import { authenticate, AuthRequest } from "../middleware/authMiddleware";
 
 const router = Router();
 
@@ -11,9 +11,14 @@ router.get("/", authenticate, async (req, res) => {
 
 // Create a new conversation
 router.post("/", authenticate, async (req, res) => {
+  const authReq = req as AuthRequest;
   const { participantId, jobId } = req.body;
-  // Minimal stub — replace with real DB logic
-  const convo = { id: Date.now().toString(), participants: [req.user?.id, participantId], jobId };
+  // Use _id instead of id
+  const convo = { 
+    id: Date.now().toString(), 
+    participants: [authReq.user?._id, participantId],
+    jobId 
+  };
   res.status(201).json({ success: true, data: convo });
 });
 
