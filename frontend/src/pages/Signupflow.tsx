@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import authService from "../services/authService";
 import type { RegisterUserPayload } from "../types";
 import {
@@ -111,8 +111,10 @@ function StepDots({ step }: { step: 1 | 2 }) {
 
 export default function SignupFlow() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const intent = searchParams.get("intent");
   const [step, setStep] = useState<1 | 2>(1);
-  const [role, setRole] = useState<Role>(null);
+  const [role, setRole] = useState<Role>(intent === "post-job" ? "client" : null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
