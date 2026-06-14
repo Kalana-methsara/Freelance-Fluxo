@@ -183,7 +183,7 @@ const TechStack = () => {
               key={index}
               className="group relative flex flex-col items-center justify-center gap-3
                          w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36
-                         bg-linear-to-br from-[#0a2a0a] to-[#052205]
+                         bg-linear-to-br from-[#0a2a0a] to-[#0d6a0d]
                          border border-gray-600
                          rounded-2xl
                          hover:border-[#00c951]
