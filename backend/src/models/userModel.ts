@@ -17,6 +17,7 @@ export interface IUser extends Document {
     rating?: number;
     reviewCount?: number;
     companyName?: string;
+    bio?: string;
     location?: {
         coordinates: { lat: number; lng: number };
         address: string;
@@ -46,6 +47,7 @@ const userSchema = new Schema<IUser>({
     title: { type: String },
     skills: { type: [String], default: [] },
     hourlyRate: { type: Number, default: 0 },
+    bio: { type: String },
     rating: { type: Number, default: 5, min: 1, max: 5 },
     reviewCount: { type: Number, default: 0 },
     companyName: { type: String },

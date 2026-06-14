@@ -11,6 +11,7 @@ import CategoryPage from "../pages/CategoryPage";
 import FreelancerDetailPage from "../pages/FreelancerDetailPage";
 import PostJobPage from "../pages/PostJobPage";
 import LegalPage from "../pages/LegalPage";
+import JobsPage from "../pages/JobsPage";
 import { RequireAuth } from "../components/RequireAuth";
 
 const Router = () => {
@@ -22,6 +23,7 @@ const Router = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/oauth-callback" element={<OAuthCallback />} />
         <Route path="/search" element={<SearchPage />} />
+        <Route path="/jobs" element={<JobsPage />} />
         <Route path="/categories/:id" element={<CategoryPage />} />
         <Route path="/freelancers/:id" element={<FreelancerDetailPage />} />
         <Route path="/terms" element={<LegalPage type="terms" />} />

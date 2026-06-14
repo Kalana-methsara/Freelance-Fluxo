@@ -15,6 +15,11 @@ const dashboardService = {
     const response = await api.get("/dashboard/admin");
     return response.data.data;
   },
+
+  getConversations: () => api.get('/conversations'),
+  getMessages: (conversationId: string) => api.get(`/conversations/${conversationId}/messages`),
+  createConversation: (participantId: string, jobId?: string) => api.post('/conversations', { participantId, jobId }),
 };
+
 
 export default dashboardService;

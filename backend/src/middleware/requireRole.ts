@@ -10,6 +10,10 @@ export const requireRole = (allowedRoles: UserRole[]) => {
       return res.status(401).json({ message: "Unauthorized: No user found" });
     }
 
+    if (authReq.user.userRole?.includes(UserRole.SUPER_ADMIN)) {
+      return next();
+    }
+
     const hasRole = authReq.user.userRole?.some(
       (role) => allowedRoles.includes(role as UserRole)
     );

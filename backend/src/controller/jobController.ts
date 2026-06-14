@@ -67,7 +67,35 @@ export const createJob = asyncHandler(async (req: Request, res: Response) => {
 export const applyToJob = asyncHandler(async (req: Request, res: Response) => {
   const authReq = req as AuthRequest;
   const { bid, coverLetter } = req.body;
-  const jobId = req.params.id;
+  const jobId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+  const freelancer = await UserModel.findById(authReq.user!._id);
+  if (!freelancer) return res.status(404).json({ message: "Freelancer not found" });
+
+  if (!freelancer.title || !freelancer.title.trim()) {
+    return res.status(400).json({ message: "Complete your profile title before applying." });
+  }
+
+  if (!freelancer.skills || freelancer.skills.length === 0) {
+    return res.status(400).json({ message: "Add at least one skill to your profile before applying." });
+  }
+
+  if (!freelancer.hourlyRate || freelancer.hourlyRate <= 0) {
+    return res.status(400).json({ message: "Set a valid hourly rate before applying." });
+  }
+
+  if (
+    !freelancer.location ||
+    !freelancer.location.address ||
+    !freelancer.location.city ||
+    !freelancer.location.province ||
+    !freelancer.location.country ||
+    !freelancer.location.coordinates ||
+    freelancer.location.coordinates.lat == null ||
+    freelancer.location.coordinates.lng == null
+  ) {
+    return res.status(400).json({ message: "Complete your profile location before applying." });
+  }
 
   const job = await JobModel.findById(jobId);
   if (!job) return res.status(404).json({ message: "Job not found" });
@@ -76,7 +104,7 @@ export const applyToJob = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const existing = await ApplicationModel.findOne({
-    jobId,
+    jobId: jobId,
     freelancerId: authReq.user!._id,
   });
   if (existing) {

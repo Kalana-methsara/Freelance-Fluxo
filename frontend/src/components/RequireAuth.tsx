@@ -42,6 +42,9 @@ export function RequireAuth({ children, roles }: RequireAuthProps) {
 
   if (roles?.length) {
     const userRoles = user.roles.map((r) => String(r).toUpperCase());
+    if (userRoles.includes("SUPER_ADMIN")) {
+      return <>{children}</>;
+    }
     const allowed = roles.some((r) => userRoles.includes(r.toUpperCase()));
     if (!allowed) {
       return <Navigate to={getDashboardPath(user.roles)} replace />;

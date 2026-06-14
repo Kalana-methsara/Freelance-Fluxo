@@ -88,9 +88,15 @@
 
 import axios from "axios";
 import { STORAGE_KEYS } from "../utils/storageKeys";
+import { store } from "../redux/store";
+import { logout } from "../features/authSlice";
+
+const baseURL = import.meta.env.MODE === 'development'
+  ? '/api/v1'
+  : 'https://freelancefluxo-server.vercel.app/api/v1';
 
 const api = axios.create({
-  baseURL: "https://freelancefluxo-server.vercel.app/api/v1",
+  baseURL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -99,10 +105,19 @@ const api = axios.create({
 const PUBLIC_ENDPOINTS = ["/auth/login", "/auth/register", "/auth/refresh"];
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(STORAGE_KEYS.accessToken);
-  if (token && !PUBLIC_ENDPOINTS.some((url) => config.url?.includes(url))) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const token =
+    localStorage.getItem(STORAGE_KEYS.accessToken) ||
+    localStorage.getItem("token") ||
+    "";
+
+  const requestUrl = config.url || "";
+  const isPublic = PUBLIC_ENDPOINTS.some((url) => requestUrl.includes(url));
+
+  // FIX 1: Use config.headers.set() instead of spreading
+  if (token && !isPublic && config.headers) {
+    config.headers.set('Authorization', `Bearer ${token}`);
   }
+
   return config;
 });
 
@@ -110,19 +125,34 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
         const refreshToken = localStorage.getItem(STORAGE_KEYS.refreshToken);
         const { data } = await api.post("/auth/refresh", { refreshToken });
         localStorage.setItem(STORAGE_KEYS.accessToken, data.accessToken);
-        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+        
+        // FIX 2: Use originalRequest.headers.set() instead of spreading
+        if (originalRequest.headers) {
+          originalRequest.headers.set('Authorization', `Bearer ${data.accessToken}`);
+        }
+        
         return api(originalRequest);
       } catch {
+        store.dispatch(logout());
         localStorage.clear();
         window.location.href = "/login";
+        return Promise.reject(error);
       }
     }
+
+    if (error.response?.status === 401) {
+      store.dispatch(logout());
+      localStorage.clear();
+      window.location.href = "/login";
+    }
+
     return Promise.reject(error);
   }
 );

@@ -1,4 +1,5 @@
 export const UserRole = {
+  SUPER_ADMIN: "SUPER_ADMIN",
   ADMIN: "ADMIN",
   CLIENT: "CLIENT",
   FREELANCER: "FREELANCER",
@@ -18,6 +19,7 @@ export interface AuthUser {
   refreshToken?: string;
   approvalStatus?: "pending" | "approved" | "rejected";
   title?: string;
+  bio?: string;
   skills?: string[];
   hourlyRate?: number;
   companyName?: string;
@@ -31,6 +33,12 @@ export interface RegisterUserPayload {
   email: string;
   password: string;
   userRole?: string[];
+  profileImage?: string;
+  bio?: string;
+  skills?: string[];
+  title?: string;
+  hourlyRate?: number;
+  companyName?: string;
   location?: { country: string };
 }
 

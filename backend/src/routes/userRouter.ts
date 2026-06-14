@@ -8,6 +8,8 @@ import {
     registerClient,
     refreshToken,
     updateUserApproval,
+    updateUserProfile,
+    updateUserRole,
 } from "../controller/userController";
 import { validate } from "../middleware/validateMiddleware";
 import { loginSchema, registerSchema, registerAdminSchema } from "../schemas/authSchema";
@@ -64,6 +66,35 @@ router.get("/github/callback", passport.authenticate("github", { failureRedirect
 router.get("/me", authenticate, getMyDetails);
 router.get("/", authenticate, requireRole([UserRole.ADMIN]), getUsers);
 router.post("/register/admin", authenticate, requireRole([UserRole.ADMIN]), validate(registerAdminSchema), registerAdmin);
+router.patch("/users/:id/profile", authenticate, updateUserProfile);
 router.patch("/users/:id/approval", authenticate, requireRole([UserRole.ADMIN]), updateUserApproval);
+router.patch("/users/:id/role", authenticate, requireRole([UserRole.ADMIN]), updateUserRole);
+
+// Development helper: return an access token for the first user in DB
+router.get('/dev/token', async (req, res) => {
+  try {
+    const roleParam = (req.query.role as string) || '';
+    const { UserRole } = await import('../enums/userRole');
+    let role = UserRole.CLIENT;
+    if (roleParam.toLowerCase() === 'admin') role = UserRole.ADMIN;
+    if (roleParam.toLowerCase() === 'freelancer') role = UserRole.FREELANCER;
+
+    const { signAccessToken } = await import('../utils/generateToken');
+    // Prefer using an existing user's _id so Mongoose lookups work; fallback to first user
+    const { UserModel } = await import('../models/userModel');
+    const existing = await UserModel.findOne().lean();
+    const subjectId = existing?._id?.toString() || undefined;
+
+    const fakeUser: any = {
+      _id: subjectId || '000000000000000000000000',
+      userRole: [role],
+      email: existing?.email || `dev+${role.toLowerCase()}@local`,
+    };
+    const token = signAccessToken(fakeUser);
+    res.json({ success: true, accessToken: token, role: role });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Dev token error', error: err });
+  }
+});
 
 export default router;

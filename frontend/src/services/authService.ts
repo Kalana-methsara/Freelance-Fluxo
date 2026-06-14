@@ -45,6 +45,11 @@ const authService = {
     const response = await api.patch(`/auth/users/${userId}/approval`, { status });
     return response.data;
   },
+
+  updateUserRole: async (userId: string, role: "SUPER_ADMIN" | "ADMIN" | "CLIENT" | "FREELANCER") => {
+    const response = await api.patch(`/auth/users/${userId}/role`, { role });
+    return response.data;
+  },
 };
 
 export default authService;

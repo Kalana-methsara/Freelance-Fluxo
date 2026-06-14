@@ -39,7 +39,7 @@ export function normalizeBackendUser(
 
 export function getDashboardPath(roles: AuthUser["roles"] = []): string {
   const r = roles.map((role) => String(role).toUpperCase());
-  if (r.includes("ADMIN")) return "/admin";
+  if (r.includes("SUPER_ADMIN") || r.includes("ADMIN")) return "/admin";
   if (r.includes("CLIENT")) return "/dashboard/client";
   if (r.includes("FREELANCER")) return "/dashboard/freelancer";
   return "/";

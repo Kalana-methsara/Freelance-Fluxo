@@ -8,8 +8,22 @@ import { asyncHandler } from "../middleware/asyncHandler";
 import { AuthRequest } from "../middleware/authMiddleware";
 import jwt from "jsonwebtoken";
 
+type CreateUserData = {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    profileImage?: string;
+    bio?: string;
+    skills?: string[];
+    hourlyRate?: number;
+    companyName?: string;
+    title?: string;
+    location?: any;
+};
+
 const createUserWithTokens = async (
-    data: { firstName: string; lastName: string; email: string; password: string },
+    data: CreateUserData,
     role: UserRole,
     approvalStatus: ApprovalStatus
 ) => {
@@ -27,14 +41,14 @@ const createUserWithTokens = async (
 
 // 1. Register Freelancer (Public)
 export const registerFreelancer = asyncHandler(async (req: Request, res: Response) => {
-    const { firstName, lastName, email, password } = req.body;
+    const { firstName, lastName, email, password, profileImage, bio, skills, title, hourlyRate, companyName, location } = req.body;
 
     if (await UserModel.findOne({ email })) {
         return res.status(400).json({ message: "User already exists" });
     }
 
     const result = await createUserWithTokens(
-        { firstName, lastName, email, password },
+        { firstName, lastName, email, password, profileImage, bio, skills, title, hourlyRate, companyName, location },
         UserRole.FREELANCER,
         ApprovalStatus.PENDING 
     );
@@ -44,14 +58,14 @@ export const registerFreelancer = asyncHandler(async (req: Request, res: Respons
 
 // 2. Register Client (Public)
 export const registerClient = asyncHandler(async (req: Request, res: Response) => {
-    const { firstName, lastName, email, password } = req.body;
+    const { firstName, lastName, email, password, profileImage, bio, skills, title, hourlyRate, companyName, location } = req.body;
 
     if (await UserModel.findOne({ email })) {
         return res.status(400).json({ message: "User already exists" });
     }
 
     const result = await createUserWithTokens(
-        { firstName, lastName, email, password },
+        { firstName, lastName, email, password, profileImage, bio, skills, title, hourlyRate, companyName, location },
         UserRole.CLIENT,
         ApprovalStatus.PENDING  
     );
@@ -137,6 +151,89 @@ export const updateUserApproval = asyncHandler(async (req: Request, res: Respons
     const user = await UserModel.findByIdAndUpdate(
         req.params.id,
         { approvalStatus: status },
+        { new: true }
+    ).select("-password");
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.status(200).json({ success: true, data: user });
+});
+
+// 9. Update user profile (self or admin)
+export const updateUserProfile = asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthRequest;
+    const requesterId = authReq.user?._id?.toString();
+    const targetId = req.params.id;
+    const isAdmin = authReq.user?.userRole?.includes(UserRole.ADMIN);
+
+    if (!isAdmin && requesterId !== targetId) {
+        return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const allowedUpdates = [
+        "firstName",
+        "lastName",
+        "profileImage",
+        "bio",
+        "skills",
+        "title",
+        "hourlyRate",
+        "companyName",
+        "location",
+        "email",
+    ];
+
+    const updates: Record<string, any> = {};
+    for (const key of Object.keys(req.body)) {
+        if (allowedUpdates.includes(key)) {
+            updates[key] = req.body[key];
+        }
+    }
+
+    const user = await UserModel.findByIdAndUpdate(targetId, updates, {
+        new: true,
+        runValidators: true,
+        context: "query",
+    }).select("-password");
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.status(200).json({ success: true, data: user });
+});
+
+// 10. Update user role (admin)
+export const updateUserRole = asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthRequest;
+    const { role } = req.body;
+
+    if (!Object.values(UserRole).includes(role)) {
+        return res.status(400).json({ message: "Invalid user role" });
+    }
+
+    const requesterRoles = authReq.user?.userRole || [];
+    const isSuperAdmin = requesterRoles.includes(UserRole.SUPER_ADMIN);
+
+    const targetUser = await UserModel.findById(req.params.id);
+    if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+    }
+
+    const targetIsAdmin = targetUser.userRole.includes(UserRole.ADMIN);
+    const targetIsSuperAdmin = targetUser.userRole.includes(UserRole.SUPER_ADMIN);
+
+    if (!isSuperAdmin) {
+        if (targetIsSuperAdmin) {
+            return res.status(403).json({ message: "Only a super admin can modify a super admin account" });
+        }
+        if (role === UserRole.SUPER_ADMIN) {
+            return res.status(403).json({ message: "Only a super admin can assign super admin role" });
+        }
+        if (targetIsAdmin && role !== UserRole.ADMIN) {
+            return res.status(403).json({ message: "Only a super admin can remove admin privileges" });
+        }
+    }
+
+    const user = await UserModel.findByIdAndUpdate(
+        req.params.id,
+        { userRole: [role] },
         { new: true }
     ).select("-password");
 

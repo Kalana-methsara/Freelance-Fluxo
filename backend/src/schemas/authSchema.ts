@@ -12,6 +12,8 @@ const baseRegisterSchema = z.object({
     email: z.email(),
     password: z.string().min(6),
     profileImage: z.string().url().optional(),
+    bio: z.string().max(500).optional(),
+    skills: z.array(z.string()).optional(),
     location: z.object({
         coordinates: z.object({
             lat: z.number(),
