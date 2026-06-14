@@ -216,7 +216,7 @@ export default function FreelancerPlatform() {
       </section>
       <section >
         <img
-          src="../src/assets/web_page.png"
+          src="/web_page.png"
           alt="Web page preview"
         />
       </section>
