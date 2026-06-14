@@ -44,7 +44,7 @@ type UserDetail = User & {
 type JobDetail = Job & {
   description?: string;
   clientId?: { _id?: string; firstName?: string; lastName?: string; companyName?: string; email?: string };
-  freelancerId?: { _id?: string; firstName?: string; lastName?: string; title?: string; skills?: string[]; hourlyRate?: number; rating?: number; reviewCount?: number };
+  freelancerId?: { _id?: string; firstName?: string; lastName?: string; email?: string; title?: string; skills?: string[]; hourlyRate?: number; rating?: number; reviewCount?: number };
   categoryId?: { title?: string; icon?: string };
   deadline?: string;
 };
