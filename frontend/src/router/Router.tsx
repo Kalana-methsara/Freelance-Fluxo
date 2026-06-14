@@ -3,15 +3,15 @@ import FreelancerPlatform from "../pages/FreelancerPlatform";
 import Signupflow from "../pages/Signupflow";
 import LoginPage from "../pages/LoginPage";
 // import OAuthCallback from "../pages/OAuthCallback";
-// import MainLayout from "../layouts/MainLayout";
 import FreelancerDashboard from "../pages/FreelancerDashboard";
 import ClientDashboard from "../pages/ClientDashboard";
 import AdminDashboard from "../pages/AdminDashboard";
-// import CustomerPage from "../pages/CustomerPage";
-// import ItemPage from "../pages/ItemPage";
-// import OrderPage from "../pages/OrderPage";
-// import BlogPage from "../pages/BlogPage";
-// import { RequireAuth } from "../components/RequireAuth";
+// import SearchPage from "../pages/SearchPage";
+// import CategoryPage from "../pages/CategoryPage";
+// import FreelancerDetailPage from "../pages/FreelancerDetailPage";
+// import PostJobPage from "../pages/PostJobPage";
+// import LegalPage from "../pages/LegalPage";
+import { RequireAuth } from "../components/RequireAuth";
 
 const Router = () => {
   return (
@@ -20,56 +20,46 @@ const Router = () => {
         <Route path="/" element={<FreelancerPlatform />} />
         <Route path="/signup" element={<Signupflow />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/dashboard/freelancer" element={<FreelancerDashboard />} />
-        <Route path="/dashboard/client" element={<ClientDashboard />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        {/* <Route path="/oauth-callback" element={<OAuthCallback />} /> */}
+        {/* <Route path="/oauth-callback" element={<OAuthCallback />} />
+        <Route path="/search" element={<SearchPage />} />
+        <Route path="/categories/:id" element={<CategoryPage />} />
+        <Route path="/freelancers/:id" element={<FreelancerDetailPage />} />
+        <Route path="/terms" element={<LegalPage type="terms" />} />
+        <Route path="/user-agreement" element={<LegalPage type="user-agreement" />} />
+        <Route path="/privacy" element={<LegalPage type="privacy" />} /> */}
 
-        {/* <Route path="/register" element={<RegisterPage />} />
-
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route
-            path="/dashboard"
-            element={
-              <RequireAuth>
-                <DashboardPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/customer"
-            element={
-              <RequireAuth>
-                <CustomerPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/item"
-            element={
-              <RequireAuth>
-                <ItemPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/order"
-            element={
-              <RequireAuth>
-                <OrderPage />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/blog"
-            element={
-              <RequireAuth>
-                <BlogPage />
-              </RequireAuth>
-            }
-          /> 
-        </Route>*/}
+        <Route
+          path="/dashboard/freelancer"
+          element={
+            <RequireAuth roles={["FREELANCER"]}>
+              <FreelancerDashboard />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard/client"
+          element={
+            <RequireAuth roles={["CLIENT"]}>
+              <ClientDashboard />
+            </RequireAuth>
+          }
+        />
+        {/* <Route
+          path="/post-job"
+          element={
+            <RequireAuth roles={["CLIENT"]}>
+              <PostJobPage />
+            </RequireAuth>
+          }
+        /> */}
+        <Route
+          path="/admin"
+          element={
+            <RequireAuth roles={["ADMIN"]}>
+              <AdminDashboard />
+            </RequireAuth>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
