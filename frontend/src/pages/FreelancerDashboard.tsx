@@ -1,86 +1,32 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-interface Job {
-  id: number;
-  title: string;
-  client: string;
-  budget: number;
-  deadline: string;
-  status: "in_progress" | "under_review" | "completed";
-}
-
-interface Proposal {
-  id: number;
-  title: string;
-  bid: number;
-  submittedAt: string;
-  status: "pending" | "shortlisted" | "rejected";
-}
-
-interface Earning {
-  month: string;
-  amount: number;
-}
-
-// ─── Data ────────────────────────────────────────────────────────────────────
-
-const ACTIVE_JOBS: Job[] = [
-  { id: 1, title: "E-commerce React Frontend",     client: "TechVision Ltd",  budget: 1200, deadline: "Jul 12", status: "in_progress"  },
-  { id: 2, title: "REST API Integration",           client: "StartupHub",     budget: 650,  deadline: "Jul 18", status: "under_review" },
-  { id: 3, title: "Mobile App UI Redesign",         client: "Creativeco",     budget: 900,  deadline: "Jul 25", status: "in_progress"  },
-];
-
-const PROPOSALS: Proposal[] = [
-  { id: 1, title: "SaaS Dashboard Build",           bid: 1500, submittedAt: "Jun 28", status: "shortlisted" },
-  { id: 2, title: "WordPress Plugin Development",   bid: 480,  submittedAt: "Jun 30", status: "pending"     },
-  { id: 3, title: "Data Visualisation Charts",      bid: 720,  submittedAt: "Jul 2",  status: "rejected"    },
-];
-
-const EARNINGS: Earning[] = [
-  { month: "Feb", amount: 1800 },
-  { month: "Mar", amount: 2400 },
-  { month: "Apr", amount: 2100 },
-  { month: "May", amount: 3200 },
-  { month: "Jun", amount: 2750 },
-  { month: "Jul", amount: 1400 },
-];
+import { useDispatch } from "react-redux";
+import dashboardService from "../services/dashboardService";
+import { logout } from "../features/authSlice";
+import { formatDate, getInitials } from "../utils/auth";
 
 const NAV_ITEMS = [
-  { label: "Overview",   icon: "⊞", id: "overview"   },
-  { label: "My Jobs",    icon: "📋", id: "jobs"       },
-  { label: "Proposals",  icon: "📨", id: "proposals"  },
-  { label: "Earnings",   icon: "💳", id: "earnings"   },
-  { label: "Profile",    icon: "👤", id: "profile"    },
-  { label: "Messages",   icon: "💬", id: "messages"   },
+  { label: "Overview", icon: "⊞", id: "overview" },
+  { label: "My Jobs", icon: "📋", id: "jobs" },
+  { label: "Proposals", icon: "📨", id: "proposals" },
+  { label: "Earnings", icon: "💳", id: "earnings" },
+  { label: "Profile", icon: "👤", id: "profile" },
 ];
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
 const STATUS_STYLES: Record<string, string> = {
-  in_progress:  "bg-blue-50 text-blue-700",
+  in_progress: "bg-blue-50 text-blue-700",
   under_review: "bg-amber-50 text-amber-700",
-  completed:    "bg-emerald-50 text-emerald-700",
-  pending:      "bg-gray-100 text-gray-600",
-  shortlisted:  "bg-emerald-50 text-emerald-700",
-  rejected:     "bg-red-50 text-red-600",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  in_progress:  "In Progress",
-  under_review: "Under Review",
-  completed:    "Completed",
-  pending:      "Pending",
-  shortlisted:  "Shortlisted",
-  rejected:     "Rejected",
+  completed: "bg-emerald-50 text-emerald-700",
+  pending: "bg-gray-100 text-gray-600",
+  shortlisted: "bg-emerald-50 text-emerald-700",
+  rejected: "bg-red-50 text-red-600",
+  open: "bg-blue-50 text-blue-700",
 };
 
 function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[status]}`}>
-      {STATUS_LABELS[status]}
+    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${STATUS_STYLES[status] || "bg-gray-100 text-gray-600"}`}>
+      {status.replace("_", " ")}
     </span>
   );
 }
@@ -95,185 +41,176 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
   );
 }
 
-// ─── Earnings Bar Chart ───────────────────────────────────────────────────────
-
-function EarningsChart({ data }: { data: Earning[] }) {
-  const max = Math.max(...data.map((d) => d.amount));
-  return (
-    <div className="flex items-end gap-2 h-32 mt-4">
-      {data.map(({ month, amount }) => (
-        <div key={month} className="flex-1 flex flex-col items-center gap-1">
-          <span className="text-[10px] text-gray-500">${(amount / 1000).toFixed(1)}k</span>
-          <div
-            className="w-full bg-emerald-600 rounded-t-md transition-all"
-            style={{ height: `${(amount / max) * 100}%`, minHeight: "4px" }}
-            aria-label={`${month}: $${amount}`}
-          />
-          <span className="text-[10px] text-gray-400">{month}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function FreelancerDashboard() {
   const [activeNav, setActiveNav] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const totalEarnings = EARNINGS.reduce((s, e) => s + e.amount, 0);
+  useEffect(() => {
+    dashboardService
+      .getFreelancerDashboard()
+      .then(setData)
+      .catch(() => setData(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate("/login");
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-500 text-sm">Loading dashboard…</p>
+      </div>
+    );
+  }
+
+  const user = data?.user;
+  const stats = data?.stats || {};
+  const name = user ? `${user.firstName} ${user.lastName}` : "Freelancer";
+  const earnings = data?.earnings || [];
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans flex">
-
-      {/* ── SIDEBAR ── */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-40 w-56 bg-white border-r border-gray-200 flex flex-col
-        transform transition-transform duration-200
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:relative lg:translate-x-0 lg:flex
-      `}>
-        {/* Logo */}
+      <aside className={`fixed inset-y-0 left-0 z-40 w-56 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:relative lg:translate-x-0 lg:flex`}>
         <div className="px-5 py-4 border-b border-gray-100 shrink-0">
           <Link to="/" className="font-serif text-lg font-light tracking-tight text-gray-900">
             freelance<em className="italic text-emerald-700">fluxo</em>
           </Link>
         </div>
-
-        {/* Nav */}
         <nav className="flex-1 py-4 overflow-y-auto">
           {NAV_ITEMS.map(({ label, icon, id }) => (
             <button
               key={id}
               onClick={() => { setActiveNav(id); setSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-5 py-2.5 text-sm font-medium transition-colors ${
-                activeNav === id
-                  ? "bg-emerald-50 text-emerald-700 border-r-2 border-emerald-700"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-              }`}
+              className={`w-full flex items-center gap-3 px-5 py-2.5 text-sm font-medium transition-colors ${activeNav === id ? "bg-emerald-50 text-emerald-700 border-r-2 border-emerald-700" : "text-gray-600 hover:bg-gray-50"}`}
             >
-              <span>{icon}</span>
-              {label}
+              <span>{icon}</span>{label}
             </button>
           ))}
         </nav>
-
-        {/* User */}
         <div className="px-5 py-4 border-t border-gray-100 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-emerald-700 text-white text-xs font-bold flex items-center justify-center shrink-0">
-              AK
+            <div className="w-8 h-8 rounded-full bg-emerald-700 text-white text-xs font-bold flex items-center justify-center">
+              {getInitials(name)}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">Ashan Kumara</p>
-              <p className="text-xs text-gray-500 truncate">Full Stack Dev</p>
+              <p className="text-sm font-medium text-gray-900 truncate">{name}</p>
+              <p className="text-xs text-gray-500 truncate">{user?.title || "Freelancer"}</p>
             </div>
           </div>
-          <button
-            onClick={() => navigate("/login")}
-            className="mt-3 w-full text-xs text-gray-500 hover:text-red-600 text-left transition-colors"
-          >
-            Sign out
-          </button>
+          <button onClick={handleLogout} className="mt-3 w-full text-xs text-gray-500 hover:text-red-600 text-left">Sign out</button>
         </div>
       </aside>
 
-      {/* Sidebar backdrop (mobile) */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/30 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-          aria-hidden="true"
-        />
-      )}
+      {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/30 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
-      {/* ── MAIN ── */}
       <div className="flex-1 flex flex-col min-w-0">
-
-        {/* Top bar */}
         <header className="sticky top-0 z-20 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-          <button
-            className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
-            onClick={() => setSidebarOpen(true)}
-            aria-label="Open menu"
-          >
+          <button className="lg:hidden p-2 rounded-md hover:bg-gray-100" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
             <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
           <h1 className="text-base font-semibold text-gray-900 capitalize">{activeNav}</h1>
-          <button className="ml-auto px-4 py-2 bg-emerald-700 text-white text-sm font-medium rounded-full hover:bg-emerald-800 transition-colors">
-            Find work
-          </button>
+          <button onClick={() => navigate("/search")} className="ml-auto px-4 py-2 bg-emerald-700 text-white text-sm font-medium rounded-full hover:bg-emerald-800">Find work</button>
         </header>
 
-        {/* Content */}
         <main className="flex-1 px-4 sm:px-6 py-6 space-y-6 max-w-5xl w-full mx-auto">
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard label="Total earnings"     value={`$${totalEarnings.toLocaleString()}`} sub="+18% vs last month" />
-            <StatCard label="Active jobs"         value={String(ACTIVE_JOBS.filter(j => j.status === "in_progress").length)} />
-            <StatCard label="Open proposals"      value={String(PROPOSALS.filter(p => p.status === "pending").length)} />
-            <StatCard label="Profile views"       value="284"  sub="This month" />
-          </div>
-
-          {/* Active Jobs */}
-          <section className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h2 className="text-sm font-semibold text-gray-900">Active jobs</h2>
-              <button className="text-xs text-emerald-700 font-medium hover:underline">View all</button>
-            </div>
-            <div className="divide-y divide-gray-100">
-              {ACTIVE_JOBS.map((job) => (
-                <div key={job.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">{job.title}</p>
-                    <p className="text-xs text-gray-500">{job.client} · Due {job.deadline}</p>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0 ml-4">
-                    <span className="text-sm font-semibold text-gray-800">${job.budget}</span>
-                    <StatusBadge status={job.status} />
-                  </div>
+          {(activeNav === "overview" || activeNav === "jobs") && (
+            <>
+              {activeNav === "overview" && (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <StatCard label="Total earnings" value={`$${(stats.totalEarnings || 0).toLocaleString()}`} />
+                  <StatCard label="Active jobs" value={String(stats.activeJobs || 0)} />
+                  <StatCard label="Open proposals" value={String(stats.openProposals || 0)} />
+                  <StatCard label="Profile views" value={String(stats.profileViews || 0)} sub="From reviews" />
                 </div>
-              ))}
-            </div>
-          </section>
+              )}
+              <section className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100">
+                  <h2 className="text-sm font-semibold text-gray-900">Active jobs</h2>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {data?.activeJobs?.length ? data.activeJobs.map((job: any) => (
+                    <div key={job._id} className="flex items-center justify-between px-5 py-3.5">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{job.title}</p>
+                        <p className="text-xs text-gray-500">
+                          {job.clientId?.companyName || job.clientId?.firstName} · Due {formatDate(job.deadline)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-semibold">${job.budget}</span>
+                        <StatusBadge status={job.status} />
+                      </div>
+                    </div>
+                  )) : <p className="px-5 py-8 text-sm text-gray-500 text-center">No active jobs yet. Browse open jobs to apply.</p>}
+                </div>
+              </section>
+            </>
+          )}
 
-          {/* Proposals + Earnings chart */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-            {/* Proposals */}
+          {(activeNav === "overview" || activeNav === "proposals") && (
             <section className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div className="px-5 py-4 border-b border-gray-100">
                 <h2 className="text-sm font-semibold text-gray-900">Recent proposals</h2>
-                <button className="text-xs text-emerald-700 font-medium hover:underline">View all</button>
               </div>
               <div className="divide-y divide-gray-100">
-                {PROPOSALS.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between px-5 py-3.5">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 truncate">{p.title}</p>
-                      <p className="text-xs text-gray-500">Bid ${p.bid} · {p.submittedAt}</p>
+                {data?.proposals?.length ? data.proposals.map((p: any) => (
+                  <div key={p._id} className="flex items-center justify-between px-5 py-3.5">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{p.jobId?.title || "Job"}</p>
+                      <p className="text-xs text-gray-500">Bid ${p.bid}</p>
                     </div>
                     <StatusBadge status={p.status} />
                   </div>
-                ))}
+                )) : <p className="px-5 py-8 text-sm text-gray-500 text-center">No proposals yet.</p>}
               </div>
             </section>
+          )}
 
-            {/* Earnings chart */}
+          {activeNav === "proposals" && null}
+
+          {(activeNav === "overview" || activeNav === "earnings") && (
             <section className="bg-white border border-gray-200 rounded-xl px-5 py-4">
-              <div className="flex items-center justify-between mb-1">
-                <h2 className="text-sm font-semibold text-gray-900">Earnings</h2>
-                <span className="text-xs text-gray-500">Last 6 months</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">${totalEarnings.toLocaleString()}</p>
-              <EarningsChart data={EARNINGS} />
+              <h2 className="text-sm font-semibold text-gray-900 mb-1">Earnings</h2>
+              <p className="text-2xl font-bold text-gray-900">${(stats.totalEarnings || 0).toLocaleString()}</p>
+              {earnings.length > 0 ? (
+                <div className="flex items-end gap-2 h-32 mt-4">
+                  {earnings.map(({ month, amount }: any) => (
+                    <div key={month} className="flex-1 flex flex-col items-center gap-1">
+                      <span className="text-[10px] text-gray-500">${amount}</span>
+                      <div className="w-full bg-emerald-600 rounded-t-md" style={{ height: `${Math.max(20, (amount / (stats.totalEarnings || 1)) * 100)}%`, minHeight: "4px" }} />
+                      <span className="text-[10px] text-gray-400">{month}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="text-sm text-gray-500 mt-4">No earnings recorded yet.</p>}
             </section>
-          </div>
+          )}
+
+          {activeNav === "profile" && user && (
+            <section className="bg-white border border-gray-200 rounded-xl p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Your profile</h2>
+              <p className="text-sm text-gray-600"><strong>Name:</strong> {name}</p>
+              <p className="text-sm text-gray-600 mt-2"><strong>Email:</strong> {user.email}</p>
+              <p className="text-sm text-gray-600 mt-2"><strong>Title:</strong> {user.title || "Not set"}</p>
+              <p className="text-sm text-gray-600 mt-2"><strong>Rate:</strong> ${user.hourlyRate || 0}/hr</p>
+              {user.skills?.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {user.skills.map((s: string) => (
+                    <span key={s} className="px-2 py-1 bg-gray-100 rounded-full text-xs">{s}</span>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </main>
       </div>
     </div>
