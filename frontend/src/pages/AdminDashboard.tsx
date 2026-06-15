@@ -59,8 +59,9 @@ type ToastType = "success" | "error" | "info";
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
+// ✅ After – no named export, everything stays internal
 let toastFn: ((message: string, type?: ToastType) => void) | null = null;
-export const setToastGlobal = (fn: typeof toastFn) => { toastFn = fn; };
+const setToastGlobal = (fn: typeof toastFn) => { toastFn = fn; };  // no export
 const toast = (message: string, type: ToastType = "info") => toastFn?.(message, type);
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
