@@ -14,7 +14,6 @@ import { logout } from "../features/authSlice";
 import { formatDate, getInitials } from "../utils/auth";
 import type { RootState } from "../redux/store";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
 
 const AVATAR_COLORS = ["#14a800", "#7c3aed", "#dc2626", "#d97706", "#0891b2", "#db2777"];
 const avatarColor = (id: string) => AVATAR_COLORS[id.charCodeAt(0) % AVATAR_COLORS.length];
