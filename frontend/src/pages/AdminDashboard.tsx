@@ -224,9 +224,8 @@ function useDebounce<T>(value: T, delay: number): T {
 
 const StatusPill = ({ status }: { status: string }) => (
   <span
-    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset capitalize ${
-      STATUS_PILL[status?.toLowerCase()] ?? "bg-gray-100 text-gray-600 ring-gray-400/20"
-    }`}
+    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset capitalize ${STATUS_PILL[status?.toLowerCase()] ?? "bg-gray-100 text-gray-600 ring-gray-400/20"
+      }`}
   >
     {status}
   </span>
@@ -321,9 +320,8 @@ const StatCard = ({
   trend?: string;
 }) => (
   <div
-    className={`relative overflow-hidden rounded-2xl border p-5 flex flex-col gap-3 transition-all hover:shadow-md group ${
-      accent ? "bg-green-600 border-green-500 text-white" : "bg-white border-gray-200 text-gray-900"
-    }`}
+    className={`relative overflow-hidden rounded-2xl border p-5 flex flex-col gap-3 transition-all hover:shadow-md group ${accent ? "bg-green-600 border-green-500 text-white" : "bg-white border-gray-200 text-gray-900"
+      }`}
   >
     {accent && <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/20 blur-2xl pointer-events-none" />}
     <p className={`text-xs font-medium uppercase tracking-widest ${accent ? "text-green-100" : "text-gray-500"}`}>{label}</p>
@@ -437,76 +435,78 @@ const UsersTab = ({
           <tbody className="divide-y divide-gray-100">
             {loading
               ? Array(4)
-                  .fill(0)
-                  .map((_, i) => (
-                    <tr key={i}>
-                      <td colSpan={6} className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <Skeleton className="w-8 h-8 rounded-full" />
-                          <div className="space-y-2 flex-1">
-                            <Skeleton className="h-3 w-32" />
-                            <Skeleton className="h-2.5 w-48" />
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-              : users.map(u => (
-                  <tr key={u._id} className="hover:bg-gray-50 transition-colors group">
-                    <td className="px-5 py-3.5">
+                .fill(0)
+                .map((_, i) => (
+                  <tr key={i}>
+                    <td colSpan={6} className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <Avatar id={u._id} name={`${u.firstName} ${u.lastName}`} size={8} />
-                        <span className="text-sm font-medium text-gray-800 truncate max-w-[140px]">
-                          {u.firstName} {u.lastName}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-gray-500 truncate max-w-[180px]">{u.email}</td>
-                    <td className="px-5 py-3.5 text-sm text-gray-600 capitalize">{u.userRole.join(", ")}</td>
-                    <td className="px-5 py-3.5">
-                      <StatusPill status={u.approvalStatus} />
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {u.approvalStatus !== "approved" && (
-                          <ActionBtn color="green" onClick={() => onApproval(u._id, "approved")}>
-                            Approve
-                          </ActionBtn>
-                        )}
-                        {u.approvalStatus !== "rejected" && (
-                          <ActionBtn color="red" onClick={() => onApproval(u._id, "rejected")}>
-                            Reject
-                          </ActionBtn>
-                        )}
-                        {isSuperAdmin &&
-                          (["CLIENT", "FREELANCER", "ADMIN", "SUPER_ADMIN"] as const)
-                            .filter(r => !u.userRole.includes(r))
-                            .map(role => (
-                              <ActionBtn key={`add-${role}`} color="blue" onClick={() => onRoleChange(u._id, role, "add")}>
-                                +{role}
-                              </ActionBtn>
-                            ))}
-                        {isSuperAdmin &&
-                          u.userRole.length > 1 &&
-                          (u.userRole as ("SUPER_ADMIN" | "ADMIN" | "CLIENT" | "FREELANCER")[]).map(role => (
-                            <ActionBtn key={`rm-${role}`} color="gray" onClick={() => onRoleChange(u._id, role, "remove")}>
-                              −{role}
-                            </ActionBtn>
-                          ))}
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition">
-                        <IconBtn title="View details" onClick={() => onViewUser(u._id)}>
-                          <EyeIcon className="w-3.5 h-3.5" />
-                        </IconBtn>
-                        <IconBtn title="Delete user" danger onClick={() => onDelete(u._id)}>
-                          <TrashIcon className="w-3.5 h-3.5" />
-                        </IconBtn>
+                        <Skeleton className="w-8 h-8 rounded-full" />
+                        <div className="space-y-2 flex-1">
+                          <Skeleton className="h-3 w-32" />
+                          <Skeleton className="h-2.5 w-48" />
+                        </div>
                       </div>
                     </td>
                   </tr>
-                ))}
+                ))
+              : users.map(u => (
+                <tr key={u._id} className="hover:bg-gray-50 transition-colors group">
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <Avatar id={u._id} name={`${u.firstName} ${u.lastName}`} size={8} />
+                      <span className="text-sm font-medium text-gray-800 truncate max-w-[140px]">
+                        {u.firstName} {u.lastName}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3.5 text-sm text-gray-500 truncate max-w-[180px]">{u.email}</td>
+                  <td className="px-5 py-3.5 text-sm text-gray-600 capitalize">{u.userRole.join(", ")}</td>
+                  <td className="px-5 py-3.5">
+                    <StatusPill status={u.approvalStatus} />
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {u.approvalStatus !== "approved" && (
+                        <ActionBtn color="green" onClick={() => onApproval(u._id, "approved")}>
+                          Approve
+                        </ActionBtn>
+                      )}
+                      {u.approvalStatus !== "rejected" && (
+                        <ActionBtn color="red" onClick={() => onApproval(u._id, "rejected")}>
+                          Reject
+                        </ActionBtn>
+                      )}
+                      {isSuperAdmin &&
+                        (["CLIENT", "FREELANCER", "ADMIN", "SUPER_ADMIN"] as const)
+                          .filter(r => !u.userRole.includes(r))
+                          .map(role => (
+                            <ActionBtn key={`add-${role}`} color="blue" onClick={() => onRoleChange(u._id, role, "add")}>
+                              +{role}
+                            </ActionBtn>
+                          ))}
+                      {isSuperAdmin &&
+                        u.userRole.length > 1 &&
+                        (u.userRole as ("SUPER_ADMIN" | "ADMIN" | "CLIENT" | "FREELANCER")[]).map(role => (
+                          <ActionBtn key={`rm-${role}`} color="gray" onClick={() => onRoleChange(u._id, role, "remove")}>
+                            −{role}
+                          </ActionBtn>
+                        ))}
+                    </div>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition">
+                      <IconBtn title="View details" onClick={() => onViewUser(u._id)}>
+                        <EyeIcon className="w-3.5 h-3.5" />
+                      </IconBtn>
+                      {isSuperAdmin && (
+                        <IconBtn title="Delete user" danger onClick={() => onDelete(u._id)}>
+                          <TrashIcon className="w-3.5 h-3.5" />
+                        </IconBtn>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>
@@ -546,7 +546,7 @@ const JobsTab = ({
                   &nbsp;·&nbsp;Budget: ${j.budget}
                 </p>
               </div>
-              <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="flex items-center gap-3 shrink-0">
                 <StatusPill status={j.status} />
                 <IconBtn
                   title="Delete job"
@@ -802,9 +802,8 @@ const IconBtn = ({
   <button
     title={title}
     onClick={onClick}
-    className={`w-7 h-7 flex items-center justify-center rounded-lg transition ${
-      danger ? "text-gray-400 hover:bg-red-50 hover:text-red-600" : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-    }`}
+    className={`w-7 h-7 flex items-center justify-center rounded-lg transition ${danger ? "text-gray-400 hover:bg-red-50 hover:text-red-600" : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+      }`}
   >
     {children}
   </button>
@@ -888,7 +887,6 @@ export default function AdminDashboard() {
   );
 }
 
-// ─── Inner component that uses toast via useToast hook ───────────────────────
 
 function DashboardContent({
   activeNav,
@@ -1021,7 +1019,7 @@ function DashboardContent({
       <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+            <Link to="/" className="flex items-center gap-2 shrink-0">
               <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center">
                 <ShieldIcon className="w-4 h-4 text-white" />
               </div>
@@ -1041,9 +1039,8 @@ function DashboardContent({
                       setActiveNav(item.id);
                       setSearchTerm("");
                     }}
-                    className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                      active ? "bg-green-50 text-green-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                    }`}
+                    className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${active ? "bg-green-50 text-green-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                      }`}
                   >
                     <Icon className="w-4 h-4" />
                     {item.label}
@@ -1111,9 +1108,8 @@ function DashboardContent({
                       setSidebarOpen(false);
                       setSearchTerm("");
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                      active ? "bg-green-50 text-green-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                    }`}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${active ? "bg-green-50 text-green-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                      }`}
                   >
                     <Icon className="w-4 h-4" />
                     {item.label}
