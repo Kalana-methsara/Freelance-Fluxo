@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import platformService from "../services/platformService";
 import { getInitials } from "../utils/auth";
 import TechStack from "../components/Skills";
+import { items } from "../../data";
 
 const HOW_IT_WORKS = [
   { n: "1", title: "Post your job", desc: "Tell us about your project requirements, timeline, and budget in just a few minutes." },
@@ -209,19 +210,67 @@ export default function FreelancerPlatform() {
         <div className="max-w-5xl mx-auto">
           <SectionBadge label="Browse categories" />
           <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">Explore talent by category</h2>
-          <p className="text-sm sm:text-base text-gray-500 mb-6 sm:mb-8 max-w-lg">Find skilled professionals across every field, ready to help your business grow.</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-            {categories.map((cat) => (
-              <button key={cat._id} className="bg-gray-50 rounded-xl p-4 sm:p-5 text-left border-2 border-transparent hover:border-green-600 hover:bg-white hover:-translate-y-0.5 hover:shadow-md transition-all"
-                onClick={() => navigate(`/categories/${cat._id}`)}>
-                <div className="text-2xl sm:text-3xl mb-2">{cat.icon}</div>
-                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-0.5 leading-snug">{cat.title}</h3>
-                <span className="text-[11px] sm:text-xs text-gray-500">{cat.skills}</span>
-              </button>
-            ))}
-          </div>
+          <p className="text-sm text-gray-500 mb-6 sm:mb-8 max-w-lg">Find skilled professionals across every field, ready to help your business grow.</p>
+          
         </div>
       </section>
+  <section className="flex justify-center -mt-20 mb-10 overflow-hidden w-full">
+  <div className="w-350 max-[500px]:w-full max-[500px]:px-4">
+    
+    {/* 💻 Desktop එකේදී සාමාන්‍ය විදිහට පේනවා (No Auto-scroll) */}
+    <div className="hidden min-[501px]:flex w-full justify-between flex-wrap">
+      {items.map((item) => (
+        <div
+          key={`desktop-${item.id}`}
+          className="w-[250px] h-[150px] flex flex-col gap-[10px] items-center justify-center text-center cursor-pointer group"
+        >
+          <img src={item.img} alt={item.label} className="w-[50px] h-[50px]" />
+          <div className="w-[50px] h-[2px] bg-gray-200 transition-all duration-300 group-hover:w-[80px] group-hover:bg-[#1dbf73]" />
+          <span className="font-light text-sm">{item.label}</span>
+        </div>
+      ))}
+    </div>
+
+    {/* 📱 Mobile (max-width: 500px) එකේදී විතරක් Auto Move වෙනවා */}
+    <div 
+      className="flex min-[501px]:hidden w-full overflow-hidden"
+      style={{
+        maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+        WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+      }}
+    >
+      <div 
+        className="flex flex-nowrap gap-4 animation-marquee"
+        style={{
+          display: 'flex',
+          width: 'max-content',
+          animation: 'scrollMarquee 20s linear infinite'
+        }}
+      >
+        {/* Array එක දෙපාරක් map කරනවා නොනැවතී loop වෙන්න */}
+        {[...items, ...items].map((item, index) => (
+          <div
+            key={`mobile-${item.id}-${index}`}
+            className="w-[200px] h-[150px] flex flex-col gap-[10px] items-center justify-center text-center flex-shrink-0"
+          >
+            <img src={item.img} alt={item.label} className="w-[50px] h-[50px]" />
+            <div className="w-[50px] h-[2px] bg-gray-200" />
+            <span className="font-light text-sm">{item.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* 🛠️ Animation එක වැඩ කරන්න මේ CSS ටික Global CSS (index.css) එකට හෝ මෙතනටම දාන්න */}
+    <style dangerouslySetInnerHTML={{__html: `
+      @keyframes scrollMarquee {
+        0% { transform: translate3d(0, 0, 0); }
+        100% { transform: translate3d(-50%, 0, 0); }
+      }
+    `}} />
+
+  </div>
+</section>
 
       <section>
         <img src="/web_page.png" alt="Web page preview" className="w-full" />
