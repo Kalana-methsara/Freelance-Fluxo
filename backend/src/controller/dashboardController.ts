@@ -92,7 +92,7 @@ export const getClientDashboard = asyncHandler(async (req: Request, res: Respons
       stats: {
         totalBudget,
         totalSpent,
-        activeProjects: projects.filter((p) => p.status === "active" || p.status === "in_progress").length,
+        activeProjects: projects.filter((p) => ["open", "in_progress", "under_review"].includes(p.status)).length,
         pendingInvoices: invoices.filter((i) => !i.paid).length,
       },
       projects,
