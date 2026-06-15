@@ -14,7 +14,6 @@ import { logout } from "../features/authSlice";
 import { formatDate, getInitials } from "../utils/auth";
 import type { RootState } from "../redux/store";
 
-// ─── Toast Context (no module‑level variables or extra exports) ──────────────
 
 type ToastType = "success" | "error" | "info";
 
@@ -220,7 +219,6 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
-// ─── Shared UI Components (StatusPill, Avatar, Skeleton, etc.) ────────────────
 
 const StatusPill = ({ status }: { status: string }) => (
   <span
