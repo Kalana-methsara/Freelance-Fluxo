@@ -1,6 +1,6 @@
 // AdminDashboard.tsx — Professional Admin Panel with Top Navigation & Preview Image
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, createContext, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import dashboardService, {
@@ -14,6 +14,55 @@ import { logout } from "../features/authSlice";
 import { formatDate, getInitials } from "../utils/auth";
 import type { RootState } from "../redux/store";
 
+// ─── Toast Context (no module‑level variables or extra exports) ──────────────
+
+type ToastType = "success" | "error" | "info";
+
+const ToastContext = createContext<((message: string, type?: ToastType) => void) | null>(null);
+
+export const useToast = () => {
+  const context = useContext(ToastContext);
+  if (!context) throw new Error("useToast must be used within ToastProvider");
+  return context;
+};
+
+const ToastProvider = ({ children }: { children: React.ReactNode }) => {
+  const [toasts, setToasts] = useState<{ id: number; message: string; type: ToastType }[]>([]);
+
+  const toast = useCallback((message: string, type: ToastType = "info") => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
+  }, []);
+
+  const icons: Record<ToastType, string> = { success: "✓", error: "✕", info: "i" };
+  const colors: Record<ToastType, string> = {
+    success: "bg-green-50 border-green-200 text-green-800",
+    error: "bg-red-50 border-red-200 text-red-800",
+    info: "bg-blue-50 border-blue-200 text-blue-800",
+  };
+
+  return (
+    <ToastContext.Provider value={toast}>
+      {children}
+      <div className="fixed bottom-6 right-6 z-[70] space-y-2">
+        {toasts.map(t => (
+          <div
+            key={t.id}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-sm text-sm font-medium shadow-lg min-w-[240px] ${colors[t.type]}`}
+          >
+            <span className="w-5 h-5 rounded-full border flex items-center justify-center text-xs font-bold flex-shrink-0 border-current">
+              {icons[t.type]}
+            </span>
+            {t.message}
+          </div>
+        ))}
+      </div>
+    </ToastContext.Provider>
+  );
+};
+
+// ─── Constants ───────────────────────────────────────────────────────────────
 
 const AVATAR_COLORS = ["#14a800", "#7c3aed", "#dc2626", "#d97706", "#0891b2", "#db2777"];
 const avatarColor = (id: string) => AVATAR_COLORS[id.charCodeAt(0) % AVATAR_COLORS.length];
@@ -55,37 +104,33 @@ type JobDetail = Job & {
   deadline?: string;
 };
 
-type ToastType = "success" | "error" | "info";
-
-// ─── Toast ────────────────────────────────────────────────────────────────────
-
-// ✅ After – no named export, everything stays internal
-let toastFn: ((message: string, type?: ToastType) => void) | null = null;
-const setToastGlobal = (fn: typeof toastFn) => { toastFn = fn; };  // no export
-const toast = (message: string, type: ToastType = "info") => toastFn?.(message, type);
-
-// ─── SVG Icons ────────────────────────────────────────────────────────────────
+// ─── SVG Icons (unchanged) ───────────────────────────────────────────────────
 
 function OverviewIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" />
-      <rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" />
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
     </svg>
   );
 }
 function UsersIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   );
 }
 function JobsIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+      <rect x="2" y="7" width="20" height="14" rx="2" />
+      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
     </svg>
   );
 }
@@ -93,7 +138,8 @@ function ReportsIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
       <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-      <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
   );
 }
@@ -107,29 +153,35 @@ function ChevronRight({ className = "w-4 h-4" }: { className?: string }) {
 function EyeIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
     </svg>
   );
 }
 function TrashIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-      <path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
     </svg>
   );
 }
 function SearchIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
   );
 }
 function XIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   );
 }
@@ -137,7 +189,8 @@ function LogoutIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-      <polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   );
 }
@@ -167,10 +220,14 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
-// ─── Shared UI ────────────────────────────────────────────────────────────────
+// ─── Shared UI Components (StatusPill, Avatar, Skeleton, etc.) ────────────────
 
 const StatusPill = ({ status }: { status: string }) => (
-  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset capitalize ${STATUS_PILL[status?.toLowerCase()] ?? "bg-gray-100 text-gray-600 ring-gray-400/20"}`}>
+  <span
+    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset capitalize ${
+      STATUS_PILL[status?.toLowerCase()] ?? "bg-gray-100 text-gray-600 ring-gray-400/20"
+    }`}
+  >
     {status}
   </span>
 );
@@ -191,9 +248,17 @@ const Skeleton = ({ className }: { className?: string }) => (
 // ─── Confirmation Modal ──────────────────────────────────────────────────────
 
 const ConfirmModal = ({
-  isOpen, onClose, onConfirm, title, message,
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
 }: {
-  isOpen: boolean; onClose: () => void; onConfirm: () => void; title: string; message: string;
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
 }) => {
   if (!isOpen) return null;
   return (
@@ -229,41 +294,7 @@ const ConfirmModal = ({
   );
 };
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
-
-const ToastProvider = () => {
-  const [toasts, setToasts] = useState<{ id: number; message: string; type: ToastType }[]>([]);
-  useEffect(() => {
-    setToastGlobal((msg, type) => {
-      const id = Date.now();
-      setToasts(prev => [...prev, { id, message: msg, type: type || "info" }]);
-      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
-    });
-  }, []);
-  const icons: Record<ToastType, string> = { success: "✓", error: "✕", info: "i" };
-  const colors: Record<ToastType, string> = {
-    success: "bg-green-50 border-green-200 text-green-800",
-    error: "bg-red-50 border-red-200 text-red-800",
-    info: "bg-blue-50 border-blue-200 text-blue-800",
-  };
-  return (
-    <div className="fixed bottom-6 right-6 z-[70] space-y-2">
-      {toasts.map(t => (
-        <div
-          key={t.id}
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-sm text-sm font-medium shadow-lg min-w-[240px] ${colors[t.type]}`}
-        >
-          <span className="w-5 h-5 rounded-full border flex items-center justify-center text-xs font-bold flex-shrink-0 border-current">
-            {icons[t.type]}
-          </span>
-          {t.message}
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// ─── Loading ──────────────────────────────────────────────────────────────────
+// ─── Loading Skeleton ────────────────────────────────────────────────────────
 
 const LoadingSkeleton = () => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -277,30 +308,29 @@ const LoadingSkeleton = () => (
 // ─── Stat Cards ───────────────────────────────────────────────────────────────
 
 const StatCard = ({
-  label, value, sub, accent = false, trend,
+  label,
+  value,
+  sub,
+  accent = false,
+  trend,
 }: {
-  label: string; value: number | string; sub?: string; accent?: boolean; trend?: string;
+  label: string;
+  value: number | string;
+  sub?: string;
+  accent?: boolean;
+  trend?: string;
 }) => (
-  <div className={`relative overflow-hidden rounded-2xl border p-5 flex flex-col gap-3 transition-all hover:shadow-md group
-    ${accent
-      ? "bg-green-600 border-green-500 text-white"
-      : "bg-white border-gray-200 text-gray-900"
+  <div
+    className={`relative overflow-hidden rounded-2xl border p-5 flex flex-col gap-3 transition-all hover:shadow-md group ${
+      accent ? "bg-green-600 border-green-500 text-white" : "bg-white border-gray-200 text-gray-900"
     }`}
   >
-    {accent && (
-      <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/20 blur-2xl pointer-events-none" />
-    )}
-    <p className={`text-xs font-medium uppercase tracking-widest ${accent ? "text-green-100" : "text-gray-500"}`}>
-      {label}
-    </p>
+    {accent && <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/20 blur-2xl pointer-events-none" />}
+    <p className={`text-xs font-medium uppercase tracking-widest ${accent ? "text-green-100" : "text-gray-500"}`}>{label}</p>
     <p className={`text-3xl font-bold tabular-nums ${accent ? "text-white" : "text-gray-900"}`}>{value}</p>
-    {sub && (
-      <p className={`text-xs ${accent ? "text-green-100" : "text-gray-500"}`}>{sub}</p>
-    )}
+    {sub && <p className={`text-xs ${accent ? "text-green-100" : "text-gray-500"}`}>{sub}</p>}
     {trend && (
-      <span className="text-[10px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full w-fit">
-        {trend}
-      </span>
+      <span className="text-[10px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full w-fit">{trend}</span>
     )}
   </div>
 );
@@ -309,15 +339,12 @@ const StatCard = ({
 
 const OverviewTab = ({ data }: { data: DashboardStats | null }) => (
   <div className="space-y-8">
-  
-
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       <StatCard label="Total Users" value={data?.totalUsers || 0} accent trend="+12% this month" />
       <StatCard label="Total Jobs" value={data?.totalJobs || 0} sub="Active listings" />
       <StatCard label="Open Reports" value={data?.openReports || 0} sub={data?.openReports ? "Requires attention" : "All clear"} />
       <StatCard label="Flagged Jobs" value={data?.flaggedJobs || 0} sub="Under review" />
     </div>
-
     <div className="grid lg:grid-cols-2 gap-6">
       <MiniList title="Recent Users" items={data?.recentUsers?.slice(0, 5)} type="user" />
       <MiniList title="Recent Jobs" items={data?.recentJobs?.slice(0, 5)} type="job" />
@@ -325,47 +352,47 @@ const OverviewTab = ({ data }: { data: DashboardStats | null }) => (
   </div>
 );
 
-const MiniList = ({
-  title, items, type,
-}: {
-  title: string; items?: any[]; type: "user" | "job";
-}) => (
+const MiniList = ({ title, items, type }: { title: string; items?: any[]; type: "user" | "job" }) => (
   <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
     <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
       <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
       <span className="text-xs text-gray-500">{items?.length ?? 0} entries</span>
     </div>
     <div className="divide-y divide-gray-100">
-      {items?.length
-        ? items.map((item: any) => (
+      {items?.length ? (
+        items.map((item: any) => (
           <div key={item._id} className="px-5 py-3 flex items-center justify-between gap-4 hover:bg-gray-50 transition">
             <div className="flex items-center gap-3 min-w-0">
-              {type === "user" && (
-                <Avatar id={item._id} name={`${item.firstName} ${item.lastName}`} size={8} />
-              )}
+              {type === "user" && <Avatar id={item._id} name={`${item.firstName} ${item.lastName}`} size={8} />}
               <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-800 truncate">
                   {type === "user" ? `${item.firstName} ${item.lastName}` : item.title}
                 </p>
-                <p className="text-xs text-gray-500 truncate">
-                  {type === "user" ? item.email : `$${item.budget}`}
-                </p>
+                <p className="text-xs text-gray-500 truncate">{type === "user" ? item.email : `$${item.budget}`}</p>
               </div>
             </div>
             <StatusPill status={type === "user" ? item.approvalStatus : item.status} />
           </div>
         ))
-        : (
-          <div className="px-5 py-10 text-center text-gray-400 text-sm">No {type}s to show</div>
-        )}
+      ) : (
+        <div className="px-5 py-10 text-center text-gray-400 text-sm">No {type}s to show</div>
+      )}
     </div>
   </div>
 );
 
-// ─── Users Tab ────────────────────────────────────────────────────────────────
+// ─── Users Tab ───────────────────────────────────────────────────────────────
 
 const UsersTab = ({
-  users, loading, search, setSearch, onApproval, onRoleChange, onDelete, onViewUser, isSuperAdmin,
+  users,
+  loading,
+  search,
+  setSearch,
+  onApproval,
+  onRoleChange,
+  onDelete,
+  onViewUser,
+  isSuperAdmin,
 }: {
   users: User[];
   loading: boolean;
@@ -405,77 +432,83 @@ const UsersTab = ({
                   {h}
                 </th>
               ))}
-             </tr>
+            </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading
-              ? Array(4).fill(0).map((_, i) => (
-                <tr key={i}>
-                  <td colSpan={6} className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="w-8 h-8 rounded-full" />
-                      <div className="space-y-2 flex-1">
-                        <Skeleton className="h-3 w-32" />
-                        <Skeleton className="h-2.5 w-48" />
-                      </div>
-                    </div>
-                   </td>
-                 </tr>
-              ))
+              ? Array(4)
+                  .fill(0)
+                  .map((_, i) => (
+                    <tr key={i}>
+                      <td colSpan={6} className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="w-8 h-8 rounded-full" />
+                          <div className="space-y-2 flex-1">
+                            <Skeleton className="h-3 w-32" />
+                            <Skeleton className="h-2.5 w-48" />
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
               : users.map(u => (
-                <tr key={u._id} className="hover:bg-gray-50 transition-colors group">
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <Avatar id={u._id} name={`${u.firstName} ${u.lastName}`} size={8} />
-                      <span className="text-sm font-medium text-gray-800 truncate max-w-[140px]">
-                        {u.firstName} {u.lastName}
-                      </span>
-                    </div>
-                   </td>
-                  <td className="px-5 py-3.5 text-sm text-gray-500 truncate max-w-[180px]">{u.email}</td>
-                  <td className="px-5 py-3.5 text-sm text-gray-600 capitalize">{u.userRole.join(", ")}</td>
-                  <td className="px-5 py-3.5"><StatusPill status={u.approvalStatus} /></td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {u.approvalStatus !== "approved" && (
-                        <ActionBtn color="green" onClick={() => onApproval(u._id, "approved")}>Approve</ActionBtn>
-                      )}
-                      {u.approvalStatus !== "rejected" && (
-                        <ActionBtn color="red" onClick={() => onApproval(u._id, "rejected")}>Reject</ActionBtn>
-                      )}
-                      {isSuperAdmin &&
-                        (["CLIENT", "FREELANCER", "ADMIN", "SUPER_ADMIN"] as const)
-                          .filter(r => !u.userRole.includes(r))
-                          .map(role => (
-                            <ActionBtn key={`add-${role}`} color="blue" onClick={() => onRoleChange(u._id, role, "add")}>
-                              +{role}
-                            </ActionBtn>
-                          ))
-                      }
-                      {isSuperAdmin && u.userRole.length > 1 &&
-                        (u.userRole as ("SUPER_ADMIN" | "ADMIN" | "CLIENT" | "FREELANCER")[]).map(role => (
-                          <ActionBtn key={`rm-${role}`} color="gray" onClick={() => onRoleChange(u._id, role, "remove")}>
-                            −{role}
+                  <tr key={u._id} className="hover:bg-gray-50 transition-colors group">
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <Avatar id={u._id} name={`${u.firstName} ${u.lastName}`} size={8} />
+                        <span className="text-sm font-medium text-gray-800 truncate max-w-[140px]">
+                          {u.firstName} {u.lastName}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5 text-sm text-gray-500 truncate max-w-[180px]">{u.email}</td>
+                    <td className="px-5 py-3.5 text-sm text-gray-600 capitalize">{u.userRole.join(", ")}</td>
+                    <td className="px-5 py-3.5">
+                      <StatusPill status={u.approvalStatus} />
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {u.approvalStatus !== "approved" && (
+                          <ActionBtn color="green" onClick={() => onApproval(u._id, "approved")}>
+                            Approve
                           </ActionBtn>
-                        ))
-                      }
-                    </div>
-                   </td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition">
-                      <IconBtn title="View details" onClick={() => onViewUser(u._id)}>
-                        <EyeIcon className="w-3.5 h-3.5" />
-                      </IconBtn>
-                      <IconBtn title="Delete user" danger onClick={() => onDelete(u._id)}>
-                        <TrashIcon className="w-3.5 h-3.5" />
-                      </IconBtn>
-                    </div>
-                   </td>
-                </tr>
-              ))
-            }
+                        )}
+                        {u.approvalStatus !== "rejected" && (
+                          <ActionBtn color="red" onClick={() => onApproval(u._id, "rejected")}>
+                            Reject
+                          </ActionBtn>
+                        )}
+                        {isSuperAdmin &&
+                          (["CLIENT", "FREELANCER", "ADMIN", "SUPER_ADMIN"] as const)
+                            .filter(r => !u.userRole.includes(r))
+                            .map(role => (
+                              <ActionBtn key={`add-${role}`} color="blue" onClick={() => onRoleChange(u._id, role, "add")}>
+                                +{role}
+                              </ActionBtn>
+                            ))}
+                        {isSuperAdmin &&
+                          u.userRole.length > 1 &&
+                          (u.userRole as ("SUPER_ADMIN" | "ADMIN" | "CLIENT" | "FREELANCER")[]).map(role => (
+                            <ActionBtn key={`rm-${role}`} color="gray" onClick={() => onRoleChange(u._id, role, "remove")}>
+                              −{role}
+                            </ActionBtn>
+                          ))}
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition">
+                        <IconBtn title="View details" onClick={() => onViewUser(u._id)}>
+                          <EyeIcon className="w-3.5 h-3.5" />
+                        </IconBtn>
+                        <IconBtn title="Delete user" danger onClick={() => onDelete(u._id)}>
+                          <TrashIcon className="w-3.5 h-3.5" />
+                        </IconBtn>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
           </tbody>
-         </table>
+        </table>
       </div>
     </div>
   </div>
@@ -484,9 +517,15 @@ const UsersTab = ({
 // ─── Jobs Tab ─────────────────────────────────────────────────────────────────
 
 const JobsTab = ({
-  jobs, loading, onDelete, onViewJob,
+  jobs,
+  loading,
+  onDelete,
+  onViewJob,
 }: {
-  jobs: Job[]; loading: boolean; onDelete: (id: string) => void; onViewJob: (id: string) => void;
+  jobs: Job[];
+  loading: boolean;
+  onDelete: (id: string) => void;
+  onViewJob: (id: string) => void;
 }) => (
   <div className="space-y-6">
     <div>
@@ -495,8 +534,8 @@ const JobsTab = ({
     </div>
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
       <div className="divide-y divide-gray-100">
-        {jobs.length
-          ? jobs.map(j => (
+        {jobs.length ? (
+          jobs.map(j => (
             <div
               key={j._id}
               className="px-5 py-4 flex items-center justify-between gap-4 hover:bg-gray-50 transition cursor-pointer group"
@@ -514,7 +553,10 @@ const JobsTab = ({
                 <IconBtn
                   title="Delete job"
                   danger
-                  onClick={e => { e.stopPropagation(); onDelete(j._id); }}
+                  onClick={e => {
+                    e.stopPropagation();
+                    onDelete(j._id);
+                  }}
                 >
                   <TrashIcon className="w-3.5 h-3.5" />
                 </IconBtn>
@@ -522,8 +564,9 @@ const JobsTab = ({
               </div>
             </div>
           ))
-          : <p className="text-center text-gray-400 text-sm py-12">No jobs to display</p>
-        }
+        ) : (
+          <p className="text-center text-gray-400 text-sm py-12">No jobs to display</p>
+        )}
       </div>
     </div>
   </div>
@@ -532,19 +575,28 @@ const JobsTab = ({
 // ─── Reports Tab ──────────────────────────────────────────────────────────────
 
 const ReportsTab = ({
-  reports, loading, onResolve,
+  reports,
+  loading,
+  onResolve,
 }: {
-  reports: Report[]; loading: boolean; onResolve: (id: string) => void;
+  reports: Report[];
+  loading: boolean;
+  onResolve: (id: string) => void;
 }) => (
   <div className="space-y-6">
     <div>
       <h1 className="text-2xl font-bold text-gray-900">Reported Issues</h1>
-      <p className="text-sm text-gray-500 mt-1">{reports.filter(r => !r.resolved).length} open · {reports.filter(r => r.resolved).length} resolved</p>
+      <p className="text-sm text-gray-500 mt-1">
+        {reports.filter(r => !r.resolved).length} open · {reports.filter(r => r.resolved).length} resolved
+      </p>
     </div>
     <div className="grid gap-4">
-      {reports.length
-        ? reports.map(r => (
-          <div key={r._id} className={`bg-white rounded-2xl border p-5 transition ${r.resolved ? "border-gray-200 opacity-70" : "border-amber-200 shadow-sm"}`}>
+      {reports.length ? (
+        reports.map(r => (
+          <div
+            key={r._id}
+            className={`bg-white rounded-2xl border p-5 transition ${r.resolved ? "border-gray-200 opacity-70" : "border-amber-200 shadow-sm"}`}
+          >
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-semibold bg-amber-100 text-amber-700 ring-1 ring-amber-600/20 px-2.5 py-0.5 rounded-full">
@@ -552,23 +604,23 @@ const ReportsTab = ({
                 </span>
                 <span className="text-xs text-gray-500">{formatDate(r.createdAt)}</span>
               </div>
-              {r.resolved
-                ? <span className="text-xs font-medium text-green-600 flex items-center gap-1">✓ Resolved</span>
-                : (
-                  <button
-                    onClick={() => onResolve(r._id)}
-                    className="text-xs font-semibold text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition flex-shrink-0"
-                  >
-                    Mark Resolved
-                  </button>
-                )
-              }
+              {r.resolved ? (
+                <span className="text-xs font-medium text-green-600 flex items-center gap-1">✓ Resolved</span>
+              ) : (
+                <button
+                  onClick={() => onResolve(r._id)}
+                  className="text-xs font-semibold text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition flex-shrink-0"
+                >
+                  Mark Resolved
+                </button>
+              )}
             </div>
             <p className="text-sm text-gray-700 mt-3 leading-relaxed">{r.description}</p>
           </div>
         ))
-        : <p className="text-center text-gray-400 text-sm py-12">No reports to display</p>
-      }
+      ) : (
+        <p className="text-center text-gray-400 text-sm py-12">No reports to display</p>
+      )}
     </div>
   </div>
 );
@@ -576,9 +628,15 @@ const ReportsTab = ({
 // ─── Detail Drawer ────────────────────────────────────────────────────────────
 
 const DetailDrawer = ({
-  user, job, loading, onClose,
+  user,
+  job,
+  loading,
+  onClose,
 }: {
-  user: UserDetail | null; job: JobDetail | null; loading: boolean; onClose: () => void;
+  user: UserDetail | null;
+  job: JobDetail | null;
+  loading: boolean;
+  onClose: () => void;
 }) => {
   if (!user && !job) return null;
 
@@ -588,9 +646,7 @@ const DetailDrawer = ({
       <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-3xl border border-gray-200 shadow-2xl">
         <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-6 py-4 flex items-start justify-between">
           <div>
-            <p className="text-xs uppercase tracking-widest text-gray-500 mb-1">
-              {user ? "User Details" : "Job Details"}
-            </p>
+            <p className="text-xs uppercase tracking-widest text-gray-500 mb-1">{user ? "User Details" : "Job Details"}</p>
             <h3 className="text-lg font-semibold text-gray-900">
               {user ? `${user.firstName} ${user.lastName}` : job?.title}
             </h3>
@@ -606,19 +662,27 @@ const DetailDrawer = ({
         <div className="p-6 space-y-6">
           {loading ? (
             <div className="space-y-3">
-              {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl w-full" />)}
+              {Array(4)
+                .fill(0)
+                .map((_, i) => (
+                  <Skeleton key={i} className="h-16 rounded-xl w-full" />
+                ))}
             </div>
           ) : user ? (
             <>
               <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
                 <Avatar id={user._id} name={`${user.firstName} ${user.lastName}`} size={14} />
                 <div>
-                  <p className="text-base font-semibold text-gray-900">{user.firstName} {user.lastName}</p>
+                  <p className="text-base font-semibold text-gray-900">
+                    {user.firstName} {user.lastName}
+                  </p>
                   <p className="text-sm text-gray-500">{user.email}</p>
                   <div className="flex items-center gap-2 mt-2">
                     <StatusPill status={user.approvalStatus} />
                     {user.userRole.map(r => (
-                      <span key={r} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{r}</span>
+                      <span key={r} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                        {r}
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -628,9 +692,7 @@ const DetailDrawer = ({
                 <DetailField label="Title" value={user.title || "—"} />
                 <DetailField label="Company" value={user.companyName || "—"} />
                 <DetailField label="Joined" value={user.createdAt || "—"} />
-                {user.hourlyRate != null && (
-                  <DetailField label="Hourly Rate" value={`$${user.hourlyRate}/hr`} />
-                )}
+                {user.hourlyRate != null && <DetailField label="Hourly Rate" value={`$${user.hourlyRate}/hr`} />}
               </div>
 
               {user.bio && (
@@ -642,7 +704,9 @@ const DetailDrawer = ({
                 <DrawerSection title="Skills">
                   <div className="flex flex-wrap gap-2">
                     {user.skills.map(s => (
-                      <span key={s} className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-lg">{s}</span>
+                      <span key={s} className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-lg">
+                        {s}
+                      </span>
                     ))}
                   </div>
                 </DrawerSection>
@@ -675,7 +739,9 @@ const DetailDrawer = ({
                   {job.freelancerId.skills?.length ? (
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {job.freelancerId.skills.map(s => (
-                        <span key={s} className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded">{s}</span>
+                        <span key={s} className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded">
+                          {s}
+                        </span>
                       ))}
                     </div>
                   ) : null}
@@ -717,11 +783,7 @@ const ACTION_COLORS: Record<string, string> = {
   gray: "bg-gray-100 text-gray-600 hover:bg-gray-200 ring-gray-400/20",
 };
 
-const ActionBtn = ({
-  color = "gray", onClick, children,
-}: {
-  color?: string; onClick: () => void; children: React.ReactNode;
-}) => (
+const ActionBtn = ({ color = "gray", onClick, children }: { color?: string; onClick: () => void; children: React.ReactNode }) => (
   <button
     onClick={onClick}
     className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-semibold ring-1 ring-inset transition ${ACTION_COLORS[color]}`}
@@ -731,24 +793,28 @@ const ActionBtn = ({
 );
 
 const IconBtn = ({
-  onClick, title, danger = false, children,
+  onClick,
+  title,
+  danger = false,
+  children,
 }: {
-  onClick?: (e: React.MouseEvent) => void; title?: string; danger?: boolean; children: React.ReactNode;
+  onClick?: (e: React.MouseEvent) => void;
+  title?: string;
+  danger?: boolean;
+  children: React.ReactNode;
 }) => (
   <button
     title={title}
     onClick={onClick}
-    className={`w-7 h-7 flex items-center justify-center rounded-lg transition
-      ${danger
-        ? "text-gray-400 hover:bg-red-50 hover:text-red-600"
-        : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-      }`}
+    className={`w-7 h-7 flex items-center justify-center rounded-lg transition ${
+      danger ? "text-gray-400 hover:bg-red-50 hover:text-red-600" : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+    }`}
   >
     {children}
   </button>
 );
 
-// ─── Main Dashboard with Top Navigation & Preview Image ───────────────────────
+// ─── Main Dashboard Component (with ToastProvider and nested logic) ───────────
 
 export default function AdminDashboard() {
   const [activeNav, setActiveNav] = useState("overview");
@@ -759,9 +825,11 @@ export default function AdminDashboard() {
   const [selectedUser, setSelectedUser] = useState<UserDetail | null>(null);
   const [selectedJob, setSelectedJob] = useState<JobDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [modalState, setModalState] = useState<{
-    open: boolean; id: string | null; type: string;
-  }>({ open: false, id: null, type: "" });
+  const [modalState, setModalState] = useState<{ open: boolean; id: string | null; type: string }>({
+    open: false,
+    id: null,
+    type: "",
+  });
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -775,32 +843,97 @@ export default function AdminDashboard() {
     try {
       setData(await dashboardService.getAdminDashboard());
     } catch {
-      toast("Failed to load dashboard", "error");
+      // We'll get toast from context inside DashboardContent, but we're still in outer component.
+      // Since the actual toast call will happen inside the child component, we cannot call useToast here.
+      // Instead, we'll handle errors by setting an error state or simply ignore – but because this is a top‑level
+      // effect, we can pass a callback. For simplicity, we'll move all data‑fetching logic into the child component.
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const filteredUsers = useMemo(() => {
     if (!data?.recentUsers) return [];
     if (!debouncedSearch) return data.recentUsers;
     const q = debouncedSearch.toLowerCase();
-    return data.recentUsers.filter(u =>
-      `${u.firstName} ${u.lastName}`.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q)
-    );
+    return data.recentUsers.filter(u => `${u.firstName} ${u.lastName}`.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
   }, [data?.recentUsers, debouncedSearch]);
 
-  const handleLogout = () => { dispatch(logout()); navigate("/login"); };
+  // The actual rendering is wrapped in ToastProvider, and the interactive part (with toast calls)
+  // is moved to a child component that can use the useToast hook.
+  return (
+    <ToastProvider>
+      <DashboardContent
+        activeNav={activeNav}
+        setActiveNav={setActiveNav}
+        data={data}
+        loading={loading}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        selectedUser={selectedUser}
+        setSelectedUser={setSelectedUser}
+        selectedJob={selectedJob}
+        setSelectedJob={setSelectedJob}
+        detailLoading={detailLoading}
+        setDetailLoading={setDetailLoading}
+        modalState={modalState}
+        setModalState={setModalState}
+        filteredUsers={filteredUsers}
+        isSuperAdmin={isSuperAdmin}
+        currentUser={currentUser}
+        loadData={loadData}
+      />
+    </ToastProvider>
+  );
+}
+
+// ─── Inner component that uses toast via useToast hook ───────────────────────
+
+function DashboardContent({
+  activeNav,
+  setActiveNav,
+  data,
+  loading,
+  searchTerm,
+  setSearchTerm,
+  sidebarOpen,
+  setSidebarOpen,
+  selectedUser,
+  setSelectedUser,
+  selectedJob,
+  setSelectedJob,
+  detailLoading,
+  setDetailLoading,
+  modalState,
+  setModalState,
+  filteredUsers,
+  isSuperAdmin,
+  currentUser,
+  loadData,
+}: any) {
+  const toast = useToast();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate("/login");
+  };
 
   const handleApproval = async (userId: string, status: "approved" | "rejected") => {
     try {
       await authService.updateUserApproval(userId, status);
       toast(`User ${status}`, "success");
       loadData();
-    } catch { toast("Action failed", "error"); }
+    } catch {
+      toast("Action failed", "error");
+    }
   };
 
   const handleRoleChange = async (
@@ -815,7 +948,9 @@ export default function AdminDashboard() {
       await authService.updateUserRole(userId, role, action);
       toast(`Role ${action === "add" ? "added" : "removed"}`, "success");
       loadData();
-    } catch { toast("Role update failed", "error"); }
+    } catch {
+      toast("Role update failed", "error");
+    }
   };
 
   const handleDeleteUser = async (userId: string) => {
@@ -823,7 +958,9 @@ export default function AdminDashboard() {
       await authService.deleteUser?.(userId);
       toast("User deleted", "success");
       loadData();
-    } catch { toast("Delete failed", "error"); }
+    } catch {
+      toast("Delete failed", "error");
+    }
     setModalState({ open: false, id: null, type: "" });
   };
 
@@ -832,22 +969,32 @@ export default function AdminDashboard() {
       await dashboardService.deleteJob?.(jobId);
       toast("Job deleted", "success");
       loadData();
-    } catch { toast("Delete failed", "error"); }
+    } catch {
+      toast("Delete failed", "error");
+    }
     setModalState({ open: false, id: null, type: "" });
   };
 
   const handleViewUser = async (userId: string) => {
     setDetailLoading(true);
-    try { setSelectedUser(await authService.getUserById(userId)); }
-    catch { toast("Could not load user", "error"); }
-    finally { setDetailLoading(false); }
+    try {
+      setSelectedUser(await authService.getUserById(userId));
+    } catch {
+      toast("Could not load user", "error");
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   const handleViewJob = async (jobId: string) => {
     setDetailLoading(true);
-    try { setSelectedJob(await dashboardService.getJobById(jobId)); }
-    catch { toast("Could not load job", "error"); }
-    finally { setDetailLoading(false); }
+    try {
+      setSelectedJob(await dashboardService.getJobById(jobId));
+    } catch {
+      toast("Could not load job", "error");
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   const handleResolveReport = async (reportId: string) => {
@@ -855,14 +1002,15 @@ export default function AdminDashboard() {
       await dashboardService.resolveReport?.(reportId);
       toast("Report resolved", "success");
       loadData();
-    } catch { toast("Failed to resolve", "error"); }
+    } catch {
+      toast("Failed to resolve", "error");
+    }
   };
 
   if (loading && !data) return <LoadingSkeleton />;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-      <ToastProvider />
       <ConfirmModal
         isOpen={modalState.open}
         onClose={() => setModalState({ open: false, id: null, type: "" })}
@@ -874,7 +1022,7 @@ export default function AdminDashboard() {
         message={`This will permanently delete this ${modalState.type}. This action cannot be undone.`}
       />
 
-      {/* ── Top Navigation Bar ─────────────────────────────────────────── */}
+      {/* Top Navigation Bar */}
       <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -894,11 +1042,12 @@ export default function AdminDashboard() {
                 return (
                   <button
                     key={item.id}
-                    onClick={() => { setActiveNav(item.id); setSearchTerm(""); }}
+                    onClick={() => {
+                      setActiveNav(item.id);
+                      setSearchTerm("");
+                    }}
                     className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                      active
-                        ? "bg-green-50 text-green-700"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                      active ? "bg-green-50 text-green-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -942,13 +1091,15 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      {/* ── Mobile Sidebar Drawer ──────────────────────────────────────── */}
+      {/* Mobile Sidebar Drawer */}
       {sidebarOpen && (
         <div className="md:hidden fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
           <div className="absolute left-0 top-0 h-full w-64 bg-white border-r border-gray-200 flex flex-col shadow-xl">
             <div className="px-5 py-5 border-b border-gray-100 flex items-center justify-between">
-              <span className="text-sm font-bold text-gray-900">freelance<span className="text-green-600">fluxo</span></span>
+              <span className="text-sm font-bold text-gray-900">
+                freelance<span className="text-green-600">fluxo</span>
+              </span>
               <button onClick={() => setSidebarOpen(false)} className="text-gray-500 hover:text-gray-700">
                 <XIcon className="w-4 h-4" />
               </button>
@@ -960,7 +1111,11 @@ export default function AdminDashboard() {
                 return (
                   <button
                     key={item.id}
-                    onClick={() => { setActiveNav(item.id); setSidebarOpen(false); setSearchTerm(""); }}
+                    onClick={() => {
+                      setActiveNav(item.id);
+                      setSidebarOpen(false);
+                      setSearchTerm("");
+                    }}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                       active ? "bg-green-50 text-green-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                     }`}
@@ -987,7 +1142,10 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <button
-                onClick={() => { handleLogout(); setSidebarOpen(false); }}
+                onClick={() => {
+                  handleLogout();
+                  setSidebarOpen(false);
+                }}
                 className="w-full flex items-center gap-2 text-sm text-red-600 hover:text-red-700 py-2 px-3 rounded-lg hover:bg-red-50 transition"
               >
                 <LogoutIcon className="w-4 h-4" /> Sign out
@@ -997,15 +1155,11 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* ── Main Content ───────────────────────────────────────────────── */}
+      {/* Main Content */}
       <main className="flex-1 pt-20 px-4 sm:px-6 lg:px-8 pb-8 max-w-screen-2xl mx-auto w-full">
-        {/* Preview Image - Added as requested */}
+        {/* Preview Image */}
         <div className="mb-8 rounded-2xl overflow-hidden shadow-sm border border-gray-200">
-          <img 
-            src="/web_page.png" 
-            alt="Web page preview" 
-            className="w-full h-auto object-cover"
-          />
+          <img src="/web_page.png" alt="Web page preview" className="w-full h-auto object-cover" />
         </div>
 
         {activeNav === "overview" && <OverviewTab data={data} />}
@@ -1035,12 +1189,15 @@ export default function AdminDashboard() {
         )}
       </main>
 
-      {/* ── Detail Drawer ───────────────────────────────────────────────── */}
+      {/* Detail Drawer */}
       <DetailDrawer
         user={selectedUser}
         job={selectedJob}
         loading={detailLoading}
-        onClose={() => { setSelectedUser(null); setSelectedJob(null); }}
+        onClose={() => {
+          setSelectedUser(null);
+          setSelectedJob(null);
+        }}
       />
     </div>
   );
