@@ -134,16 +134,16 @@ Built with the **MERN stack** and modern tooling:
 ┌──────────────────────────────▼──────────────────────────────────┐
 │                         SERVER LAYER                            │
 │              Node.js + Express.js + JWT Auth                    │
-│  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌─────────────┐ │
-│  │  Auth     │  │  Jobs     │  │  Users    │  │  Courses    │ │
-│  │  Routes   │  │  Routes   │  │  Routes   │  │  Routes     │ │
-│  └───────────┘  └───────────┘  └───────────┘  └─────────────┘ │
+│  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌─────────────┐   │
+│  │  Auth     │  │  Jobs     │  │  Users    │  │  Courses    │   │
+│  │  Routes   │  │  Routes   │  │  Routes   │  │  Routes     │   │
+│  └───────────┘  └───────────┘  └───────────┘  └─────────────┘   │
 └──────────────────────────────┬──────────────────────────────────┘
                                │ Mongoose ODM
 ┌──────────────────────────────▼──────────────────────────────────┐
 │                        DATABASE LAYER                           │
 │                    MongoDB (Mongoose ODM)                       │
-│   Users · Jobs · Applications · Courses · Certificates         │
+│   Users · Jobs · Applications · Courses · Certificates          │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
