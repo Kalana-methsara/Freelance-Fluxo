@@ -111,7 +111,7 @@ export default function SearchPage() {
               <div className="w-10 h-0.5 bg-green-500 mb-6"></div>
               {data?.freelancers?.length ? (
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {data.freelancers.map((fl: any, i: number) => (
+                  {data.freelancers.map((fl: any) => (
                     <button
                       key={fl._id}
                       onClick={() => navigate(`/freelancers/${fl._id}`)}
