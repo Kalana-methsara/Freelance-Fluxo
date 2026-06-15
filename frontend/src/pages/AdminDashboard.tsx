@@ -518,12 +518,10 @@ const UsersTab = ({
 
 const JobsTab = ({
   jobs,
-  loading,
   onDelete,
   onViewJob,
 }: {
   jobs: Job[];
-  loading: boolean;
   onDelete: (id: string) => void;
   onViewJob: (id: string) => void;
 }) => (
@@ -576,11 +574,9 @@ const JobsTab = ({
 
 const ReportsTab = ({
   reports,
-  loading,
   onResolve,
 }: {
   reports: Report[];
-  loading: boolean;
   onResolve: (id: string) => void;
 }) => (
   <div className="space-y-6">
@@ -830,9 +826,8 @@ export default function AdminDashboard() {
     id: null,
     type: "",
   });
-
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
+  // `navigate` and `dispatch` are used inside the inner `DashboardContent` component.
+  // Keep top-level component free of hooks that aren't used here to avoid lint errors.
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const isSuperAdmin = currentUser?.roles?.some(r => String(r).toUpperCase() === "SUPER_ADMIN") ?? false;
 
@@ -1179,13 +1174,12 @@ function DashboardContent({
         {activeNav === "jobs" && (
           <JobsTab
             jobs={data?.recentJobs || []}
-            loading={loading}
             onDelete={id => setModalState({ open: true, id, type: "job" })}
             onViewJob={handleViewJob}
           />
         )}
         {activeNav === "reports" && (
-          <ReportsTab reports={data?.reports || []} loading={loading} onResolve={handleResolveReport} />
+          <ReportsTab reports={data?.reports || []} onResolve={handleResolveReport} />
         )}
       </main>
 
