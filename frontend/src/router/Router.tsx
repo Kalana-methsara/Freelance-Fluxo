@@ -1,23 +1,27 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import FreelancerPlatform from "../pages/FreelancerPlatform";
-import Signupflow from "../pages/Signupflow";
-import LoginPage from "../pages/LoginPage";
-import OAuthCallback from "../pages/OAuthCallback";
-import FreelancerDashboard from "../pages/FreelancerDashboard";
-import ClientDashboard from "../pages/ClientDashboard";
-import AdminDashboard from "../pages/AdminDashboard";
-import SearchPage from "../pages/SearchPage";
-import CategoryPage from "../pages/CategoryPage";
-import FreelancerDetailPage from "../pages/FreelancerDetailPage";
-import PostJobPage from "../pages/PostJobPage";
-import LegalPage from "../pages/LegalPage";
-import JobsPage from "../pages/JobsPage";
+import { Suspense, lazy } from "react";
 import { RequireAuth } from "../components/RequireAuth";
+
+// Route-based code-splitting: lazy-load larger pages
+const FreelancerPlatform = lazy(() => import("../pages/FreelancerPlatform"));
+const Signupflow = lazy(() => import("../pages/Signupflow"));
+const LoginPage = lazy(() => import("../pages/LoginPage"));
+const OAuthCallback = lazy(() => import("../pages/OAuthCallback"));
+const FreelancerDashboard = lazy(() => import("../pages/FreelancerDashboard"));
+const ClientDashboard = lazy(() => import("../pages/ClientDashboard"));
+const AdminDashboard = lazy(() => import("../pages/AdminDashboard"));
+const SearchPage = lazy(() => import("../pages/SearchPage"));
+const CategoryPage = lazy(() => import("../pages/CategoryPage"));
+const FreelancerDetailPage = lazy(() => import("../pages/FreelancerDetailPage"));
+const PostJobPage = lazy(() => import("../pages/PostJobPage"));
+const LegalPage = lazy(() => import("../pages/LegalPage"));
+const JobsPage = lazy(() => import("../pages/JobsPage"));
 
 const Router = () => {
   return (
     <BrowserRouter>
-      <Routes>
+      <Suspense fallback={<div className="p-8 text-center">Loading…</div>}>
+        <Routes>
         <Route path="/" element={<FreelancerPlatform />} />
         <Route path="/signup" element={<Signupflow />} />
         <Route path="/login" element={<LoginPage />} />
@@ -62,7 +66,8 @@ const Router = () => {
             </RequireAuth>
           }
         />
-      </Routes>
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 };

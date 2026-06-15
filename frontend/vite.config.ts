@@ -13,4 +13,20 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    // Increase warning threshold slightly and provide rollup chunking hints
+    chunkSizeWarningLimit: 700,
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('redux') || id.includes('react-router')) {
+              return 'vendor.react';
+            }
+            return 'vendor';
+          }
+        },
+      },
+    },
+  },
 })
