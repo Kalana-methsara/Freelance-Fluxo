@@ -51,7 +51,7 @@ function renderStars(rating: number) {
 export default function FreelancerPlatform() {
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [, setCategories] = useState<any[]>([]);
   const [freelancers, setFreelancers] = useState<any[]>([]);
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(true);
   const videoRef = useRef<HTMLVideoElement>(null);
