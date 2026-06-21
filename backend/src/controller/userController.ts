@@ -168,6 +168,29 @@ export const updateUserApproval = asyncHandler(async (req: Request, res: Respons
     res.status(200).json({ success: true, data: user });
 });
 
+const allowedProfileFields = [
+    "firstName",
+    "lastName",
+    "profileImage",
+    "bio",
+    "skills",
+    "title",
+    "hourlyRate",
+    "companyName",
+    "location",
+    "email",
+];
+
+const buildProfileUpdatePayload = (body: any) => {
+    const updates: Record<string, any> = {};
+    for (const key of Object.keys(body)) {
+        if (allowedProfileFields.includes(key)) {
+            updates[key] = body[key];
+        }
+    }
+    return updates;
+};
+
 // 9. Update user profile (self or admin)
 export const updateUserProfile = asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
@@ -179,25 +202,7 @@ export const updateUserProfile = asyncHandler(async (req: Request, res: Response
         return res.status(403).json({ message: "Forbidden" });
     }
 
-    const allowedUpdates = [
-        "firstName",
-        "lastName",
-        "profileImage",
-        "bio",
-        "skills",
-        "title",
-        "hourlyRate",
-        "companyName",
-        "location",
-        "email",
-    ];
-
-    const updates: Record<string, any> = {};
-    for (const key of Object.keys(req.body)) {
-        if (allowedUpdates.includes(key)) {
-            updates[key] = req.body[key];
-        }
-    }
+    const updates = buildProfileUpdatePayload(req.body);
 
     const user = await UserModel.findByIdAndUpdate(targetId, updates, {
         new: true,
@@ -209,7 +214,28 @@ export const updateUserProfile = asyncHandler(async (req: Request, res: Response
     res.status(200).json({ success: true, data: user });
 });
 
-// 10. Update user role (admin)
+// 10. Update own profile (authenticated user)
+export const updateMyProfile = asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthRequest;
+    const targetId = authReq.user?._id?.toString();
+
+    if (!targetId) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const updates = buildProfileUpdatePayload(req.body);
+
+    const user = await UserModel.findByIdAndUpdate(targetId, updates, {
+        new: true,
+        runValidators: true,
+        context: "query",
+    }).select("-password");
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.status(200).json({ success: true, data: user });
+});
+
+// 11. Update user role (admin)
 export const updateUserRole = asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const { role, action = "add" } = req.body as { role: UserRole; action?: "add" | "remove" };

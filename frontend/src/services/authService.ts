@@ -83,6 +83,11 @@ const authService = {
     return response.data;
   },
 
+  updateMyProfile: async (updates: Partial<Record<string, any>>) => {
+    const response = await api.patch("/users/profile", updates);
+    return response.data.data;
+  },
+
   // ⭐ NEW: Delete user (super admin only)
   deleteUser: async (userId: string): Promise<ApiResponse<null>> => {
     const response = await api.delete(`/auth/users/${userId}`);

@@ -9,6 +9,7 @@ import {
     refreshToken,
     updateUserApproval,
     updateUserProfile,
+    updateMyProfile,
     updateUserRole,
     deleteUser,                         // ✅ super admin delete user
 } from "../controller/userController";
@@ -21,7 +22,7 @@ import {
     resolveReport,
 } from "../controller/adminController";
 import { validate } from "../middleware/validateMiddleware";
-import { loginSchema, registerSchema, registerAdminSchema } from "../schemas/authSchema";
+import { loginSchema, registerSchema, registerAdminSchema, updateProfileSchema } from "../schemas/authSchema";
 import passport from "../config/passport";
 import { signAccessToken, signRefreshToken } from "../utils/generateToken";
 import { authenticate } from "../middleware/authMiddleware";
@@ -73,7 +74,8 @@ router.get("/github/callback", passport.authenticate("github", { failureRedirect
 
 // ======================== Protected Routes ========================
 router.get("/me", authenticate, getMyDetails);
-router.patch("/users/:id/profile", authenticate, updateUserProfile);
+router.patch("/users/profile", authenticate, validate(updateProfileSchema), updateMyProfile);
+router.patch("/users/:id/profile", authenticate, validate(updateProfileSchema), updateUserProfile);
 
 // ======================== Admin-Only Routes ========================
 router.get("/", authenticate, requireRole([UserRole.ADMIN]), getUsers);
