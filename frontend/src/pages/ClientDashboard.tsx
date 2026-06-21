@@ -1,8 +1,8 @@
 // ============================================================
-// ClientDashboard.tsx – Fully Refactored & Polished
+// ClientDashboard.tsx – Top Nav Bar Layout (matches AdminDashboard pattern)
 // ============================================================
 
-import { useEffect, useLayoutEffect, useRef, useState, useCallback, memo } from 'react';
+import { useEffect, useState, useCallback, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import dashboardService from '../services/dashboardService';
@@ -32,6 +32,11 @@ interface Project {
   spent: number;
   status: string;
   deadline: string;
+  description?: string;
+  createdAt?: string;
+  // ⚠️ Confirm this is the field your API actually returns to identify the
+  // poster (could be `clientId`, `userId`, `ownerId`, etc.) and rename below.
+  postedBy?: string;
   freelancerId?: { _id: string; firstName: string; lastName: string };
 }
 
@@ -65,53 +70,93 @@ interface DashboardData {
 }
 
 // ============================================================
-// 2. CONSTANTS
+// 2. ICONS
 // ============================================================
 
-const NAV_ITEMS = [
-  { label: 'Overview', icon: '⊞', id: 'overview' },
-  { label: 'Projects', icon: '📁', id: 'projects' },
-  { label: 'Applicants', icon: '👥', id: 'applicants' },
-  { label: 'Invoices', icon: '🧾', id: 'invoices' },
-  { label: 'Messages', icon: '💬', id: 'messages' },
-];
-
-const STATUS_STYLES: Record<string, string> = {
-  active: 'bg-blue-50 text-blue-700',
-  in_progress: 'bg-blue-50 text-blue-700',
-  under_review: 'bg-amber-50 text-amber-700',
-  completed: 'bg-emerald-50 text-emerald-700',
-  draft: 'bg-gray-100 text-gray-500',
-  open: 'bg-blue-50 text-blue-700',
-  pending: 'bg-gray-100 text-gray-600',
-  shortlisted: 'bg-emerald-50 text-emerald-700',
-};
-
-// ============================================================
-// 3. UTILITY FUNCTIONS
-// ============================================================
-
-function getStatusStyle(status: string): string {
-  return STATUS_STYLES[status] || 'bg-gray-100 text-gray-600';
+function OverviewNavIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}
+function ProjectsNavIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+    </svg>
+  );
+}
+function ApplicantsNavIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+function InvoicesNavIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" />
+    </svg>
+  );
+}
+function MessagesNavIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+    </svg>
+  );
+}
+function MenuIcon({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path d="M3 12h18M3 6h18M3 18h18" />
+    </svg>
+  );
+}
+function XIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+function LogoutIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
+function TrashIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
+}
+function ChevronRight({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path d="M9 18l6-6-6-6" />
+    </svg>
+  );
 }
 
-// ============================================================
-// 4. PRESENTATIONAL COMPONENTS (memoized)
-// ============================================================
-
-const Logo = memo(() => (
-  <span className="font-serif text-xl tracking-tight text-gray-900">
-    freelance<em className="italic text-emerald-600">fluxo</em>
-  </span>
-));
-
-const StatusBadge = memo(({ status }: { status: string }) => (
-  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusStyle(status)}`}>
-    {status.replace('_', ' ')}
-  </span>
-));
-
-// ── Icons ──
 const Icons = {
   Budget: () => (
     <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -139,6 +184,53 @@ const Icons = {
     </svg>
   ),
 };
+
+// ============================================================
+// 3. CONSTANTS
+// ============================================================
+
+const NAV_ITEMS = [
+  { label: 'Overview', icon: OverviewNavIcon, id: 'overview' },
+  { label: 'Projects', icon: ProjectsNavIcon, id: 'projects' },
+  { label: 'Applicants', icon: ApplicantsNavIcon, id: 'applicants' },
+  { label: 'Invoices', icon: InvoicesNavIcon, id: 'invoices' },
+  { label: 'Messages', icon: MessagesNavIcon, id: 'messages' },
+];
+
+const STATUS_STYLES: Record<string, string> = {
+  active: 'bg-blue-50 text-blue-700',
+  in_progress: 'bg-blue-50 text-blue-700',
+  under_review: 'bg-amber-50 text-amber-700',
+  completed: 'bg-emerald-50 text-emerald-700',
+  draft: 'bg-gray-100 text-gray-500',
+  open: 'bg-blue-50 text-blue-700',
+  pending: 'bg-gray-100 text-gray-600',
+  shortlisted: 'bg-emerald-50 text-emerald-700',
+};
+
+// ============================================================
+// 4. UTILITY FUNCTIONS
+// ============================================================
+
+function getStatusStyle(status: string): string {
+  return STATUS_STYLES[status] || 'bg-gray-100 text-gray-600';
+}
+
+// ============================================================
+// 5. PRESENTATIONAL COMPONENTS (memoized)
+// ============================================================
+
+const Logo = memo(() => (
+  <span className="font-serif text-xl tracking-tight text-gray-900">
+    freelance<em className="italic text-emerald-600">fluxo</em>
+  </span>
+));
+
+const StatusBadge = memo(({ status }: { status: string }) => (
+  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusStyle(status)}`}>
+    {status.replace('_', ' ')}
+  </span>
+));
 
 // ── Enhanced Stat Card ──
 const EnhancedStatCard = memo(({ label, value, icon: Icon, sub, accent }: { label: string; value: string; icon: React.ElementType; sub?: string; accent?: boolean }) => (
@@ -169,14 +261,29 @@ const EmptyState = memo(({ title, description, action }: { title: string; descri
 ));
 
 // ── Project Card ──
-const ProjectCard = memo(({ project, onMessage }: { project: Project; onMessage: (freelancerId: string, jobId: string) => void }) => {
+const ProjectCard = memo(({
+  project,
+  canDelete,
+  onMessage,
+  onView,
+  onDelete,
+}: {
+  project: Project;
+  canDelete: boolean;
+  onMessage: (freelancerId: string, jobId: string) => void;
+  onView: (project: Project) => void;
+  onDelete: (projectId: string) => void;
+}) => {
   const progress = project.budget > 0 ? Math.min(100, ((project.spent || 0) / project.budget) * 100) : 0;
 
   return (
-    <div className="px-6 py-5 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
+    <div
+      className="px-6 py-5 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 cursor-pointer group"
+      onClick={() => onView(project)}
+    >
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-gray-900 truncate">{project.title}</h3>
+          <h3 className="font-medium text-gray-900 truncate group-hover:text-emerald-700 transition">{project.title}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
             {project.freelancerId
               ? `${project.freelancerId.firstName} ${project.freelancerId.lastName}`
@@ -187,6 +294,19 @@ const ProjectCard = memo(({ project, onMessage }: { project: Project; onMessage:
         <div className="flex items-center gap-3 flex-shrink-0 self-start sm:self-center">
           <span className="text-xs text-gray-500">${project.spent || 0} / ${project.budget}</span>
           <StatusBadge status={project.status} />
+          {canDelete && (
+            <button
+              title="Delete project"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(project._id);
+              }}
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition"
+            >
+              <TrashIcon className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition" />
         </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -197,13 +317,167 @@ const ProjectCard = memo(({ project, onMessage }: { project: Project; onMessage:
         </div>
         {project.freelancerId && (
           <button
-            onClick={() => onMessage(project.freelancerId!._id, project._id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onMessage(project.freelancerId!._id, project._id);
+            }}
             className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-800 transition"
           >
             <Icons.Message />
             Message freelancer
           </button>
         )}
+      </div>
+    </div>
+  );
+});
+
+// ── Confirm Delete Modal ──
+const ConfirmModal = memo(({
+  isOpen,
+  title,
+  message,
+  onCancel,
+  onConfirm,
+}: {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={onCancel}>
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      <div
+        className="relative w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-xl p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+            <TrashIcon className="w-5 h-5 text-red-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        </div>
+        <p className="text-sm text-gray-600 mb-6">{message}</p>
+        <div className="flex gap-3 justify-end">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+// ── Project Detail Drawer ──
+const ProjectDetailDrawer = memo(({
+  project,
+  canDelete,
+  onClose,
+  onMessage,
+  onDelete,
+}: {
+  project: Project | null;
+  canDelete: boolean;
+  onClose: () => void;
+  onMessage: (freelancerId: string, jobId: string) => void;
+  onDelete: (projectId: string) => void;
+}) => {
+  if (!project) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto bg-white rounded-3xl border border-gray-200 shadow-2xl">
+        <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-6 py-4 flex items-start justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-gray-500 mb-1">Project Details</p>
+            <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition"
+          >
+            <XIcon className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="flex items-center gap-2">
+            <StatusBadge status={project.status} />
+            {project.createdAt && <span className="text-xs text-gray-500">Posted {formatDate(project.createdAt)}</span>}
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+              <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1.5">Budget</p>
+              <p className="text-sm font-medium text-gray-800">${project.budget}</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+              <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1.5">Spent</p>
+              <p className="text-sm font-medium text-gray-800">${project.spent || 0}</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+              <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1.5">Deadline</p>
+              <p className="text-sm font-medium text-gray-800">{formatDate(project.deadline)}</p>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">Freelancer</p>
+            <div className="bg-gray-50 rounded-xl border border-gray-100 p-4 flex items-center justify-between gap-3">
+              {project.freelancerId ? (
+                <>
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">
+                      {project.freelancerId.firstName} {project.freelancerId.lastName}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => onMessage(project.freelancerId!._id, project._id)}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-800 transition flex-shrink-0"
+                  >
+                    <Icons.Message />
+                    Message
+                  </button>
+                </>
+              ) : (
+                <p className="text-sm text-gray-500">No freelancer assigned yet</p>
+              )}
+            </div>
+          </div>
+
+          {project.description && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">Description</p>
+              <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+                <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{project.description}</p>
+              </div>
+            </div>
+          )}
+
+          {canDelete && (
+            <div className="pt-2 border-t border-gray-100">
+              <button
+                onClick={() => onDelete(project._id)}
+                className="inline-flex items-center gap-2 text-sm font-medium text-red-600 hover:text-red-700 transition"
+              >
+                <TrashIcon className="w-4 h-4" />
+                Delete this project
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -241,25 +515,20 @@ const InvoiceItem = memo(({ invoice }: { invoice: Invoice }) => (
 ));
 
 // ============================================================
-// 5. MAIN COMPONENT
+// 6. MAIN COMPONENT
 // ============================================================
 
 export default function ClientDashboard() {
   const [activeNav, setActiveNav] = useState('overview');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   // Chat state
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
   const [selectedParticipant, setSelectedParticipant] = useState<any>(null);
-
-  // Sidebar: sliding active-row indicator
-  const navRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const [navIndicator, setNavIndicator] = useState<{ top: number; height: number; ready: boolean }>({
-    top: 0,
-    height: 0,
-    ready: false,
-  });
+  // Project detail / delete state
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -282,23 +551,6 @@ export default function ClientDashboard() {
     }
     fetchDashboard();
   }, [fetchDashboard]);
-
-  // Measure the active sidebar row so the indicator can glide to it
-  useLayoutEffect(() => {
-    const el = navRefs.current[activeNav];
-    if (el) {
-      setNavIndicator({ top: el.offsetTop, height: el.offsetHeight, ready: true });
-    }
-  }, [activeNav, loading, sidebarOpen]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      const el = navRefs.current[activeNav];
-      if (el) setNavIndicator({ top: el.offsetTop, height: el.offsetHeight, ready: true });
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [activeNav]);
 
   // ── WebSocket connection ──
   useEffect(() => {
@@ -329,6 +581,18 @@ export default function ClientDashboard() {
     }
   }, []);
 
+  const handleDeleteProject = useCallback(async (projectId: string) => {
+    try {
+      await dashboardService.deleteJob(projectId);
+      setSelectedProject(null);
+      fetchDashboard();
+    } catch (err) {
+      alert('Could not delete project');
+    } finally {
+      setDeleteModal({ open: false, id: null });
+    }
+  }, [fetchDashboard]);
+
   // ── Derived data ──
   const user = data?.user;
   const stats = data?.stats || { totalBudget: 0, totalSpent: 0, activeProjects: 0, pendingInvoices: 0 };
@@ -348,262 +612,327 @@ export default function ClientDashboard() {
 
   // ── Render ──
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 font-sans flex">
-      {/* ===== SIDEBAR ===== */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white/90 backdrop-blur-sm border-r border-gray-200 flex flex-col transform transition-all duration-300 shadow-xl ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:relative lg:translate-x-0 lg:shadow-none`}
-      >
-        <div className="px-6 py-5 border-b border-gray-100">
-          <Link to="/" className="block">
-            <Logo />
-          </Link>
-        </div>
-        <nav className="relative flex-1 py-6 space-y-1">
-          {/* Sliding active-row indicator */}
-          <span
-            aria-hidden="true"
-            className={`absolute left-0 w-full bg-emerald-50 border-r-4 border-emerald-600 transition-all duration-300 ease-out ${
-              navIndicator.ready ? 'opacity-100' : 'opacity-0'
-            }`}
-            style={{ top: navIndicator.top, height: navIndicator.height }}
-          />
-          {NAV_ITEMS.map(({ label, icon, id }) => (
-            <button
-              key={id}
-              ref={(el) => { navRefs.current[id] = el; }}
-              onClick={() => {
-                setActiveNav(id);
-                setSidebarOpen(false);
-              }}
-              className={`relative z-10 w-full flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors duration-200 ${
-                activeNav === id
-                  ? 'text-emerald-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-600'
-              }`}
-            >
-              <span className="text-lg">{icon}</span>
-              <span>{label}</span>
-            </button>
-          ))}
-        </nav>
-        <div className="px-6 py-5 border-t border-gray-100">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-white text-sm font-bold flex items-center justify-center shadow-sm">
-              {getInitials(name)}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 font-sans flex flex-col">
+      {/* ===== TOP NAVIGATION BAR ===== */}
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Link to="/" className="flex items-center gap-2 shrink-0">
+              <Logo />
+            </Link>
+
+            <nav className="hidden md:flex items-center gap-1">
+              {NAV_ITEMS.map(item => {
+                const Icon = item.icon;
+                const active = activeNav === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveNav(item.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      active ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+
+            <div className="hidden md:flex items-center gap-3">
+              <button
+                onClick={() => navigate('/post-job')}
+                className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-full hover:bg-emerald-700 transition shadow-sm hover:shadow"
+              >
+                + Post a job
+              </button>
+              <div className="flex items-center gap-3 px-3 py-1.5 rounded-xl bg-gray-50">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-white text-xs font-bold flex items-center justify-center shadow-sm">
+                  {getInitials(name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-800 truncate max-w-[150px]">{name}</p>
+                  <p className="text-[10px] text-gray-500">Client</p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  title="Sign out"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition"
+                >
+                  <LogoutIcon className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">{name}</p>
-              <p className="text-xs text-gray-500">Client</p>
+
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-gray-600 hover:text-gray-900 transition"
+            >
+              <MenuIcon className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* ===== MOBILE MENU DRAWER ===== */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
+          <div className="absolute left-0 top-0 h-full w-64 bg-white border-r border-gray-200 flex flex-col shadow-xl">
+            <div className="px-5 py-5 border-b border-gray-100 flex items-center justify-between">
+              <Logo />
+              <button onClick={() => setMobileMenuOpen(false)} className="text-gray-500 hover:text-gray-700">
+                <XIcon className="w-4 h-4" />
+              </button>
+            </div>
+            <nav className="flex-1 px-3 py-4 space-y-1">
+              {NAV_ITEMS.map(item => {
+                const Icon = item.icon;
+                const active = activeNav === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveNav(item.id);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      active ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+            <div className="px-4 py-4 border-t border-gray-100 space-y-3">
+              <button
+                onClick={() => {
+                  navigate('/post-job');
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-full hover:bg-emerald-700 transition"
+              >
+                + Post a job
+              </button>
+              <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gray-50">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-white text-xs font-bold flex items-center justify-center">
+                  {getInitials(name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-800 truncate">{name}</p>
+                  <p className="text-[10px] text-gray-500">Client</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 text-sm text-red-600 hover:text-red-700 py-2 px-3 rounded-lg hover:bg-red-50 transition"
+              >
+                <LogoutIcon className="w-4 h-4" /> Sign out
+              </button>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="mt-4 w-full text-center text-xs text-gray-500 hover:text-red-600 transition"
-          >
-            Sign out
-          </button>
         </div>
-      </aside>
-
-      {/* ===== MOBILE OVERLAY ===== */}
-      <div
-        className={`fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden transition-opacity duration-300 ${
-          sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={() => setSidebarOpen(false)}
-        aria-hidden={!sidebarOpen}
-      />
+      )}
 
       {/* ===== MAIN CONTENT ===== */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* HEADER */}
-        <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-sm border-b border-gray-200 px-4 sm:px-6 py-4 flex items-center gap-4 shadow-sm">
-          <button
-            className="lg:hidden p-2 -ml-2 text-gray-600 hover:text-emerald-600"
-            onClick={() => setSidebarOpen(true)}
-            aria-label="Toggle sidebar"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-          <h1 className="text-lg font-semibold capitalize text-gray-800">{activeNav}</h1>
-          <button
-            onClick={() => navigate('/post-job')}
-            className="ml-auto px-5 py-2 bg-emerald-600 text-white text-sm rounded-full hover:bg-emerald-700 transition shadow-sm hover:shadow"
-          >
-            + Post a job
-          </button>
-        </header>
+      <main className="flex-1 pt-20 px-4 sm:px-6 lg:px-8 pb-8 max-w-6xl mx-auto w-full space-y-8">
+        {/* Preview Image */}
+        <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-200">
+          <img src="/web_page.png" alt="Dashboard preview" className="w-full h-auto object-cover" />
+        </div>
 
-        {/* MAIN */}
-        <main className="flex-1 px-4 sm:px-6 py-8 space-y-8 max-w-6xl mx-auto w-full">
-          {/* ===== OVERVIEW / PROJECTS ===== */}
-          {(activeNav === 'overview' || activeNav === 'projects') && (
-            <>
-              {activeNav === 'overview' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                  <EnhancedStatCard
-                    label="Total budget"
-                    value={`$${(stats.totalBudget || 0).toLocaleString()}`}
-                    icon={Icons.Budget}
-                  />
-                  <EnhancedStatCard
-                    label="Total spent"
-                    value={`$${(stats.totalSpent || 0).toLocaleString()}`}
-                    icon={Icons.Spent}
-                    accent
-                  />
-                  <EnhancedStatCard
-                    label="Active projects"
-                    value={String(stats.activeProjects || 0)}
-                    icon={Icons.Projects}
-                    sub={stats.activeProjects > 0 ? 'In progress' : undefined}
-                  />
-                  <EnhancedStatCard
-                    label="Pending invoices"
-                    value={String(stats.pendingInvoices || 0)}
-                    icon={Icons.Invoices}
-                    sub={stats.pendingInvoices > 0 ? 'Awaiting payment' : undefined}
-                  />
-                </div>
-              )}
+        <h1 className="text-2xl font-bold text-gray-900 capitalize -mb-2">{activeNav}</h1>
 
-              <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b bg-gray-50/50 flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-gray-700">Projects</h2>
-                  {activeNav === 'overview' && (
-                    <button
-                      onClick={() => setActiveNav('projects')}
-                      className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
-                    >
-                      View all →
-                    </button>
-                  )}
-                </div>
-                {projects.length > 0 ? (
-                  <div className="divide-y divide-gray-100">
-                    {projects.map((project) => (
-                      <ProjectCard
-                        key={project._id}
-                        project={project}
-                        onMessage={handleMessageFreelancer}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState
-                    title="No projects yet"
-                    description="Start by posting your first job to find the perfect freelancer."
-                    action={
-                      <button
-                        onClick={() => navigate('/post-job')}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-full hover:bg-emerald-700 transition"
-                      >
-                        Post a job
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                      </button>
-                    }
-                  />
-                )}
-              </section>
-            </>
-          )}
+        {/* ===== OVERVIEW / PROJECTS ===== */}
+        {(activeNav === 'overview' || activeNav === 'projects') && (
+          <>
+            {activeNav === 'overview' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <EnhancedStatCard
+                  label="Total budget"
+                  value={`$${(stats.totalBudget || 0).toLocaleString()}`}
+                  icon={Icons.Budget}
+                />
+                <EnhancedStatCard
+                  label="Total spent"
+                  value={`$${(stats.totalSpent || 0).toLocaleString()}`}
+                  icon={Icons.Spent}
+                  accent
+                />
+                <EnhancedStatCard
+                  label="Active projects"
+                  value={String(stats.activeProjects || 0)}
+                  icon={Icons.Projects}
+                  sub={stats.activeProjects > 0 ? 'In progress' : undefined}
+                />
+                <EnhancedStatCard
+                  label="Pending invoices"
+                  value={String(stats.pendingInvoices || 0)}
+                  icon={Icons.Invoices}
+                  sub={stats.pendingInvoices > 0 ? 'Awaiting payment' : undefined}
+                />
+              </div>
+            )}
 
-          {/* ===== APPLICANTS ===== */}
-          {(activeNav === 'overview' || activeNav === 'applicants') && (
             <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b bg-gray-50/50 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-gray-700">Recent applicants</h2>
+                <h2 className="text-sm font-semibold text-gray-700">Projects</h2>
                 {activeNav === 'overview' && (
                   <button
-                    onClick={() => setActiveNav('applicants')}
+                    onClick={() => setActiveNav('projects')}
                     className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
                   >
                     View all →
                   </button>
                 )}
               </div>
-              {applicants.length > 0 ? (
+              {projects.length > 0 ? (
                 <div className="divide-y divide-gray-100">
-                  {applicants.slice(0, 10).map((applicant) => (
-                    <ApplicantItem key={applicant._id} applicant={applicant} />
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  title="No applicants yet"
-                  description="Once freelancers apply to your jobs, they will appear here."
-                />
-              )}
-            </section>
-          )}
-
-          {/* ===== INVOICES ===== */}
-          {(activeNav === 'overview' || activeNav === 'invoices') && (
-            <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b bg-gray-50/50 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-gray-700">Invoices</h2>
-                {activeNav === 'overview' && (
-                  <button
-                    onClick={() => setActiveNav('invoices')}
-                    className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
-                  >
-                    View all →
-                  </button>
-                )}
-              </div>
-              {invoices.length > 0 ? (
-                <div className="divide-y divide-gray-100">
-                  {invoices.map((invoice) => (
-                    <InvoiceItem key={invoice._id} invoice={invoice} />
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  title="No invoices yet"
-                  description="When you hire freelancers, invoices will be generated here."
-                />
-              )}
-            </section>
-          )}
-
-          {/* ===== MESSAGES ===== */}
-          {activeNav === 'messages' && user && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="grid md:grid-cols-3 h-[650px]">
-                <div className="border-r border-gray-200 overflow-y-auto bg-gray-50/30">
-                  <ChatConversationList
-                    onSelectConversation={(convId, participant) => {
-                      setSelectedConvId(convId);
-                      setSelectedParticipant(participant);
-                    }}
-                    selectedId={selectedConvId || undefined}
-                  />
-                </div>
-                <div className="md:col-span-2 bg-white">
-                  {selectedConvId && selectedParticipant ? (
-                    <ChatRoom
-                      conversationId={selectedConvId}
-                      currentUserId={user._id}
-                      otherUser={selectedParticipant}
+                  {projects.map((project) => (
+                    <ProjectCard
+                      key={project._id}
+                      project={project}
+                      canDelete={!!project.postedBy && project.postedBy === user?._id}
+                      onView={setSelectedProject}
+                      onMessage={handleMessageFreelancer}
+                      onDelete={(id) => setDeleteModal({ open: true, id })}
                     />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-3">
-                      <span className="text-6xl">💬</span>
-                      <p className="text-sm font-light">Select a conversation to start chatting</p>
-                    </div>
-                  )}
+                  ))}
                 </div>
+              ) : (
+                <EmptyState
+                  title="No projects yet"
+                  description="Start by posting your first job to find the perfect freelancer."
+                  action={
+                    <button
+                      onClick={() => navigate('/post-job')}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-full hover:bg-emerald-700 transition"
+                    >
+                      Post a job
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </button>
+                  }
+                />
+              )}
+            </section>
+          </>
+        )}
+
+        {/* ===== APPLICANTS ===== */}
+        {(activeNav === 'overview' || activeNav === 'applicants') && (
+          <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b bg-gray-50/50 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-700">Recent applicants</h2>
+              {activeNav === 'overview' && (
+                <button
+                  onClick={() => setActiveNav('applicants')}
+                  className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+                >
+                  View all →
+                </button>
+              )}
+            </div>
+            {applicants.length > 0 ? (
+              <div className="divide-y divide-gray-100">
+                {applicants.slice(0, 10).map((applicant) => (
+                  <ApplicantItem key={applicant._id} applicant={applicant} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No applicants yet"
+                description="Once freelancers apply to your jobs, they will appear here."
+              />
+            )}
+          </section>
+        )}
+
+        {/* ===== INVOICES ===== */}
+        {(activeNav === 'overview' || activeNav === 'invoices') && (
+          <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b bg-gray-50/50 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-700">Invoices</h2>
+              {activeNav === 'overview' && (
+                <button
+                  onClick={() => setActiveNav('invoices')}
+                  className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+                >
+                  View all →
+                </button>
+              )}
+            </div>
+            {invoices.length > 0 ? (
+              <div className="divide-y divide-gray-100">
+                {invoices.map((invoice) => (
+                  <InvoiceItem key={invoice._id} invoice={invoice} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No invoices yet"
+                description="When you hire freelancers, invoices will be generated here."
+              />
+            )}
+          </section>
+        )}
+
+        {/* ===== MESSAGES ===== */}
+        {activeNav === 'messages' && user && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="grid md:grid-cols-3 h-[650px]">
+              <div className="border-r border-gray-200 overflow-y-auto bg-gray-50/30">
+                <ChatConversationList
+                  onSelectConversation={(convId, participant) => {
+                    setSelectedConvId(convId);
+                    setSelectedParticipant(participant);
+                  }}
+                  selectedId={selectedConvId || undefined}
+                />
+              </div>
+              <div className="md:col-span-2 bg-white">
+                {selectedConvId && selectedParticipant ? (
+                  <ChatRoom
+                    conversationId={selectedConvId}
+                    currentUserId={user._id}
+                    otherUser={selectedParticipant}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-3">
+                    <span className="text-6xl">💬</span>
+                    <p className="text-sm font-light">Select a conversation to start chatting</p>
+                  </div>
+                )}
               </div>
             </div>
-          )}
-        </main>
-      </div>
+          </div>
+        )}
+      </main>
+
+      {/* ===== PROJECT DETAIL DRAWER ===== */}
+      <ProjectDetailDrawer
+        project={selectedProject}
+        canDelete={!!selectedProject?.postedBy && selectedProject.postedBy === user?._id}
+        onClose={() => setSelectedProject(null)}
+        onMessage={handleMessageFreelancer}
+        onDelete={(id) => setDeleteModal({ open: true, id })}
+      />
+
+      {/* ===== DELETE CONFIRM MODAL ===== */}
+      <ConfirmModal
+        isOpen={deleteModal.open}
+        title="Delete project"
+        message="This will permanently delete this project. This action cannot be undone."
+        onCancel={() => setDeleteModal({ open: false, id: null })}
+        onConfirm={() => deleteModal.id && handleDeleteProject(deleteModal.id)}
+      />
     </div>
   );
 }

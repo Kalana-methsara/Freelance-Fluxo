@@ -3,7 +3,7 @@
 // ============================================================
 
 import React, {
-  useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo, memo,
+  useEffect, useLayoutEffect, useRef, useState, useCallback, memo,
 } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
@@ -44,6 +44,7 @@ interface Job {
   budget: number;
   status: string;
   deadline: string;
+  description?: string;
   clientId: { _id: string; firstName: string; companyName?: string };
 }
 
@@ -149,14 +150,6 @@ const StatusBadge = memo(({ status }: { status: string }) => (
   </span>
 ));
 
-const StatCard = memo(({ label, value, sub }: { label: string; value: string; sub?: string }) => (
-  <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-xs">
-    <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>
-    <p className="text-2xl font-bold text-gray-900">{value}</p>
-    {sub && <p className="text-xs text-green-600 mt-0.5">{sub}</p>}
-  </div>
-));
-
 // ============================================================
 // 5. ENHANCED DASHBOARD COMPONENTS (memoized)
 // ============================================================
@@ -192,6 +185,17 @@ const Icons = {
   Submit: () => (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+    </svg>
+  ),
+  Close: () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <line x1="18" y1="6" x2="6" y2="18" strokeWidth={2} strokeLinecap="round" />
+      <line x1="6" y1="6" x2="18" y2="18" strokeWidth={2} strokeLinecap="round" />
+    </svg>
+  ),
+  Chevron: () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 18l6-6-6-6" />
     </svg>
   ),
 };
@@ -232,11 +236,14 @@ const EmptyState = memo(({ title, description, action }: { title: string; descri
 ));
 
 // ── Job card ──
-const JobCard = memo(({ job, onMessage, onSubmit }: { job: Job; onMessage: (clientId: string, jobId: string) => void; onSubmit: (jobId: string) => void }) => (
-  <div className="group px-5 py-4 hover:bg-gray-50/70 transition-colors duration-150 border-b border-gray-100 last:border-0">
+const JobCard = memo(({ job, onMessage, onSubmit, onView }: { job: Job; onMessage: (clientId: string, jobId: string) => void; onSubmit: (jobId: string) => void; onView: (job: Job) => void }) => (
+  <div
+    className="group px-5 py-4 hover:bg-gray-50/70 transition-colors duration-150 border-b border-gray-100 last:border-0 cursor-pointer"
+    onClick={() => onView(job)}
+  >
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div className="flex-1 min-w-0">
-        <h4 className="text-sm font-semibold text-gray-900 truncate">{job.title}</h4>
+        <h4 className="text-sm font-semibold text-gray-900 truncate group-hover:text-green-700 transition">{job.title}</h4>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-0.5">
           <span className="text-xs text-gray-500">
             {job.clientId?.companyName || job.clientId?.firstName}
@@ -248,24 +255,30 @@ const JobCard = memo(({ job, onMessage, onSubmit }: { job: Job; onMessage: (clie
       <div className="flex items-center gap-3 self-end sm:self-center flex-shrink-0">
         <span className="text-sm font-bold text-gray-800">${job.budget}</span>
         <StatusBadge status={job.status} />
+        <Icons.Chevron />
       </div>
     </div>
     {job.status === 'in_progress' && (
       <div className="flex flex-wrap items-center gap-2 mt-3 pt-2 border-t border-gray-100/80">
         <button
-          onClick={() => onSubmit(job._id)}
+          onClick={(e) => { e.stopPropagation(); onSubmit(job._id); }}
           className="inline-flex items-center gap-1.5 text-xs font-medium bg-green-50 text-green-700 px-3 py-1.5 rounded-full hover:bg-green-100 transition-colors"
         >
           <Icons.Submit />
           Submit work
         </button>
         <button
-          onClick={() => onMessage(job.clientId._id, job._id)}
+          onClick={(e) => { e.stopPropagation(); onMessage(job.clientId._id, job._id); }}
           className="inline-flex items-center gap-1.5 text-xs font-medium bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors"
         >
           <Icons.Message />
           Message client
         </button>
+      </div>
+    )}
+    {job.status === 'open' && (
+      <div className="flex items-center gap-2 mt-3 pt-2 border-t border-gray-100/80">
+        <span className="text-xs font-medium text-green-700">Open to apply — click to view & submit a proposal</span>
       </div>
     )}
   </div>
@@ -376,6 +389,173 @@ function WorkSubmissionModal({ jobId, onClose, onSuccess, onError }: WorkSubmiss
 }
 
 // ============================================================
+// 6b. JOB DETAIL DRAWER (view job + apply with a proposal)
+// ============================================================
+
+interface JobDetailDrawerProps {
+  job: Job | null;
+  onClose: () => void;
+  onMessage: (clientId: string, jobId: string) => void;
+  onSubmitWork: (jobId: string) => void;
+  onApply: (jobId: string, payload: { bid: number; coverLetter: string }) => Promise<void>;
+}
+
+function JobDetailDrawer({ job, onClose, onMessage, onSubmitWork, onApply }: JobDetailDrawerProps) {
+  const [applyOpen, setApplyOpen] = useState(false);
+  const [bid, setBid] = useState('');
+  const [coverLetter, setCoverLetter] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  // Reset the inline apply form whenever a different job is opened
+  useEffect(() => {
+    setApplyOpen(false);
+    setBid('');
+    setCoverLetter('');
+  }, [job?._id]);
+
+  if (!job) return null;
+
+  const handleApplySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const bidNumber = Number(bid);
+    if (!bidNumber || bidNumber <= 0) return;
+    setSubmitting(true);
+    try {
+      await onApply(job._id, { bid: bidNumber, coverLetter: coverLetter.trim() });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl border border-gray-200 shadow-2xl">
+        <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-6 py-4 flex items-start justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-gray-500 mb-1">Job Details</p>
+            <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition"
+          >
+            <Icons.Close />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="flex items-center gap-2">
+            <StatusBadge status={job.status} />
+            <span className="text-xs text-gray-500">
+              Posted by {job.clientId?.companyName || job.clientId?.firstName || 'Client'}
+            </span>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+              <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1.5">Budget</p>
+              <p className="text-sm font-medium text-gray-800">${job.budget}</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+              <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1.5">Deadline</p>
+              <p className="text-sm font-medium text-gray-800">{formatDate(job.deadline)}</p>
+            </div>
+          </div>
+
+          {job.description && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">Description</p>
+              <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+                <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{job.description}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Already-assigned job: submit work / message client */}
+          {job.status === 'in_progress' && (
+            <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+              <button
+                onClick={() => { onSubmitWork(job._id); onClose(); }}
+                className="inline-flex items-center gap-1.5 text-xs font-medium bg-green-50 text-green-700 px-3 py-1.5 rounded-full hover:bg-green-100 transition-colors"
+              >
+                <Icons.Submit />
+                Submit work
+              </button>
+              <button
+                onClick={() => onMessage(job.clientId._id, job._id)}
+                className="inline-flex items-center gap-1.5 text-xs font-medium bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors"
+              >
+                <Icons.Message />
+                Message client
+              </button>
+            </div>
+          )}
+
+          {/* Open job: apply with a proposal */}
+          {job.status === 'open' && (
+            <div className="pt-2 border-t border-gray-100">
+              {!applyOpen ? (
+                <button
+                  onClick={() => setApplyOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-full hover:bg-green-700 transition"
+                >
+                  Apply to this job
+                </button>
+              ) : (
+                <form onSubmit={handleApplySubmit} className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Your bid ($)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      required
+                      value={bid}
+                      onChange={(e) => setBid(e.target.value)}
+                      placeholder={`e.g. ${job.budget}`}
+                      className="w-full border rounded-md px-3 py-2 mt-1 focus:border-green-600 outline-hidden"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Cover letter (optional)</label>
+                    <textarea
+                      rows={4}
+                      value={coverLetter}
+                      onChange={(e) => setCoverLetter(e.target.value)}
+                      placeholder="Briefly explain why you're a good fit for this job…"
+                      className="w-full border rounded-md px-3 py-2 mt-1 focus:border-green-600 outline-hidden"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-50"
+                    >
+                      {submitting ? 'Submitting…' : 'Submit proposal'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setApplyOpen(false)}
+                      className="px-4 py-2 border rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
+// ============================================================
 // 7. PROFILE EDITOR
 // ============================================================
 
@@ -468,7 +648,6 @@ type ToastMessage = { type: 'success' | 'error'; text: string } | null;
 export default function FreelancerPlatform() {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
   const [freelancers, setFreelancers] = useState<any[]>([]);
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(true);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -489,6 +668,7 @@ export default function FreelancerPlatform() {
   // UI state
   const [editingProfile, setEditingProfile] = useState(false);
   const [showWorkModal, setShowWorkModal] = useState<string | null>(null);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [toast, setToast] = useState<ToastMessage>(null);
 
   // Chat state
@@ -529,7 +709,6 @@ export default function FreelancerPlatform() {
   // 8c. Effects
   // ============================================================
   useEffect(() => {
-    platformService.getCategories().then(setCategories).catch(() => setCategories([]));
     platformService.getFreelancers().then(setFreelancers).catch(() => setFreelancers([]));
     fetchDashboardData();
   }, [fetchDashboardData]);
@@ -636,6 +815,23 @@ export default function FreelancerPlatform() {
     fetchDashboardData();
     showToast('success', 'Work submitted successfully.');
   }, [fetchDashboardData, showToast]);
+
+  const handleApplyToJob = useCallback(
+    async (jobId: string, payload: { bid: number; coverLetter: string }) => {
+      try {
+        // ⚠️ Confirm this matches the actual "submit proposal" method in your jobService
+        // (could be named submitProposal, applyToJob, createProposal, etc.)
+        await jobService.submitProposal(jobId, payload);
+        setSelectedJob(null);
+        setActiveNav('proposals');
+        fetchDashboardData();
+        showToast('success', 'Proposal submitted.');
+      } catch (err) {
+        showToast('error', 'Could not submit your proposal. Please try again.');
+      }
+    },
+    [fetchDashboardData, showToast]
+  );
 
   // ============================================================
   // 8e. Derived data
@@ -985,6 +1181,7 @@ export default function FreelancerPlatform() {
                     job={job}
                     onMessage={handleMessageClient}
                     onSubmit={setShowWorkModal}
+                    onView={setSelectedJob}
                   />
                 ))
               ) : (
@@ -1405,6 +1602,15 @@ export default function FreelancerPlatform() {
           </div>
         </div>
       </footer>
+
+      {/* ─── JOB DETAIL DRAWER (view + apply) ─── */}
+      <JobDetailDrawer
+        job={selectedJob}
+        onClose={() => setSelectedJob(null)}
+        onMessage={handleMessageClient}
+        onSubmitWork={setShowWorkModal}
+        onApply={handleApplyToJob}
+      />
 
       {/* ─── WORK SUBMISSION MODAL ─── */}
       {showWorkModal && (

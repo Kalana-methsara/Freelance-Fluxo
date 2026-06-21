@@ -35,6 +35,12 @@ const jobService = {
     return response.data.data;
   },
 
+  // Backwards-compatible alias used in some pages/components
+  submitProposal: async (jobId: string, payload: { bid: number; coverLetter?: string }) => {
+    const response = await api.post(`/jobs/${jobId}/apply`, { bid: payload.bid, coverLetter: payload.coverLetter });
+    return response.data.data;
+  },
+
   getMyApplications: async () => {
     const response = await api.get("/jobs/applications/me");
     return response.data.data;

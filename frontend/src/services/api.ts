@@ -115,7 +115,7 @@ api.interceptors.request.use((config) => {
 
   // FIX 1: Use config.headers.set() instead of spreading
   if (token && !isPublic && config.headers) {
-    config.headers.set('Authorization', `Bearer ${token}`);
+    config.headers.Authorization = `Bearer ${token}`;
   }
 
   return config;

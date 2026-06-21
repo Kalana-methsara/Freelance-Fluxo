@@ -26,12 +26,32 @@ class ChatService {
     this.socket?.emit('send_message', { conversationId, text });
   }
 
+  sendTyping(conversationId: string, isTyping: boolean): void {
+    this.socket?.emit('typing', { conversationId, isTyping });
+  }
+
   onNewMessage(callback: (msg: any) => void): void {
     this.socket?.on('receive_message', callback);
   }
 
   offNewMessage(): void {
     this.socket?.off('receive_message');
+  }
+
+  onTyping(callback: (payload: any) => void): void {
+    this.socket?.on('typing', callback);
+  }
+
+  offTyping(): void {
+    this.socket?.off('typing');
+  }
+
+  onUserStatus(callback: (payload: any) => void): void {
+    this.socket?.on('user_status', callback);
+  }
+
+  offUserStatus(): void {
+    this.socket?.off('user_status');
   }
 
   // Optional: mark messages as read

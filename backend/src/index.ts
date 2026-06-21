@@ -10,9 +10,12 @@ import conversationRouter from "./routes/conversationRouter";
 import mongoDB from "./config/db";
 import { errorHandler } from "./middleware/errorMiddleware";
 import passport from 'passport';
+import jwt from 'jsonwebtoken';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import authRoutes from './routes/authRoutes';
+import { ConversationModel } from './models/conversationModel';
+import { MessageModel } from './models/messageModel';
 
 const PORT = process.env.PORT || 5000; 
 
@@ -58,23 +61,107 @@ const start = async () => {
       origin: allowedOrigins,
       methods: ["GET", "POST"],
       credentials: true,
+    },
+  });
+
+  const onlineUsers = new Map<string, Set<string>>();
+
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token;
+    if (!token) {
+      return next(new Error("Authentication error: token required"));
+    }
+
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+      socket.data.userId = decoded.sub;
+      return next();
+    } catch (error) {
+      return next(new Error("Authentication error: invalid token"));
     }
   });
 
-  io.on('connection', (socket) => {
-    console.log('Socket connected:', socket.id);
+  io.on("connection", (socket) => {
+    const userId = socket.data.userId as string;
+    console.log("Socket connected:", socket.id, "userId:", userId);
 
-    socket.on('join', (conversationId: string) => {
+    if (userId) {
+      const existing = onlineUsers.get(userId) || new Set<string>();
+      existing.add(socket.id);
+      onlineUsers.set(userId, existing);
+      io.emit("user_status", { userId, online: true });
+    }
+
+    socket.on("join", async (conversationId: string) => {
+      if (!conversationId) return;
       socket.join(conversationId);
     });
 
-    socket.on('send_message', (data: any) => {
-      const { conversationId } = data;
-      io.to(conversationId).emit('receive_message', data);
+    socket.on("typing", (payload: { conversationId: string; isTyping: boolean }) => {
+      if (!payload?.conversationId) return;
+      socket.to(payload.conversationId).emit("typing", {
+        conversationId: payload.conversationId,
+        userId,
+        isTyping: payload.isTyping,
+      });
     });
 
-    socket.on('disconnect', () => {
-      // noop
+    socket.on("send_message", async (data: any) => {
+      const { conversationId, text } = data;
+      if (!conversationId || !text || !text.trim()) return;
+
+      try {
+        const conversation = await ConversationModel.findById(conversationId);
+        if (!conversation) {
+          return socket.emit("chat_error", { message: "Conversation not found" });
+        }
+
+        if (!conversation.participants.some((p) => p.toString() === userId)) {
+          return socket.emit("chat_error", { message: "Unauthorized to send message in this conversation" });
+        }
+
+        const savedMessage = await MessageModel.create({
+          conversationId: conversation._id,
+          senderId: userId,
+          text: text.trim(),
+          readBy: [userId],
+        });
+
+        conversation.lastMessage = {
+          text: savedMessage.text,
+          senderId: savedMessage.senderId,
+          createdAt: savedMessage.createdAt,
+        };
+        await conversation.save();
+
+        const populatedMessage = await savedMessage.populate({
+          path: "senderId",
+          select: "firstName lastName profileImage",
+        });
+
+        io.to(conversationId).emit("receive_message", {
+          _id: populatedMessage._id,
+          conversationId,
+          senderId: populatedMessage.senderId,
+          text: populatedMessage.text,
+          createdAt: populatedMessage.createdAt,
+        });
+      } catch (err) {
+        console.error("Socket send_message error:", err);
+        socket.emit("chat_error", { message: "Could not save message" });
+      }
+    });
+
+    socket.on("disconnect", () => {
+      if (!userId) return;
+      const sockets = onlineUsers.get(userId);
+      if (sockets) {
+        sockets.delete(socket.id);
+        if (sockets.size === 0) {
+          onlineUsers.delete(userId);
+          io.emit("user_status", { userId, online: false });
+        }
+      }
     });
   });
 
