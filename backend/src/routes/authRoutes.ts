@@ -23,7 +23,7 @@ import {
     resolveReport,
 } from "../controller/adminController";
 import { validate } from "../middleware/validateMiddleware";
-import { loginSchema, registerSchema, registerAdminSchema } from "../schemas/authSchema";
+import { loginSchema, registerSchema, registerAdminSchema, updateProfileSchema } from "../schemas/authSchema";
 import passport from "../config/passport";
 import { signAccessToken, signRefreshToken } from "../utils/generateToken";
 import { authenticate } from "../middleware/authMiddleware";
@@ -76,7 +76,7 @@ router.get("/github/callback", passport.authenticate("github", { failureRedirect
 // ======================== Protected Routes (user & admin) ========================
 router.get("/me", authenticate, getMyDetails);
 router.get("/users/:id", authenticate, requireRole([UserRole.ADMIN]), getUserById);
-router.patch("/users/:id/profile", authenticate, updateUserProfile);
+router.patch("/users/:id/profile", authenticate, validate(updateProfileSchema), updateUserProfile);
 
 // ======================== Admin-Only Routes ========================
 router.get("/", authenticate, requireRole([UserRole.ADMIN]), getUsers);

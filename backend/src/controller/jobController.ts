@@ -86,15 +86,16 @@ export const applyToJob = asyncHandler(async (req: Request, res: Response) => {
 
   if (
     !freelancer.location ||
-    !freelancer.location.address ||
-    !freelancer.location.city ||
-    !freelancer.location.province ||
-    !freelancer.location.country ||
-    !freelancer.location.coordinates ||
-    freelancer.location.coordinates.lat == null ||
-    freelancer.location.coordinates.lng == null
+    !freelancer.location.address?.trim() ||
+    !freelancer.location.city?.trim() ||
+    !freelancer.location.province?.trim() ||
+    !freelancer.location.country?.trim()
   ) {
     return res.status(400).json({ message: "Complete your profile location before applying." });
+  }
+
+  if (!bid || bid <= 0) {
+    return res.status(400).json({ message: "A valid bid amount is required." });
   }
 
   const job = await JobModel.findById(jobId);

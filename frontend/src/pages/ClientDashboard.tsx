@@ -1,5 +1,5 @@
 // ============================================================
-// ClientDashboard.tsx – Top Nav Bar Layout (matches AdminDashboard pattern)
+// ClientDashboard.tsx – Top Nav Bar Layout (Fully Optimized)
 // ============================================================
 
 import { useEffect, useState, useCallback, memo } from 'react';
@@ -34,9 +34,10 @@ interface Project {
   deadline: string;
   description?: string;
   createdAt?: string;
-  // ⚠️ Confirm this is the field your API actually returns to identify the
-  // poster (could be `clientId`, `userId`, `ownerId`, etc.) and rename below.
-  postedBy?: string;
+  // Fallbacks configured in canDelete utility below
+  postedBy?: string | { _id: string };
+  clientId?: string | { _id: string };
+  ownerId?: string | { _id: string };
   freelancerId?: { _id: string; firstName: string; lastName: string };
 }
 
@@ -70,7 +71,7 @@ interface DashboardData {
 }
 
 // ============================================================
-// 2. ICONS
+// 2. ICONS (Slightly improved for versatility)
 // ============================================================
 
 function OverviewNavIcon({ className = 'w-4 h-4' }: { className?: string }) {
@@ -158,28 +159,28 @@ function ChevronRight({ className = 'w-4 h-4' }: { className?: string }) {
 }
 
 const Icons = {
-  Budget: () => (
-    <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  Budget: ({ className = "text-emerald-600" }: { className?: string }) => (
+    <svg className={`w-5 h-5 ${className}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   ),
-  Spent: () => (
-    <svg className="w-5 h-5 text-emerald-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  Spent: ({ className = "text-emerald-600" }: { className?: string }) => (
+    <svg className={`w-5 h-5 ${className}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
     </svg>
   ),
-  Projects: () => (
-    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  Projects: ({ className = "text-blue-600" }: { className?: string }) => (
+    <svg className={`w-5 h-5 ${className}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
     </svg>
   ),
-  Invoices: () => (
-    <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  Invoices: ({ className = "text-orange-600" }: { className?: string }) => (
+    <svg className={`w-5 h-5 ${className}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
     </svg>
   ),
-  Message: () => (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  Message: ({ className = "w-4 h-4" }: { className?: string }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
     </svg>
   ),
@@ -216,6 +217,21 @@ function getStatusStyle(status: string): string {
   return STATUS_STYLES[status] || 'bg-gray-100 text-gray-600';
 }
 
+/**
+ * Checks if the project was created by the current user across common object patterns
+ */
+function checkProjectOwnership(project: Project | null | undefined, userId: string | undefined): boolean {
+  if (!project || !userId) return false;
+  
+  const extractId = (field: any): string => {
+    if (!field) return '';
+    return typeof field === 'object' ? field._id || '' : String(field);
+  };
+
+  const creatorId = extractId(project.postedBy) || extractId(project.clientId) || extractId(project.ownerId);
+  return creatorId === userId;
+}
+
 // ============================================================
 // 5. PRESENTATIONAL COMPONENTS (memoized)
 // ============================================================
@@ -232,13 +248,25 @@ const StatusBadge = memo(({ status }: { status: string }) => (
   </span>
 ));
 
-// ── Enhanced Stat Card ──
-const EnhancedStatCard = memo(({ label, value, icon: Icon, sub, accent }: { label: string; value: string; icon: React.ElementType; sub?: string; accent?: boolean }) => (
+// ── Enhanced Stat Card (Fixed Hardcoded Colors) ──
+const EnhancedStatCard = memo(({ 
+  label, 
+  value, 
+  icon: Icon, 
+  sub, 
+  accent 
+}: { 
+  label: string; 
+  value: string; 
+  icon: React.ElementType; 
+  sub?: string; 
+  accent?: boolean 
+}) => (
   <div className={`rounded-xl border p-5 transition-all duration-200 hover:shadow-md ${accent ? 'bg-emerald-700 border-emerald-700' : 'bg-white border-gray-200'}`}>
     <div className="flex items-center justify-between">
       <p className={`text-xs font-medium ${accent ? 'text-emerald-200' : 'text-gray-500'}`}>{label}</p>
       <div className={`p-2 rounded-lg ${accent ? 'bg-emerald-600/30' : 'bg-gray-50'}`}>
-        <Icon />
+        <Icon className={accent ? 'text-emerald-100' : undefined} />
       </div>
     </div>
     <p className={`text-2xl font-bold mt-2 ${accent ? 'text-white' : 'text-gray-900'}`}>{value}</p>
@@ -260,7 +288,7 @@ const EmptyState = memo(({ title, description, action }: { title: string; descri
   </div>
 ));
 
-// ── Project Card ──
+// ── Project Card (Fixed Click Event Bubble & Deletion Context) ──
 const ProjectCard = memo(({
   project,
   canDelete,
@@ -296,9 +324,11 @@ const ProjectCard = memo(({
           <StatusBadge status={project.status} />
           {canDelete && (
             <button
+              type="button"
               title="Delete project"
               onClick={(e) => {
-                e.stopPropagation();
+                e.preventDefault();
+                e.stopPropagation(); // Prevents opening the drawer simultaneously
                 onDelete(project._id);
               }}
               className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition"
@@ -317,7 +347,9 @@ const ProjectCard = memo(({
         </div>
         {project.freelancerId && (
           <button
+            type="button"
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               onMessage(project.freelancerId!._id, project._id);
             }}
@@ -363,12 +395,14 @@ const ConfirmModal = memo(({
         <p className="text-sm text-gray-600 mb-6">{message}</p>
         <div className="flex gap-3 justify-end">
           <button
+            type="button"
             onClick={onCancel}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={onConfirm}
             className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition"
           >
@@ -405,6 +439,7 @@ const ProjectDetailDrawer = memo(({
             <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition"
           >
@@ -418,7 +453,7 @@ const ProjectDetailDrawer = memo(({
             {project.createdAt && <span className="text-xs text-gray-500">Posted {formatDate(project.createdAt)}</span>}
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid sm:grid-cols-3 gap-3">
             <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
               <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1.5">Budget</p>
               <p className="text-sm font-medium text-gray-800">${project.budget}</p>
@@ -444,6 +479,7 @@ const ProjectDetailDrawer = memo(({
                     </p>
                   </div>
                   <button
+                    type="button"
                     onClick={() => onMessage(project.freelancerId!._id, project._id)}
                     className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-800 transition flex-shrink-0"
                   >
@@ -469,6 +505,7 @@ const ProjectDetailDrawer = memo(({
           {canDelete && (
             <div className="pt-2 border-t border-gray-100">
               <button
+                type="button"
                 onClick={() => onDelete(project._id)}
                 className="inline-flex items-center gap-2 text-sm font-medium text-red-600 hover:text-red-700 transition"
               >
@@ -523,9 +560,11 @@ export default function ClientDashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  
   // Chat state
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
   const [selectedParticipant, setSelectedParticipant] = useState<any>(null);
+  
   // Project detail / delete state
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
@@ -533,7 +572,7 @@ export default function ClientDashboard() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // ── Fetch dashboard ──
+  // ── Fetch dashboard data ──
   const fetchDashboard = useCallback(() => {
     setLoading(true);
     dashboardService
@@ -547,12 +586,13 @@ export default function ClientDashboard() {
     const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
     if (!token) {
       setLoading(false);
+      navigate('/login');
       return;
     }
     fetchDashboard();
-  }, [fetchDashboard]);
+  }, [fetchDashboard, navigate]);
 
-  // ── WebSocket connection ──
+  // ── WebSocket connection management ──
   useEffect(() => {
     if (data?.user?._id) {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token') || '';
@@ -565,6 +605,7 @@ export default function ClientDashboard() {
 
   // ── Handlers ──
   const handleLogout = useCallback(() => {
+    chatService.disconnect(); // Explicitly clear socket channel before state teardown
     dispatch(logout());
     navigate('/login');
   }, [dispatch, navigate]);
@@ -576,7 +617,6 @@ export default function ClientDashboard() {
       setSelectedParticipant(conversation.participant);
       setActiveNav('messages');
     } catch (err) {
-      // toast would be better; fallback to alert for now
       alert('Could not start conversation');
     }
   }, []);
@@ -584,14 +624,19 @@ export default function ClientDashboard() {
   const handleDeleteProject = useCallback(async (projectId: string) => {
     try {
       await dashboardService.deleteJob(projectId);
-      setSelectedProject(null);
+      setSelectedProject(null); // Clear selected item references
+      setDeleteModal({ open: false, id: null }); // Smooth layout state resetting
       fetchDashboard();
     } catch (err) {
       alert('Could not delete project');
-    } finally {
       setDeleteModal({ open: false, id: null });
     }
   }, [fetchDashboard]);
+
+  // Trigger delete sequence gracefully from components
+  const triggerDeleteSequence = useCallback((id: string) => {
+    setDeleteModal({ open: true, id });
+  }, []);
 
   // ── Derived data ──
   const user = data?.user;
@@ -601,16 +646,15 @@ export default function ClientDashboard() {
   const applicants = data?.applicants || [];
   const invoices = data?.invoices || [];
 
-  // ── Loading ──
+  // ── Loading state UI ──
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-500 text-sm animate-pulse">Loading dashboard…</p>
+        <p className="text-gray-500 text-sm animate-pulse font-medium">Loading dashboard…</p>
       </div>
     );
   }
 
-  // ── Render ──
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 font-sans flex flex-col">
       {/* ===== TOP NAVIGATION BAR ===== */}
@@ -628,6 +672,7 @@ export default function ClientDashboard() {
                 return (
                   <button
                     key={item.id}
+                    type="button"
                     onClick={() => setActiveNav(item.id)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                       active ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -642,12 +687,14 @@ export default function ClientDashboard() {
 
             <div className="hidden md:flex items-center gap-3">
               <button
+                type="button"
                 onClick={() => navigate('/search')}
                 className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-full hover:border-emerald-600 hover:text-emerald-700 transition"
               >
                 Find freelancers
               </button>
               <button
+                type="button"
                 onClick={() => navigate('/post-job')}
                 className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-full hover:bg-emerald-700 transition shadow-sm hover:shadow"
               >
@@ -662,6 +709,7 @@ export default function ClientDashboard() {
                   <p className="text-[10px] text-gray-500">Client</p>
                 </div>
                 <button
+                  type="button"
                   onClick={handleLogout}
                   title="Sign out"
                   className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition"
@@ -672,6 +720,7 @@ export default function ClientDashboard() {
             </div>
 
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(true)}
               className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-gray-600 hover:text-gray-900 transition"
             >
@@ -688,7 +737,7 @@ export default function ClientDashboard() {
           <div className="absolute left-0 top-0 h-full w-64 bg-white border-r border-gray-200 flex flex-col shadow-xl">
             <div className="px-5 py-5 border-b border-gray-100 flex items-center justify-between">
               <Logo />
-              <button onClick={() => setMobileMenuOpen(false)} className="text-gray-500 hover:text-gray-700">
+              <button type="button" onClick={() => setMobileMenuOpen(false)} className="text-gray-500 hover:text-gray-700">
                 <XIcon className="w-4 h-4" />
               </button>
             </div>
@@ -699,6 +748,7 @@ export default function ClientDashboard() {
                 return (
                   <button
                     key={item.id}
+                    type="button"
                     onClick={() => {
                       setActiveNav(item.id);
                       setMobileMenuOpen(false);
@@ -715,6 +765,7 @@ export default function ClientDashboard() {
             </nav>
             <div className="px-4 py-4 border-t border-gray-100 space-y-3">
               <button
+                type="button"
                 onClick={() => {
                   navigate('/search');
                   setMobileMenuOpen(false);
@@ -724,6 +775,7 @@ export default function ClientDashboard() {
                 Find freelancers
               </button>
               <button
+                type="button"
                 onClick={() => {
                   navigate('/post-job');
                   setMobileMenuOpen(false);
@@ -742,6 +794,7 @@ export default function ClientDashboard() {
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => {
                   handleLogout();
                   setMobileMenuOpen(false);
@@ -757,11 +810,6 @@ export default function ClientDashboard() {
 
       {/* ===== MAIN CONTENT ===== */}
       <main className="flex-1 pt-20 px-4 sm:px-6 lg:px-8 pb-8 max-w-6xl mx-auto w-full space-y-8">
-        {/* Preview Image */}
-        <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-200">
-          <img src="/web_page.png" alt="Dashboard preview" className="w-full h-auto object-cover" />
-        </div>
-
         <h1 className="text-2xl font-bold text-gray-900 capitalize -mb-2">{activeNav}</h1>
 
         {/* ===== OVERVIEW / PROJECTS ===== */}
@@ -800,6 +848,7 @@ export default function ClientDashboard() {
                 <h2 className="text-sm font-semibold text-gray-700">Projects</h2>
                 {activeNav === 'overview' && (
                   <button
+                    type="button"
                     onClick={() => setActiveNav('projects')}
                     className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
                   >
@@ -813,10 +862,10 @@ export default function ClientDashboard() {
                     <ProjectCard
                       key={project._id}
                       project={project}
-                      canDelete={!!project.postedBy && project.postedBy === user?._id}
+                      canDelete={checkProjectOwnership(project, user?._id)}
                       onView={setSelectedProject}
                       onMessage={handleMessageFreelancer}
-                      onDelete={(id) => setDeleteModal({ open: true, id })}
+                      onDelete={triggerDeleteSequence}
                     />
                   ))}
                 </div>
@@ -826,6 +875,7 @@ export default function ClientDashboard() {
                   description="Start by posting your first job to find the perfect freelancer."
                   action={
                     <button
+                      type="button"
                       onClick={() => navigate('/post-job')}
                       className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-full hover:bg-emerald-700 transition"
                     >
@@ -848,6 +898,7 @@ export default function ClientDashboard() {
               <h2 className="text-sm font-semibold text-gray-700">Recent applicants</h2>
               {activeNav === 'overview' && (
                 <button
+                  type="button"
                   onClick={() => setActiveNav('applicants')}
                   className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
                 >
@@ -857,9 +908,14 @@ export default function ClientDashboard() {
             </div>
             {applicants.length > 0 ? (
               <div className="divide-y divide-gray-100">
-                {applicants.slice(0, 10).map((applicant) => (
-                  <ApplicantItem key={applicant._id} applicant={applicant} />
-                ))}
+                {activeNav === 'overview' 
+                  ? applicants.slice(0, 5).map((applicant) => (
+                      <ApplicantItem key={applicant._id} applicant={applicant} />
+                    ))
+                  : applicants.map((applicant) => (
+                      <ApplicantItem key={applicant._id} applicant={applicant} />
+                    ))
+                }
               </div>
             ) : (
               <EmptyState
@@ -877,6 +933,7 @@ export default function ClientDashboard() {
               <h2 className="text-sm font-semibold text-gray-700">Invoices</h2>
               {activeNav === 'overview' && (
                 <button
+                  type="button"
                   onClick={() => setActiveNav('invoices')}
                   className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
                 >
@@ -899,10 +956,10 @@ export default function ClientDashboard() {
           </section>
         )}
 
-        {/* ===== MESSAGES ===== */}
+        {/* ===== MESSAGES (Premium Responsive Container Height) ===== */}
         {activeNav === 'messages' && user && (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="grid md:grid-cols-3 h-[650px]">
+            <div className="grid md:grid-cols-3 h-[calc(100vh-14rem)] min-h-[500px]">
               <div className="border-r border-gray-200 overflow-y-auto bg-gray-50/30">
                 <ChatConversationList
                   onSelectConversation={(convId, participant) => {
@@ -921,7 +978,7 @@ export default function ClientDashboard() {
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-3">
-                    <span className="text-6xl">💬</span>
+                    <span className="text-5xl">💬</span>
                     <p className="text-sm font-light">Select a conversation to start chatting</p>
                   </div>
                 )}
@@ -934,10 +991,10 @@ export default function ClientDashboard() {
       {/* ===== PROJECT DETAIL DRAWER ===== */}
       <ProjectDetailDrawer
         project={selectedProject}
-        canDelete={!!selectedProject?.postedBy && selectedProject.postedBy === user?._id}
+        canDelete={checkProjectOwnership(selectedProject, user?._id)}
         onClose={() => setSelectedProject(null)}
         onMessage={handleMessageFreelancer}
-        onDelete={(id) => setDeleteModal({ open: true, id })}
+        onDelete={triggerDeleteSequence}
       />
 
       {/* ===== DELETE CONFIRM MODAL ===== */}

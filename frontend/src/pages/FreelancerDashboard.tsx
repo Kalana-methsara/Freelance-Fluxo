@@ -36,6 +36,17 @@ interface User {
   profilePic?: string;
   rating?: number;
   reviewCount?: number;
+  location?: {
+    address?: string;
+    city?: string;
+    province?: string;
+    country?: string;
+  };
+}
+
+interface PendingProposalPayload {
+  jobId: string;
+  payload: { bid: number; coverLetter: string };
 }
 
 interface Job {
@@ -639,6 +650,181 @@ function ProfileEditor({ user, onSave, onCancel, onError }: ProfileEditorProps) 
   );
 }
 
+function ProfileCompletionModal({
+  user,
+  onSave,
+  onCancel,
+  onError,
+}: {
+  user: User;
+  onSave: (data: Partial<User>) => void;
+  onCancel: () => void;
+  onError: (message: string) => void;
+}) {
+  const [form, setForm] = useState({
+    title: user?.title || '',
+    hourlyRate: user?.hourlyRate || 0,
+    bio: user?.bio || '',
+    skills: (user?.skills || []).join(', '),
+    address: user?.location?.address || '',
+    city: user?.location?.city || '',
+    province: user?.location?.province || '',
+    country: user?.location?.country || '',
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (form.hourlyRate < 0) {
+      onError('Hourly rate cannot be negative.');
+      return;
+    }
+    if (!form.title.trim()) {
+      onError('Please add a title to your profile.');
+      return;
+    }
+    if (!form.skills.trim()) {
+      onError('Please add at least one skill to your profile.');
+      return;
+    }
+    if (!form.address.trim() || !form.city.trim() || !form.province.trim() || !form.country.trim()) {
+      onError('Please complete your profile location.');
+      return;
+    }
+
+    onSave({
+      title: form.title.trim(),
+      hourlyRate: form.hourlyRate,
+      bio: form.bio,
+      skills: form.skills.split(',').map((s) => s.trim()).filter(Boolean),
+      location: {
+        address: form.address.trim(),
+        city: form.city.trim(),
+        province: form.province.trim(),
+        country: form.country.trim(),
+      },
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="relative w-full max-w-2xl overflow-y-auto max-h-[90vh] bg-white rounded-3xl border border-gray-200 p-6 shadow-2xl">
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Complete your freelancer profile</h2>
+            <p className="text-sm text-gray-500 mt-1">Update your profile now to finish your proposal submission.</p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-gray-400 hover:text-gray-600"
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Title</label>
+              <input
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                className="w-full border rounded-md px-3 py-2 mt-1 focus:border-green-600 outline-hidden"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Hourly Rate</label>
+              <input
+                type="number"
+                min="0"
+                step="0.5"
+                value={form.hourlyRate}
+                onChange={(e) => setForm({ ...form, hourlyRate: Number(e.target.value) })}
+                className="w-full border rounded-md px-3 py-2 mt-1 focus:border-green-600 outline-hidden"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Bio</label>
+            <textarea
+              rows={3}
+              value={form.bio}
+              onChange={(e) => setForm({ ...form, bio: e.target.value })}
+              className="w-full border rounded-md px-3 py-2 mt-1 focus:border-green-600 outline-hidden"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Skills</label>
+            <input
+              value={form.skills}
+              onChange={(e) => setForm({ ...form, skills: e.target.value })}
+              placeholder="React, Node, UI/UX"
+              className="w-full border rounded-md px-3 py-2 mt-1 focus:border-green-600 outline-hidden"
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Address</label>
+              <input
+                value={form.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                className="w-full border rounded-md px-3 py-2 mt-1 focus:border-green-600 outline-hidden"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">City</label>
+              <input
+                value={form.city}
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                className="w-full border rounded-md px-3 py-2 mt-1 focus:border-green-600 outline-hidden"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Province</label>
+              <input
+                value={form.province}
+                onChange={(e) => setForm({ ...form, province: e.target.value })}
+                className="w-full border rounded-md px-3 py-2 mt-1 focus:border-green-600 outline-hidden"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Country</label>
+              <input
+                value={form.country}
+                onChange={(e) => setForm({ ...form, country: e.target.value })}
+                className="w-full border rounded-md px-3 py-2 mt-1 focus:border-green-600 outline-hidden"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end sm:items-center pt-4">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 border rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700"
+            >
+              Save and apply
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ============================================================
 // 8. MAIN COMPONENT
 // ============================================================
@@ -667,6 +853,8 @@ export default function FreelancerPlatform() {
 
   // UI state
   const [editingProfile, setEditingProfile] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [pendingProposal, setPendingProposal] = useState<PendingProposalPayload | null>(null);
   const [showWorkModal, setShowWorkModal] = useState<string | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [toast, setToast] = useState<ToastMessage>(null);
@@ -768,12 +956,26 @@ export default function FreelancerPlatform() {
     navigate('/login');
   }, [dispatch, navigate]);
 
+  const isProfileComplete = useCallback((user?: User | null) => {
+    if (!user) return false;
+    return Boolean(
+      user.title?.trim() &&
+      user.skills?.length &&
+      user.hourlyRate &&
+      user.hourlyRate > 0 &&
+      user.location?.address?.trim() &&
+      user.location?.city?.trim() &&
+      user.location?.province?.trim() &&
+      user.location?.country?.trim()
+    );
+  }, []);
+
   const handleSaveProfile = useCallback(
     async (updated: Partial<User>) => {
       if (!dashboardData?.user?._id) return;
       try {
         await jobService.updateFreelancerProfile(dashboardData.user._id, updated);
-        fetchDashboardData();
+        await fetchDashboardData();
         setEditingProfile(false);
         showToast('success', 'Profile updated successfully.');
       } catch (err) {
@@ -781,6 +983,28 @@ export default function FreelancerPlatform() {
       }
     },
     [dashboardData?.user?._id, fetchDashboardData, showToast]
+  );
+
+  const handleSaveProfileAndApply = useCallback(
+    async (updated: Partial<User>) => {
+      if (!dashboardData?.user?._id || !pendingProposal) return;
+      try {
+        await jobService.updateFreelancerProfile(dashboardData.user._id, updated);
+        await fetchDashboardData();
+        setShowProfileModal(false);
+
+        const { jobId, payload } = pendingProposal;
+        await jobService.submitProposal(jobId, payload);
+        setPendingProposal(null);
+        setSelectedJob(null);
+        setActiveNav('proposals');
+        await fetchDashboardData();
+        showToast('success', 'Profile updated and proposal submitted.');
+      } catch (err) {
+        showToast('error', 'Could not save profile or submit proposal.');
+      }
+    },
+    [dashboardData?.user?._id, fetchDashboardData, pendingProposal, showToast]
   );
 
   const handleWithdrawProposal = useCallback(
@@ -818,9 +1042,14 @@ export default function FreelancerPlatform() {
 
   const handleApplyToJob = useCallback(
     async (jobId: string, payload: { bid: number; coverLetter: string }) => {
+      if (!isProfileComplete(dashboardData?.user)) {
+        setPendingProposal({ jobId, payload });
+        setShowProfileModal(true);
+        showToast('error', 'Complete your profile before applying.');
+        return;
+      }
+
       try {
-        // ⚠️ Confirm this matches the actual "submit proposal" method in your jobService
-        // (could be named submitProposal, applyToJob, createProposal, etc.)
         await jobService.submitProposal(jobId, payload);
         setSelectedJob(null);
         setActiveNav('proposals');
@@ -830,7 +1059,7 @@ export default function FreelancerPlatform() {
         showToast('error', 'Could not submit your proposal. Please try again.');
       }
     },
-    [fetchDashboardData, showToast]
+    [dashboardData?.user, fetchDashboardData, isProfileComplete, showToast]
   );
 
   // ============================================================
@@ -1417,7 +1646,20 @@ export default function FreelancerPlatform() {
             )}
           </section>
         )}
+
         </div>
+
+        {showProfileModal && user && (
+          <ProfileCompletionModal
+            user={user}
+            onSave={handleSaveProfileAndApply}
+            onCancel={() => {
+              setShowProfileModal(false);
+              setPendingProposal(null);
+            }}
+            onError={(msg) => showToast('error', msg)}
+          />
+        )}
       </main>
 
       {/* ─── CAROUSELS & MARKETING ─── */}
