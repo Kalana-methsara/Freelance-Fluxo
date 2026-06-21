@@ -642,6 +642,12 @@ export default function ClientDashboard() {
 
             <div className="hidden md:flex items-center gap-3">
               <button
+                onClick={() => navigate('/search')}
+                className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-full hover:border-emerald-600 hover:text-emerald-700 transition"
+              >
+                Find freelancers
+              </button>
+              <button
                 onClick={() => navigate('/post-job')}
                 className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-full hover:bg-emerald-700 transition shadow-sm hover:shadow"
               >
@@ -708,6 +714,15 @@ export default function ClientDashboard() {
               })}
             </nav>
             <div className="px-4 py-4 border-t border-gray-100 space-y-3">
+              <button
+                onClick={() => {
+                  navigate('/search');
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-full hover:border-emerald-600 hover:text-emerald-700 transition"
+              >
+                Find freelancers
+              </button>
               <button
                 onClick={() => {
                   navigate('/post-job');

@@ -36,6 +36,27 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState(query);
 
+  // ── Role-based section visibility ──
+  // Clients search for Freelancers. Freelancers search for Jobs.
+  // Logged-out users (unknown role) can browse both sections.
+  let roles: string[] = [];
+  try {
+    const storedUser = localStorage.getItem("user");
+    const parsedRoles = storedUser ? JSON.parse(storedUser)?.roles : [];
+    roles = Array.isArray(parsedRoles)
+      ? parsedRoles.map((r: string) => String(r).toUpperCase())
+      : [];
+  } catch {
+    roles = [];
+  }
+  
+  const isFreelancer = roles.includes("FREELANCER");
+  const isClient = roles.includes("CLIENT");
+  
+  // Adjusted logic: clients see freelancers, freelancers see jobs
+  const showFreelancersSection = isClient || (!isFreelancer && !isClient);
+  const showJobsSection = isFreelancer || (!isFreelancer && !isClient);
+
   useEffect(() => {
     setLoading(true);
     platformService
@@ -104,95 +125,99 @@ export default function SearchPage() {
         ) : (
           <div className="space-y-12">
             {/* ── Freelancers section ── */}
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                Freelancers
-              </h2>
-              <div className="w-10 h-0.5 bg-green-500 mb-6"></div>
-              {data?.freelancers?.length ? (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {data.freelancers.map((fl: any) => (
-                    <button
-                      key={fl._id}
-                      onClick={() => navigate(`/freelancers/${fl._id}`)}
-                      className="bg-white border border-gray-200 rounded-xl p-5 text-left hover:border-green-600 hover:shadow-md transition-all hover:-translate-y-0.5"
-                    >
-                      <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold mb-3"
-                        style={{ background: avatarColor(fl._id) }}
+            {showFreelancersSection && (
+              <section>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  Freelancers
+                </h2>
+                <div className="w-10 h-0.5 bg-green-500 mb-6"></div>
+                {data?.freelancers?.length ? (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {data.freelancers.map((fl: any) => (
+                      <button
+                        key={fl._id}
+                        onClick={() => navigate(`/freelancers/${fl._id}`)}
+                        className="bg-white border border-gray-200 rounded-xl p-5 text-left hover:border-green-600 hover:shadow-md transition-all hover:-translate-y-0.5"
                       >
-                        {getInitials(`${fl.firstName} ${fl.lastName}`)}
-                      </div>
-                      <p className="font-semibold text-gray-900 text-sm">
-                        {fl.firstName} {fl.lastName}
-                      </p>
-                      <p className="text-xs text-gray-500 mb-2">
-                        {fl.title || "Freelancer"}
-                      </p>
-                      <div className="text-amber-500 text-xs mb-1.5">
-                        {renderStars(fl.rating || 5)}{" "}
-                        <span className="text-gray-500">
-                          ({fl.reviewCount || 0})
-                        </span>
-                      </div>
-                      <p className="font-semibold text-gray-800 text-sm">
-                        ${fl.hourlyRate || 0}/hr
-                      </p>
-                      <div className="flex gap-1.5 flex-wrap mt-2">
-                        {(fl.skills || []).slice(0, 3).map((skill: string) => (
-                          <span
-                            key={skill}
-                            className="px-2 py-0.5 bg-gray-100 rounded-full text-xs text-gray-500 font-medium"
-                          >
-                            {skill}
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold mb-3"
+                          style={{ background: avatarColor(fl._id) }}
+                        >
+                          {getInitials(`${fl.firstName} ${fl.lastName}`)}
+                        </div>
+                        <p className="font-semibold text-gray-900 text-sm">
+                          {fl.firstName} {fl.lastName}
+                        </p>
+                        <p className="text-xs text-gray-500 mb-2">
+                          {fl.title || "Freelancer"}
+                        </p>
+                        <div className="text-amber-500 text-xs mb-1.5">
+                          {renderStars(fl.rating || 5)}{" "}
+                          <span className="text-gray-500">
+                            ({fl.reviewCount || 0})
                           </span>
-                        ))}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">
-                  No freelancers found. Try a different search.
-                </p>
-              )}
-            </section>
+                        </div>
+                        <p className="font-semibold text-gray-800 text-sm">
+                          ${fl.hourlyRate || 0}/hr
+                        </p>
+                        <div className="flex gap-1.5 flex-wrap mt-2">
+                          {(fl.skills || []).slice(0, 3).map((skill: string) => (
+                            <span
+                              key={skill}
+                              className="px-2 py-0.5 bg-gray-100 rounded-full text-xs text-gray-500 font-medium"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    No freelancers found. Try a different search.
+                  </p>
+                )}
+              </section>
+            )}
 
             {/* ── Jobs section ── */}
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                Open jobs
-              </h2>
-              <div className="w-10 h-0.5 bg-green-500 mb-6"></div>
-              {data?.jobs?.length ? (
-                <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100 shadow-sm">
-                  {data.jobs.map((job: any) => (
-                    <div
-                      key={job._id}
-                      className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-gray-50 transition"
-                    >
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          {job.title}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {job.clientId?.companyName ||
-                            job.clientId?.firstName}{" "}
-                          · ${job.budget}
-                        </p>
+            {showJobsSection && (
+              <section>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  Open jobs
+                </h2>
+                <div className="w-10 h-0.5 bg-green-500 mb-6"></div>
+                {data?.jobs?.length ? (
+                  <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100 shadow-sm">
+                    {data.jobs.map((job: any) => (
+                      <div
+                        key={job._id}
+                        className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-gray-50 transition"
+                      >
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            {job.title}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {job.clientId?.companyName ||
+                              job.clientId?.firstName}{" "}
+                            · ${job.budget}
+                          </p>
+                        </div>
+                        <span className="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full font-medium self-start sm:self-auto">
+                          {job.status}
+                        </span>
                       </div>
-                      <span className="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full font-medium self-start sm:self-auto">
-                        {job.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">
-                  No open jobs match your search.
-                </p>
-              )}
-            </section>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    No open jobs match your search.
+                  </p>
+                )}
+              </section>
+            )}
           </div>
         )}
       </main>
