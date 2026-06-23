@@ -1,7 +1,3 @@
-// ============================================================
-// SearchPage.tsx – Fully Synced Profile with Laptop Image Upload
-// ============================================================
-
 import { useEffect, useState, memo, useCallback, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import platformService from "../services/platformService";
@@ -93,7 +89,7 @@ export default function SearchPage() {
           firstName: parsed.firstName || "",
           lastName: parsed.lastName || "",
           email: parsed.email || "",
-          profileImage: parsed.profileImage || "", // ✅ Local storage එකෙන් කෙලින්ම form එකට ගන්නවා
+          profileImage: parsed.profileImage || "", 
           title: parsed.title || "",
           bio: parsed.bio || "",
           hourlyRate: parsed.hourlyRate || 0,
@@ -141,7 +137,7 @@ export default function SearchPage() {
     }
   }, [searchInput, navigate]);
 
- // ── 📸 Laptop එකෙන් Image එක අරන් Cloudinary යවන තැන ──
+  // ── 📸 Laptop එකෙන් Image එක අරන් Cloudinary යවන තැන ──
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -156,16 +152,14 @@ export default function SearchPage() {
       });
       
       if (res.data && res.data.url) {
-        // ✅ 1. Form state එකට දානවා (Modal එක ඇතුළේ පේන්න)
         setFormData(prev => ({ ...prev, profileImage: res.data.url }));
         
-        // ✅ 2. ක්ෂණිකව Local Storage එකත් අප්ඩේට් කරනවා (Nav bar එකට එකපාරම යන්න)
         const storedUser = localStorage.getItem("user");
         if (storedUser) {
           const parsed = JSON.parse(storedUser);
           parsed.profileImage = res.data.url;
           localStorage.setItem("user", JSON.stringify(parsed));
-          setCurrentUser(parsed); // Header එක refresh වෙන්න state එක අප්ඩේට් කරනවා
+          setCurrentUser(parsed); 
         }
       }
     } catch (err) {
@@ -228,6 +222,31 @@ export default function SearchPage() {
       setSelectedJobId(jobId);
       setShowModal(true);
     }
+  }, [currentUser, navigate]);
+
+  // ── 1. handleHireClick function එක (Patch) ──
+  const handleHireClick = useCallback((e: React.MouseEvent, freelancerId: string) => {
+    e.stopPropagation();
+
+    if (!currentUser) {
+      navigate("/login");
+      return;
+    }
+
+    // ── Client payment method check ──
+    const hasPayment = !!(
+      currentUser.paymentMethod?.cardLast4 ||
+      currentUser.paymentMethod?.walletBalance > 0
+    );
+
+    if (!hasPayment) {
+      // Payment නැත්නම් HireFreelancerPage ම redirect කරනවා
+      // ඒ page එකෙන්ම payment modal handle වෙනවා
+      navigate(`/hire/${freelancerId}`);
+      return;
+    }
+
+    navigate(`/hire/${freelancerId}`);
   }, [currentUser, navigate]);
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
@@ -294,7 +313,7 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 font-sans flex flex-col">
-      {/* ── 🟢 HEADER NAVBAR (UPDATED WITH PROFILE PIC SYNC) ── */}
+      {/* ── 🟢 HEADER NAVBAR ── */}
       <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4 justify-between w-full">
           <Link to="/" className="shrink-0 flex items-center gap-2">
@@ -320,7 +339,6 @@ export default function SearchPage() {
             </button>
           </div>
 
-          {/* RIGHT SIDE: PROFILE IMAGE SYNCED */}
           <div className="shrink-0 flex items-center gap-4">
             <Link to="/" className="hidden md:inline-block text-sm font-medium text-gray-600 hover:text-gray-900 px-2 py-2 transition">
               Back to Home
@@ -332,7 +350,6 @@ export default function SearchPage() {
                 className="flex items-center gap-2 pl-2 border-l border-gray-200 cursor-pointer rounded-xl p-1 hover:bg-gray-50 transition"
                 title="Edit Profile"
               >
-                {/* 📸 Cloudinary URL එක තියෙනවා නම් ඒක පේනවා, නැත්නම් Initials වැටෙනවා */}
                 {currentUser.profileImage ? (
                   <img 
                     src={currentUser.profileImage} 
@@ -386,20 +403,21 @@ export default function SearchPage() {
 
                 {data?.freelancers?.length ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {data.freelancers.map((fl: any) => (
+                    {/* ── 2. Freelancer Card JSX Updated with Patch ── */}
+                    {data?.freelancers?.map((fl: any) => (
                       <div
                         key={fl._id}
                         onClick={() => navigate(`/freelancers/${fl._id}`)}
                         className="bg-white border border-gray-200 rounded-2xl p-5 text-left hover:border-emerald-600 hover:shadow-md transition-all duration-200 cursor-pointer group flex flex-col justify-between"
                       >
                         <div>
-                          <div
-                            className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black mb-3 shadow-sm overflow-hidden border bg-gray-100"
-                          >
+                          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black mb-3 shadow-sm overflow-hidden border bg-gray-100">
                             {fl.profileImage ? (
                               <img src={fl.profileImage} alt="" className="w-full h-full object-cover"/>
                             ) : (
-                              getInitials(`${fl.firstName} ${fl.lastName}`)
+                              <span className="text-sm font-bold text-gray-400">
+                                {getInitials(`${fl.firstName} ${fl.lastName}`)}
+                              </span>
                             )}
                           </div>
                           <h3 className="font-semibold text-gray-900 text-base group-hover:text-emerald-700 transition">
@@ -410,10 +428,22 @@ export default function SearchPage() {
                           </p>
                         </div>
 
-                        <div className="pt-3 border-t border-gray-100 mt-2 flex flex-col gap-3">
+                        <div className="pt-3 border-t border-gray-100 mt-2 flex items-center justify-between gap-2">
                           <p className="font-bold text-gray-900 text-sm">
-                            ${fl.hourlyRate || 0}<span className="text-gray-400 font-normal text-xs">/hr</span>
+                            ${fl.hourlyRate || 0}
+                            <span className="text-gray-400 font-normal text-xs">/hr</span>
                           </p>
+
+                          {/* ✅ HIRE BUTTON */}
+                          {isClient && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleHireClick(e, fl._id)}
+                              className="px-3.5 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 shadow-sm shadow-emerald-600/10 transition-all shrink-0"
+                            >
+                              Hire
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -474,7 +504,7 @@ export default function SearchPage() {
         )}
       </main>
 
-      {/* ── 📌 MODAL FORM: WITH CLOUDINARY FILE UPLOADER ── */}
+      {/* ── 📌 MODAL FORM ── */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-xs">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden transform transition-all border border-gray-100">
@@ -491,12 +521,10 @@ export default function SearchPage() {
             </div>
 
             <form onSubmit={handleProfileSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
-              
-              {/* 🧑‍💻 SECTION 1: PERSONAL INFO + CLOUDINARY UPLOADER */}
+              {/* SECTION 1: PERSONAL INFO */}
               <div>
                 <h4 className="text-sm font-bold text-gray-800 mb-3 border-b pb-1">1. Personal Information</h4>
                 
-                {/* 📸 CLOUDINARY AVATAR UPLOAD DESIGN */}
                 <div className="flex items-center gap-4 mb-4 p-3 bg-gray-50 rounded-2xl border border-gray-100">
                   <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-gray-200 border-2 border-white shadow-md shrink-0 flex items-center justify-center">
                     {formData.profileImage ? (
@@ -567,7 +595,7 @@ export default function SearchPage() {
                 </div>
               </div>
 
-              {/* 💼 SECTION 2: PROFESSIONAL DETAILS */}
+              {/* SECTION 2: PROFESSIONAL DETAILS */}
               <div>
                 <h4 className="text-sm font-bold text-gray-800 mb-3 border-b pb-1">2. Professional Profiles</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3">
@@ -617,7 +645,7 @@ export default function SearchPage() {
                 </div>
               </div>
 
-              {/* 🎯 SECTION 3: SKILL SELECTOR */}
+              {/* SECTION 3: SKILL SELECTOR */}
               <div>
                 <h4 className="text-sm font-bold text-gray-800 mb-2 flex items-center justify-between border-b pb-1">
                   <span>3. Select Your Skills</span>
@@ -668,7 +696,7 @@ export default function SearchPage() {
                 </div>
               </div>
 
-              {/* 📍 SECTION 4: LOCATION INFO */}
+              {/* SECTION 4: LOCATION INFO */}
               <div>
                 <h4 className="text-sm font-bold text-gray-800 mb-3 border-b pb-1">4. Location Info</h4>
                 <div className="space-y-3">
