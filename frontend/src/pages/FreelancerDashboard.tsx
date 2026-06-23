@@ -1990,7 +1990,6 @@ export default function FreelancerDashboard() {
 
       <TechStack />
 
-      {/* ─── HOW IT WORKS ─── */}
       <section className="py-10 md:py-14 px-4 sm:px-6 lg:px-6 bg-linear-to-b from-white to-gray-50/50">
         <div className="max-w-5xl mx-auto">
           <SectionBadge label="Workflow" />
