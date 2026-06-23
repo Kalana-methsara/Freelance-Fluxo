@@ -29,7 +29,6 @@ export const sendHireOffer = asyncHandler(async (req: Request, res: Response) =>
         escrowAmount,
     } = authReq.body;
 
-    // ── Validation ──
     if (!freelancerId || !contractTitle || !budgetType || !deadline || !message) {
         return res.status(400).json({ success: false, message: "Missing required fields." });
     }
@@ -38,77 +37,52 @@ export const sendHireOffer = asyncHandler(async (req: Request, res: Response) =>
         return res.status(400).json({ success: false, message: "Invalid budget type." });
     }
 
-    // ── Freelancer exists check ──
-    const freelancer = await UserModel.findOne({
-        _id: new Types.ObjectId(freelancerId),
-        userRole: UserRole.FREELANCER,
-    });
-    if (!freelancer) {
-        return res.status(404).json({ success: false, message: "Freelancer not found." });
-    }
-
-    // ── Prevent hiring yourself ──
-    if (freelancerId.toString() === clientId.toString()) {
-        return res.status(400).json({ success: false, message: "You cannot hire yourself." });
-    }
-
-    // ── Escrow amount server-side recalculate (don't trust client) ──
-    let contractAmount: number;
-    if (budgetType === BudgetType.FIXED) {
-        if (milestones.length > 0) {
-            contractAmount = milestones[0].amount; // First milestone only funded upfront
-        } else {
-            contractAmount = Number(totalAmount);
-        }
-    } else {
-        contractAmount = Number(hourlyRate) * Number(estimatedHours);
-    }
-
-    if (contractAmount <= 0) {
-        return res.status(400).json({ success: false, message: "Contract amount must be greater than 0." });
-    }
-
-    const calculatedEscrow = contractAmount * (1 + PLATFORM_FEE_RATE);
-
-    // ── Create contract ──
-    const contract = await ContractModel.create({
-        clientId: new Types.ObjectId(clientId),
-        freelancerId: new Types.ObjectId(freelancerId),
-        jobId: jobId ? new Types.ObjectId(jobId) : undefined,
-        contractTitle: contractTitle.trim(),
+    const newContract = new ContractModel({
+        clientId,
+        freelancerId,
+        jobId: jobId || undefined,
+        contractTitle,
         budgetType,
-        totalAmount: contractAmount,
-        hourlyRate: budgetType === BudgetType.HOURLY ? Number(hourlyRate) : undefined,
-        estimatedHours: budgetType === BudgetType.HOURLY ? Number(estimatedHours) : undefined,
-        deadline: new Date(deadline),
-        message: message.trim(),
-        milestones: milestones.map((m: any) => ({
-            title: m.title.trim(),
-            amount: Number(m.amount),
-            dueDate: new Date(m.dueDate),
-            status: "pending",
-        })),
-        escrowAmount: calculatedEscrow,
-        escrowFunded: true, // Real payment gateway integrate කළාම මේක payment confirm වෙලා true කරන්න
+        totalAmount,
+        hourlyRate,
+        estimatedHours,
+        deadline,
+        message,
+        milestones,
+        escrowAmount,
+        escrowFunded: true, // Client card link කරලා ආපු නිසා true කරනවා
         status: ContractStatus.PENDING,
     });
 
-    // ── TODO: Send notification + email to freelancer ──
-    // await notificationService.sendHireOfferNotification(freelancer, contract);
-    // await emailService.sendHireOfferEmail(freelancer.email, contract);
+    await newContract.save();
+    return res.status(201).json({ success: true, data: newContract });
+});
 
-    return res.status(201).json({
-        success: true,
-        message: "Hire offer sent successfully.",
-        data: contract,
-    });
+// ── 💡 NEW: GET /contracts/pending-offers ──────────────────────
+// Fetches pending offers for the logged-in Freelancer
+export const getPendingOffers = asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthRequest;
+    const freelancerId = authReq.user?._id;
+
+    if (!freelancerId) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    // ලොග් වෙලා ඉන්න Freelancer ට ආපු Pending Offers විතරක් ගන්නවා
+    // Client ගේ නම සහ රූපය පෙන්වන්න clientId එක populate කරනවා
+    const contracts = await ContractModel.find({
+        freelancerId,
+        status: ContractStatus.PENDING,
+    })
+    .populate("clientId", "firstName lastName profileImage companyName")
+    .sort({ createdAt: -1 });
+
+    return res.status(200).json({ success: true, data: contracts });
 });
 
 // ── GET /contracts ───────────────────────────────────────────
-// Client හෝ Freelancer ගේ contracts list
 export const getMyContracts = asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
-
     const userId = authReq.user?._id;
     if (!userId) return res.status(401).json({ success: false, message: "Unauthorized" });
 
@@ -152,12 +126,5 @@ export const respondToOffer = asyncHandler(async (req: Request, res: Response) =
     contract.status = action === "accept" ? ContractStatus.ACCEPTED : ContractStatus.DECLINED;
     await contract.save();
 
-    // ── TODO: Notify client ──
-    // await notificationService.sendOfferResponseNotification(contract, action);
-
-    return res.status(200).json({
-        success: true,
-        message: `Offer ${action}ed successfully.`,
-        data: contract,
-    });
+    return res.status(200).json({ success: true, data: contract });
 });

@@ -1,9 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Add these methods to your existing platformService object/class.
-// Assumes `api` is your configured axios instance (e.g. from services/api.ts)
-// with the Authorization header already set via an interceptor.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import api from "./api";
 
 export interface HireOfferPayload {
@@ -50,7 +44,6 @@ const platformService = {
     return response.data.data;
   },
 
-  // New contract-related methods
   getFreelancerById: async (freelancerId: string) => {
     const res = await api.get(`/platform/freelancers/${freelancerId}`);
     return res.data?.data ?? res.data;
@@ -66,21 +59,21 @@ const platformService = {
     return res.data?.data ?? [];
   },
 
+  // ── 💡 NEW: Fetch Pending Offers For Freelancer ──
+  getPendingOffers: async () => {
+    const res = await api.get("/contracts/pending-offers");
+    return res.data?.data ?? [];
+  },
+
   respondToOffer: async (contractId: string, action: "accept" | "decline") => {
     const res = await api.patch(`/contracts/${contractId}/respond`, { action });
     return res.data;
   },
  
-  // Self profile update helper
   updateProfile: async (updates: Partial<Record<string, any>>) => {
     const res = await api.patch("/users/profile", updates);
-    return res.data?.data ?? res.data;
+    return res.data;
   },
 };
 
 export default platformService;
-export {
-  platformService as platformServiceObj,
-  // named exports for compatibility
-  platformService as namedPlatformService,
-};
