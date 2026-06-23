@@ -1,4 +1,28 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Add these methods to your existing platformService object/class.
+// Assumes `api` is your configured axios instance (e.g. from services/api.ts)
+// with the Authorization header already set via an interceptor.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import api from "./api";
+
+export interface HireOfferPayload {
+  freelancerId?: string;
+  jobId?: string | null;
+  contractTitle: string;
+  budgetType: "fixed" | "hourly";
+  totalAmount?: number;
+  hourlyRate?: number;
+  estimatedHours?: number;
+  deadline: string;
+  message: string;
+  milestones?: {
+    title: string;
+    amount: number;
+    dueDate: string;
+  }[];
+  escrowAmount: number;
+}
 
 const platformService = {
   getCategories: async () => {
@@ -21,39 +45,42 @@ const platformService = {
     return response.data.data;
   },
 
-  // ── HireFreelancerPage.tsx එකේ use වෙනවා ──
-  getFreelancerById: async (id: string) => {
-    const response = await api.get(`/platform/freelancers/${id}`);
-    return response.data.data;
-  },
-
   search: async (q?: string) => {
     const response = await api.get("/platform/search", { params: { q } });
     return response.data.data;
   },
 
-  updateProfile: async (profileData: any) => {
-    const response = await api.patch("/users/profile", profileData);
-    return response.data.data;
+  // New contract-related methods
+  getFreelancerById: async (freelancerId: string) => {
+    const res = await api.get(`/platform/freelancers/${freelancerId}`);
+    return res.data?.data ?? res.data;
   },
 
-  // ── Hire Offer submit කරන endpoint ──
-  sendHireOffer: async (offerData: {
-    freelancerId: string | undefined;
-    jobId: string | null;
-    contractTitle: string;
-    budgetType: "fixed" | "hourly";
-    totalAmount: number;
-    hourlyRate?: number;
-    estimatedHours?: number;
-    deadline: string;
-    message: string;
-    milestones: { id: string; title: string; amount: number; dueDate: string }[];
-    escrowAmount: number;
-  }) => {
-    const response = await api.post("/contracts/hire", offerData);
-    return response.data.data;
+  sendHireOffer: async (payload: HireOfferPayload) => {
+    const res = await api.post("/contracts/hire", payload);
+    return res.data;
+  },
+
+  getMyContracts: async () => {
+    const res = await api.get("/contracts");
+    return res.data?.data ?? [];
+  },
+
+  respondToOffer: async (contractId: string, action: "accept" | "decline") => {
+    const res = await api.patch(`/contracts/${contractId}/respond`, { action });
+    return res.data;
+  },
+ 
+  // Self profile update helper
+  updateProfile: async (updates: Partial<Record<string, any>>) => {
+    const res = await api.patch("/users/profile", updates);
+    return res.data?.data ?? res.data;
   },
 };
 
 export default platformService;
+export {
+  platformService as platformServiceObj,
+  // named exports for compatibility
+  platformService as namedPlatformService,
+};

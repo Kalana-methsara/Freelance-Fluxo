@@ -20,7 +20,7 @@ import Slide from '../components/Slide';
 import CatCard from '../components/CatCard';
 import { cards, items } from '../../data';
 import api from '../services/api';
-import { MapPin, Code2, FolderOpen, Mail, DollarSign, Award, Clock } from "lucide-react";
+import { MapPin, Code2, DollarSign, Award, Clock } from "lucide-react";
 
 // ============================================================
 // 1. TYPES & INTERFACES
@@ -140,9 +140,7 @@ function avatarColor(id: string): string {
   return AVATAR_COLORS[idx];
 }
 
-function renderStars(rating: number): string {
-  return '★'.repeat(rating) + '☆'.repeat(5 - rating);
-}
+// renderStars removed (unused)
 
 // ============================================================
 // 4. PRESENTATIONAL COMPONENTS (memoized)
@@ -995,7 +993,7 @@ type ToastMessage = { type: 'success' | 'error'; text: string } | null;
 export default function FreelancerDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [freelancers, setFreelancers] = useState<any[]>([]);
+  // const [freelancers, setFreelancers] = useState<any[]>([]); // unused
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -1058,7 +1056,8 @@ export default function FreelancerDashboard() {
   // 8c. Effects
   // ============================================================
   useEffect(() => {
-    platformService.getFreelancers().then(setFreelancers).catch(() => setFreelancers([]));
+    // optionally fetch freelancers for future features; ignore result for now
+    platformService.getFreelancers().catch(() => {});
     fetchDashboardData();
   }, [fetchDashboardData]);
 

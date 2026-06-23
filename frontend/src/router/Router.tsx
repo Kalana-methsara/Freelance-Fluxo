@@ -16,6 +16,7 @@ const FreelancerDetailPage = lazy(() => import("../pages/FreelancerDetailPage"))
 const PostJobPage = lazy(() => import("../pages/PostJobPage"));
 const LegalPage = lazy(() => import("../pages/LegalPage"));
 const JobsPage = lazy(() => import("../pages/JobsPage"));
+const HireFreelancerPage = lazy(() => import("../pages/HireFreelancerPage"));
 
 const Router = () => {
   return (
@@ -29,6 +30,7 @@ const Router = () => {
         <Route path="/search" element={<SearchPage />} />
         <Route path="/jobs" element={<JobsPage />} />
         <Route path="/jobs/:id/*" element={<JobsPage />} />
+        <Route path="/hire/:freelancerId" element={<HireFreelancerPage />} />
         <Route path="/categories/:id" element={<CategoryPage />} />
         <Route path="/freelancers/:id" element={<FreelancerDetailPage />} />
         <Route path="/terms" element={<LegalPage type="terms" />} />

@@ -55,7 +55,9 @@ export default function HireFreelancerPage() {
   const navigate = useNavigate();
 
   // ── State ──
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  // `currentUser` is intentionally unused directly; localStorage used for auth checks elsewhere
+  // keep setter available for future use
+  const [, setCurrentUser] = useState<any>(null);
   const [freelancer, setFreelancer] = useState<any>(null);
   const [loadingFreelancer, setLoadingFreelancer] = useState(true);
 

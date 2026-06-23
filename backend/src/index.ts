@@ -18,6 +18,8 @@ import authRoutes from './routes/authRoutes';
 import { ConversationModel } from './models/conversationModel';
 import { MessageModel } from './models/messageModel';
 import { upload } from './middleware/uploadMiddleware';
+import contractRouter from "./routes/contractRouter";
+
 
 const PORT = process.env.PORT || 5000; 
 
@@ -47,7 +49,8 @@ app.use("/api/v1/jobs", jobRouter);
 app.use("/api/v1/platform", platformRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/conversations", conversationRouter);
-app.use("/api/v1/upload", uploadRoute); // 👈 2. මෙතනට semicolon (;) එකක් දාලා ලයින් එක fix කරා
+app.use("/api/v1/upload", uploadRoute); 
+app.use("/api/contracts", contractRouter);
 
 app.get("/api/v1/health", (_req, res) => {
   res.json({ success: true, message: "Freelance-Fluxo API is running" });

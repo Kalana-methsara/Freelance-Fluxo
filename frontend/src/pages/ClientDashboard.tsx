@@ -327,8 +327,6 @@ function useChatConnection(userId: string | undefined) {
 }
 
 function useProjectActions(refetch: () => void) {
-  const navigate = useNavigate();
-
   const handleMessageFreelancer = useCallback(async (freelancerId: string, jobId: string) => {
     try {
       const conversation = await jobService.createConversation(freelancerId, jobId);
