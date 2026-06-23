@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { Types } from "mongoose";
-import { ContractModel, ContractStatus, BudgetType } from "../models/Contractmodel";
+import { ContractModel, ContractStatus, BudgetType } from "../models/contractModel";
 import { UserModel } from "../models/userModel";
 import { asyncHandler } from "../middleware/asyncHandler";
 import { AuthRequest } from "../middleware/authMiddleware";

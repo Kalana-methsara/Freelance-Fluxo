@@ -50,7 +50,7 @@ app.use("/api/v1/platform", platformRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/conversations", conversationRouter);
 app.use("/api/v1/upload", uploadRoute); 
-app.use("/api/contracts", contractRouter);
+app.use("/api/v1/contracts", contractRouter);
 
 app.get("/api/v1/health", (_req, res) => {
   res.json({ success: true, message: "Freelance-Fluxo API is running" });
