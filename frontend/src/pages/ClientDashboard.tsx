@@ -83,6 +83,17 @@ interface DashboardData {
   invoices: Invoice[];
 }
 
+interface FreelancerMock {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  title?: string;
+  rating?: number;
+  reviewCount?: number;
+  hourlyRate?: number;
+  skills?: string[];
+}
+
 // ================================================================
 // 2. CONSTANTS & HELPERS
 // ================================================================
@@ -108,8 +119,57 @@ const STATUS_STYLES: Record<string, string> = {
   shortlisted: 'bg-emerald-50 text-emerald-700',
 };
 
+const AVATAR_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+
+const MOCK_FREELANCERS: FreelancerMock[] = [
+  {
+    _id: 'fl_1',
+    firstName: 'Alex',
+    lastName: 'Morgan',
+    title: 'Full-Stack Developer',
+    rating: 5,
+    reviewCount: 38,
+    hourlyRate: 65,
+    skills: ['React', 'Node.js', 'Next.js'],
+  },
+  {
+    _id: 'fl_2',
+    firstName: 'Elena',
+    lastName: 'Rostova',
+    title: 'UI/UX Product Designer',
+    rating: 5,
+    reviewCount: 24,
+    hourlyRate: 55,
+    skills: ['Figma', 'Wireframing', 'Tailwind'],
+  },
+  {
+    _id: 'fl_3',
+    firstName: 'Marcus',
+    lastName: 'Chen',
+    title: 'DevOps Engineer',
+    rating: 4,
+    reviewCount: 19,
+    hourlyRate: 75,
+    skills: ['AWS', 'Docker', 'Kubernetes'],
+  },
+  {
+    _id: 'fl_4',
+    firstName: 'Sarah',
+    lastName: 'Jenkins',
+    title: 'Technical Content Writer',
+    rating: 5,
+    reviewCount: 42,
+    hourlyRate: 40,
+    skills: ['SEO', 'Copywriting', 'Editing'],
+  },
+];
+
 function getStatusStyle(status: string): string {
   return STATUS_STYLES[status] || 'bg-gray-100 text-gray-600';
+}
+
+function renderStars(rating: number) {
+  return '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
 }
 
 function getProjectOwnerId(project: Project): string {
@@ -229,7 +289,6 @@ const Icons = {
 // 4. CUSTOM HOOKS
 // ================================================================
 
-// 4.1 – Dashboard data fetching
 function useDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -256,7 +315,6 @@ function useDashboard() {
   return { data, loading, error, refetch: fetchDashboard };
 }
 
-// 4.2 – Chat connection
 function useChatConnection(userId: string | undefined) {
   useEffect(() => {
     if (!userId) return;
@@ -268,7 +326,6 @@ function useChatConnection(userId: string | undefined) {
   }, [userId]);
 }
 
-// 4.3 – Project actions (delete, message)
 function useProjectActions(refetch: () => void) {
   const navigate = useNavigate();
 
@@ -296,7 +353,6 @@ function useProjectActions(refetch: () => void) {
   return { handleMessageFreelancer, handleDeleteProject };
 }
 
-// 4.4 – URL sync for active nav
 function useActiveNav(): [NavId, (id: NavId) => void] {
   const [searchParams, setSearchParams] = useSearchParams();
   const active = (searchParams.get('tab') as NavId) || 'overview';
@@ -374,7 +430,6 @@ const EmptyState = memo(({
   </div>
 ));
 
-// ---- Project Card ----
 const ProjectCard = memo(({
   project,
   canDelete,
@@ -459,7 +514,6 @@ const ProjectCard = memo(({
   );
 });
 
-// ---- Applicant Item ----
 const ApplicantItem = memo(({ applicant }: { applicant: Applicant }) => (
   <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
     <div className="min-w-0 flex-1">
@@ -474,7 +528,6 @@ const ApplicantItem = memo(({ applicant }: { applicant: Applicant }) => (
   </div>
 ));
 
-// ---- Invoice Item ----
 const InvoiceItem = memo(({ invoice }: { invoice: Invoice }) => (
   <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
     <div className="min-w-0 flex-1">
@@ -490,7 +543,6 @@ const InvoiceItem = memo(({ invoice }: { invoice: Invoice }) => (
   </div>
 ));
 
-// ---- Confirm Delete Modal ----
 const ConfirmModal = memo(({
   isOpen,
   title,
@@ -565,7 +617,6 @@ const ConfirmModal = memo(({
   );
 });
 
-// ---- Project Detail Drawer ----
 const ProjectDetailDrawer = memo(({
   project,
   canDelete,
@@ -1001,6 +1052,54 @@ export default function ClientDashboard() {
                   sub={stats.pendingInvoices > 0 ? 'Awaiting payment' : undefined}
                 />
               </div>
+            )}
+
+            {/* ===== TALENT LISTINGS (Added here for Overview) ===== */}
+            {activeNav === 'overview' && (
+              <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 sm:p-6 overflow-hidden">
+                <div className="mb-4">
+                  <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-semibold uppercase tracking-wider">
+                    Top freelancers
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mt-2 mb-1">Work alongside peer talent</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 max-w-lg">
+                    Handpicked professionals with verified skills and top-rated ecosystem reviews.
+                  </p>
+                </div>
+                <div className="flex gap-4 overflow-x-auto pb-3 sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-4 scrollbar-thin">
+                  {MOCK_FREELANCERS.map((fl, i) => (
+                    <button
+                      key={fl._id}
+                      type="button"
+                      className="snap-start shrink-0 w-[72vw] xs:w-64 sm:w-auto bg-gray-50/50 border border-gray-200 rounded-2xl p-4 text-left hover:border-emerald-600 hover:bg-white hover:shadow-md transition-all"
+                      onClick={() => navigate(`/freelancers/${fl._id}`)}
+                    >
+                      <div
+                        className="w-11 h-11 rounded-full flex items-center justify-center text-xs font-bold text-white mb-3 shadow-sm"
+                        style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}
+                      >
+                        {getInitials(`${fl.firstName} ${fl.lastName}`)}
+                      </div>
+                      <div className="font-semibold text-gray-900 text-sm mb-0.5 truncate">
+                        {fl.firstName} {fl.lastName}
+                      </div>
+                      <div className="text-xs text-gray-500 mb-2 truncate">{fl.title || 'Freelancer'}</div>
+                      <div className="text-amber-500 text-xs mb-1.5 flex items-center gap-1">
+                        <span>{renderStars(fl.rating || 5)}</span>
+                        <span className="text-gray-400 font-medium">({fl.reviewCount || 0})</span>
+                      </div>
+                      <div className="font-bold text-gray-900 text-sm">${fl.hourlyRate || 0}/hr</div>
+                      <div className="flex gap-1.5 flex-wrap mt-3">
+                        {(fl.skills || []).slice(0, 3).map((skill: string) => (
+                          <span key={skill} className="px-2 py-0.5 bg-white border border-gray-100 rounded-lg text-[10px] text-gray-600 font-medium shadow-sm">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
             )}
 
             <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
