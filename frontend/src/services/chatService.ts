@@ -5,10 +5,11 @@ class ChatService {
   private socket: Socket | null = null;
 
   connect(userId: string, token: string): Socket {
-    const wsUrl = (import.meta as any).env?.VITE_WS_URL || 'http://localhost:5000';
+    const wsUrl = (import.meta as any).env?.VITE_WS_URL || window.location.origin;
     this.socket = io(wsUrl, {
       auth: { token },
       query: { userId },
+      path: '/socket.io',
     });
     return this.socket;
   }

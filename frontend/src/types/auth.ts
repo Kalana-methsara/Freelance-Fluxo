@@ -25,6 +25,7 @@ export interface AuthUser {
   companyName?: string;
   rating?: number;
   reviewCount?: number;
+  profileImage?: string;
 }
 
 export interface RegisterUserPayload {

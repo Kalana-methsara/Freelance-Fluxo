@@ -1,15 +1,21 @@
 // ============================================================
-// SearchPage.tsx – With Conditional Profile Completion Form
+// SearchPage.tsx – Fully Synced Profile with Laptop Image Upload
 // ============================================================
 
-import { useEffect, useState, memo, useCallback } from "react";
+import { useEffect, useState, memo, useCallback, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import platformService from "../services/platformService";
-// userService එකක් තියෙනවා නම් ඒකෙන් profile update කරන්න පුළුවන්
-// import userService from "../services/userService"; 
+import api from "../services/api";
 import { getInitials } from "../utils/auth";
 
 const AVATAR_COLORS = ["#059669", "#7c3aed", "#dc2626", "#d97706", "#0891b2"];
+
+const SKILL_POOL = {
+  "Development": ["React", "Node.js", "TypeScript", "JavaScript", "Python", "Java", "Spring Boot", "Express", "MongoDB", "PostgreSQL", "Next.js", "Docker"],
+  "Design & Creative": ["UI/UX Design", "Figma", "Adobe Photoshop", "Illustrator", "Web Design", "Graphic Design"],
+  "Writing & Translation": ["Content Writing", "Technical Writing", "Copywriting", "Translation", "SEO Writing"],
+  "Marketing & Sales": ["SEO", "Digital Marketing", "Social Media Management", "Google Analytics", "Lead Generation"]
+};
 
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-blue-50 text-blue-700 border-blue-100',
@@ -19,6 +25,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 function avatarColor(id: string) {
+  if (!id) return AVATAR_COLORS[0];
   const idx = id.charCodeAt(0) % AVATAR_COLORS.length;
   return AVATAR_COLORS[idx];
 }
@@ -35,15 +42,11 @@ const StatusBadge = memo(({ status }: { status: string }) => (
   </span>
 ));
 
-function renderStars(rating: number) {
-  return "★".repeat(Math.min(5, Math.max(0, rating))) + "☆".repeat(Math.min(5, Math.max(0, 5 - rating)));
-}
-
 export default function SearchPage() {
   const [searchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
   const navigate = useNavigate();
-  
+
   const [data, setData] = useState<{ freelancers: any[]; jobs: any[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState(query);
@@ -53,46 +56,73 @@ export default function SearchPage() {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false); 
 
-  // Form State Fields
+  const [customSkill, setCustomSkill] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Form States
   const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    profileImage: "", 
     title: "",
     bio: "",
     hourlyRate: 0,
-    skills: "",
+    companyName: "",
     address: "",
     city: "",
-    country: ""
+    province: "",
+    country: "",
+    lat: 6.0329,
+    lng: 80.2170
   });
 
-  // Local Storage එකෙන් දැනට ලොග් වෙලා ඉන්න User ව ගන්නවා
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+
+  // Local Storage Sync
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem("user");
       if (storedUser) {
         const parsed = JSON.parse(storedUser);
         setCurrentUser(parsed);
-        
-        // Form එකට දැනට තියෙන දත්ත pre-fill කරනවා
+
         setFormData({
+          firstName: parsed.firstName || "",
+          lastName: parsed.lastName || "",
+          email: parsed.email || "",
+          profileImage: parsed.profileImage || "", // ✅ Local storage එකෙන් කෙලින්ම form එකට ගන්නවා
           title: parsed.title || "",
           bio: parsed.bio || "",
           hourlyRate: parsed.hourlyRate || 0,
-          skills: parsed.skills ? parsed.skills.join(", ") : "",
+          companyName: parsed.companyName || "",
           address: parsed.location?.address || "",
           city: parsed.location?.city || "",
-          country: parsed.location?.country || ""
+          province: parsed.location?.province || "",
+          country: parsed.location?.country || "",
+          lat: parsed.location?.coordinates?.lat || 6.0329,
+          lng: parsed.location?.coordinates?.lng || 80.2170
         });
+
+        if (parsed.skills && Array.isArray(parsed.skills)) {
+          setSelectedSkills(parsed.skills);
+        } else if (parsed.skills) {
+          setSelectedSkills(String(parsed.skills).split(",").map(s => s.trim()).filter(Boolean));
+        } else {
+          setSelectedSkills([]);
+        }
       }
     } catch (e) {
-      console.error("Error loading user data", e);
+      console.error("Error loading user data from local storage", e);
     }
-  }, [showModal]); // Modal එක ඇරෙන හැම පාරම sync වෙනවා
+  }, [showModal]);
 
-  const roles = currentUser?.roles || [];
+  const roles = currentUser?.userRole || currentUser?.roles || [];
   const isFreelancer = roles.map((r: string) => String(r).toUpperCase()).includes("FREELANCER");
   const isClient = roles.map((r: string) => String(r).toUpperCase()).includes("CLIENT");
-  
+
   const showFreelancersSection = isClient || (!isFreelancer && !isClient);
   const showJobsSection = isFreelancer || (!isFreelancer && !isClient);
 
@@ -111,82 +141,160 @@ export default function SearchPage() {
     }
   }, [searchInput, navigate]);
 
-  // ── Profile එක සම්පූර්ණද කියලා Check කරන Function එක ──
+ // ── 📸 Laptop එකෙන් Image එක අරන් Cloudinary යවන තැන ──
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const data = new FormData();
+    data.append("image", file);
+
+    setIsUploadingImage(true);
+    try {
+      const res = await api.post("/upload/upload-avatar", data, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      
+      if (res.data && res.data.url) {
+        // ✅ 1. Form state එකට දානවා (Modal එක ඇතුළේ පේන්න)
+        setFormData(prev => ({ ...prev, profileImage: res.data.url }));
+        
+        // ✅ 2. ක්ෂණිකව Local Storage එකත් අප්ඩේට් කරනවා (Nav bar එකට එකපාරම යන්න)
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          const parsed = JSON.parse(storedUser);
+          parsed.profileImage = res.data.url;
+          localStorage.setItem("user", JSON.stringify(parsed));
+          setCurrentUser(parsed); // Header එක refresh වෙන්න state එක අප්ඩේට් කරනවා
+        }
+      }
+    } catch (err) {
+      console.error("Image upload failed:", err);
+      alert("Failed to upload image to Cloudinary.");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const toggleSkill = (skill: string) => {
+    if (selectedSkills.includes(skill)) {
+      setSelectedSkills(selectedSkills.filter(s => s !== skill));
+    } else {
+      setSelectedSkills([...selectedSkills, skill]);
+    }
+  };
+
+  const handleAddCustomSkill = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && customSkill.trim()) {
+      e.preventDefault();
+      if (!selectedSkills.includes(customSkill.trim())) {
+        setSelectedSkills([...selectedSkills, customSkill.trim()]);
+      }
+      setCustomSkill("");
+    }
+  };
+
   const checkIsProfileComplete = (user: any) => {
     if (!user) return false;
     return !!(
+      user.firstName?.trim() &&
+      user.lastName?.trim() &&
+      user.email?.trim() &&
       user.title?.trim() &&
       user.bio?.trim() &&
-      user.hourlyRate > 0 &&
+      user.profileImage?.trim() && 
+      Number(user.hourlyRate) > 0 &&
       user.skills?.length > 0 &&
-      user.location?.address?.trim()
+      user.location?.address?.trim() &&
+      user.location?.city?.trim() &&
+      user.location?.province?.trim() &&
+      user.location?.country?.trim()
     );
   };
 
   const handleApplyClick = useCallback((e: React.MouseEvent, jobId: string) => {
-    e.stopPropagation(); // Row click navigation එක නවත්තනවා
-    
-    // User ලොග් වෙලා නැත්නම් login එකට යවනවා
+    e.stopPropagation();
+
     if (!currentUser) {
       navigate("/login");
       return;
     }
 
-    // Profile එක complete ද කියලා බලනවා
     const isProfileComplete = checkIsProfileComplete(currentUser);
 
     if (isProfileComplete) {
-      // Profile එක හරිනම් කෙළින්ම Apply Page එකට යවනවා
       navigate(`/jobs/${jobId}/apply`);
     } else {
-      // අඩුපාඩු තියෙනවා නම් Form Modal එක පෙන්වනවා
       setSelectedJobId(jobId);
       setShowModal(true);
     }
   }, [currentUser, navigate]);
 
-  // ── Profile Form එක Submit කරලා Update කරන එක ──
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (selectedSkills.length === 0) {
+      alert("Please select at least one skill!");
+      return;
+    }
     setIsUpdatingProfile(true);
 
     try {
       const updatedPayload = {
-        ...currentUser,
-        title: formData.title,
-        bio: formData.bio,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email.trim(),
+        profileImage: formData.profileImage.trim(),
+        title: formData.title.trim(),
+        bio: formData.bio.trim(),
         hourlyRate: Number(formData.hourlyRate),
-        skills: formData.skills.split(",").map(s => s.trim()).filter(Boolean),
+        companyName: formData.companyName.trim(),
+        skills: selectedSkills,
         location: {
-          ...currentUser.location,
-          address: formData.address,
-          city: formData.city,
-          country: formData.country,
+          address: formData.address.trim(),
+          city: formData.city.trim(),
+          province: formData.province.trim(),
+          country: formData.country.trim(),
+          coordinates: { lat: Number(formData.lat), lng: Number(formData.lng) }
         }
       };
 
-      // Backend API එකට Update request එක යවන්න (ඔයාගේ API එකට ගැලපෙන සේ වෙනස් කරගන්න)
-      // await userService.updateProfile(updatedPayload);
+      const responseData = await platformService.updateProfile(updatedPayload);
       
-      // Local Storage එක update කරනවා අලුත් දත්ත වලින්
-      localStorage.setItem("user", JSON.stringify(updatedPayload));
-      setCurrentUser(updatedPayload);
+      const fullUpdatedUser = {
+        ...currentUser,
+        ...responseData, 
+        firstName: updatedPayload.firstName,
+        lastName: updatedPayload.lastName,
+        email: updatedPayload.email,
+        profileImage: updatedPayload.profileImage,
+        title: updatedPayload.title,
+        bio: updatedPayload.bio,
+        hourlyRate: updatedPayload.hourlyRate,
+        companyName: updatedPayload.companyName,
+        skills: updatedPayload.skills,
+        location: updatedPayload.location
+      };
+
+      localStorage.setItem("user", JSON.stringify(fullUpdatedUser));
+      setCurrentUser(fullUpdatedUser);
       setShowModal(false);
 
-      // Profile එක සාර්ථකව Update වුනාට පස්සේ කෙළින්ම Apply route එකට යවනවා
       if (selectedJobId) {
         navigate(`/jobs/${selectedJobId}/apply`);
       }
-    } catch (error) {
-      alert("Failed to update profile. Please try again.");
+    } catch (error: any) {
+      console.error("Profile update failed:", error);
+      alert("Something went wrong while updating your profile.");
     } finally {
       setIsUpdatingProfile(false);
     }
   };
 
+  const userFullName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : "User";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 font-sans flex flex-col">
-      {/* ── HEADER NAVBAR ── */}
+      {/* ── 🟢 HEADER NAVBAR (UPDATED WITH PROFILE PIC SYNC) ── */}
       <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4 justify-between w-full">
           <Link to="/" className="shrink-0 flex items-center gap-2">
@@ -212,10 +320,42 @@ export default function SearchPage() {
             </button>
           </div>
 
-          <div className="shrink-0 hidden sm:block">
-            <Link to="/" className="text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-2 rounded-xl transition">
+          {/* RIGHT SIDE: PROFILE IMAGE SYNCED */}
+          <div className="shrink-0 flex items-center gap-4">
+            <Link to="/" className="hidden md:inline-block text-sm font-medium text-gray-600 hover:text-gray-900 px-2 py-2 transition">
               Back to Home
             </Link>
+
+            {currentUser ? (
+              <div 
+                onClick={() => setShowModal(true)} 
+                className="flex items-center gap-2 pl-2 border-l border-gray-200 cursor-pointer rounded-xl p-1 hover:bg-gray-50 transition"
+                title="Edit Profile"
+              >
+                {/* 📸 Cloudinary URL එක තියෙනවා නම් ඒක පේනවා, නැත්නම් Initials වැටෙනවා */}
+                {currentUser.profileImage ? (
+                  <img 
+                    src={currentUser.profileImage} 
+                    alt={userFullName} 
+                    className="w-8 h-8 rounded-full object-cover border border-emerald-500 shadow-xs" 
+                  />
+                ) : (
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-xs"
+                    style={{ background: avatarColor(currentUser._id || '') }}
+                  >
+                    {getInitials(userFullName)}
+                  </div>
+                )}
+                <span className="text-xs font-semibold text-gray-700 hidden sm:inline max-w-[100px] truncate">
+                  {currentUser.firstName}
+                </span>
+              </div>
+            ) : (
+              <Link to="/login" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700">
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -226,7 +366,6 @@ export default function SearchPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
             {query ? `Results for “${query}”` : "Browse talent & open jobs"}
           </h1>
-          <p className="text-xs text-gray-500 mt-1">Found matching services on freelancefluxo platform</p>
         </div>
 
         {loading ? (
@@ -235,8 +374,7 @@ export default function SearchPage() {
           </div>
         ) : (
           <div className="space-y-12">
-            
-            {/* ── 1. FREELANCERS SECTION ── */}
+            {/* Freelancers Section */}
             {showFreelancersSection && (
               <section className="space-y-4">
                 <div className="flex items-center gap-3">
@@ -245,7 +383,7 @@ export default function SearchPage() {
                     {data?.freelancers?.length || 0}
                   </span>
                 </div>
-                
+
                 {data?.freelancers?.length ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     {data.freelancers.map((fl: any) => (
@@ -256,10 +394,13 @@ export default function SearchPage() {
                       >
                         <div>
                           <div
-                            className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black mb-3 shadow-sm"
-                            style={{ background: avatarColor(fl._id) }}
+                            className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black mb-3 shadow-sm overflow-hidden border bg-gray-100"
                           >
-                            {getInitials(`${fl.firstName} ${fl.lastName}`)}
+                            {fl.profileImage ? (
+                              <img src={fl.profileImage} alt="" className="w-full h-full object-cover"/>
+                            ) : (
+                              getInitials(`${fl.firstName} ${fl.lastName}`)
+                            )}
                           </div>
                           <h3 className="font-semibold text-gray-900 text-base group-hover:text-emerald-700 transition">
                             {fl.firstName} {fl.lastName}
@@ -267,27 +408,12 @@ export default function SearchPage() {
                           <p className="text-xs font-medium text-emerald-600 mt-0.5">
                             {fl.title || "Professional Freelancer"}
                           </p>
-                          
-                          <div className="flex items-center gap-1.5 text-amber-500 text-xs my-2 font-medium">
-                            <span>{renderStars(fl.rating || 5)}</span>
-                            <span className="text-gray-400 font-normal">({fl.reviewCount || 0})</span>
-                          </div>
                         </div>
 
                         <div className="pt-3 border-t border-gray-100 mt-2 flex flex-col gap-3">
                           <p className="font-bold text-gray-900 text-sm">
                             ${fl.hourlyRate || 0}<span className="text-gray-400 font-normal text-xs">/hr</span>
                           </p>
-                          <div className="flex gap-1.5 flex-wrap">
-                            {(fl.skills || []).slice(0, 3).map((skill: string) => (
-                              <span
-                                key={skill}
-                                className="px-2 py-0.5 bg-gray-50 border border-gray-100 rounded-lg text-[11px] text-gray-500 font-medium"
-                              >
-                                {skill}
-                              </span>
-                            ))}
-                          </div>
                         </div>
                       </div>
                     ))}
@@ -300,7 +426,7 @@ export default function SearchPage() {
               </section>
             )}
 
-            {/* ── 2. JOBS SECTION ── */}
+            {/* Jobs Section */}
             {showJobsSection && (
               <section className="space-y-4">
                 <div className="flex items-center gap-3">
@@ -322,22 +448,14 @@ export default function SearchPage() {
                           <h3 className="font-semibold text-gray-900 text-base group-hover:text-emerald-700 transition truncate">
                             {job.title}
                           </h3>
-                          <p className="text-xs text-gray-500 flex items-center gap-1.5 flex-wrap">
-                            <span className="font-medium text-gray-700">
-                              {job.clientId?.companyName || `${job.clientId?.firstName || ""} ${job.clientId?.lastName || ""}`.trim() || 'Client'}
-                            </span>
-                            <span>•</span>
-                            <span className="text-emerald-600 font-semibold">${job.budget?.toLocaleString()} Budget</span>
-                          </p>
                         </div>
-                        
-                        <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+
+                        <div className="flex items-center gap-3 shrink-0">
                           <StatusBadge status={job.status || "open"} />
-                          
                           <button
                             type="button"
                             onClick={(e) => handleApplyClick(e, job._id)}
-                            className="px-4 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 shadow-sm hover:shadow transition-all duration-200"
+                            className="px-4 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 shadow-sm shadow-emerald-600/10 transition-all"
                           >
                             Apply Now
                           </button>
@@ -356,131 +474,255 @@ export default function SearchPage() {
         )}
       </main>
 
-      {/* ── 3. MODAL POPUP: COMPLETE PROFILE FORM ── */}
+      {/* ── 📌 MODAL FORM: WITH CLOUDINARY FILE UPLOADER ── */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden transform transition-all border border-gray-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden transform transition-all border border-gray-100">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Complete Your Profile</h3>
-                <p className="text-xs text-gray-500">You must fill in these details before applying for a job.</p>
+                <h3 className="text-lg font-bold text-gray-900">Complete Your Full Profile Details</h3>
+                <p className="text-xs text-gray-500">Verify your data and avatar image before applying.</p>
               </div>
-              <button 
-                onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition"
-              >
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition">
                 <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <form onSubmit={handleProfileSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-              {/* Professional Title */}
+            <form onSubmit={handleProfileSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+              
+              {/* 🧑‍💻 SECTION 1: PERSONAL INFO + CLOUDINARY UPLOADER */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Professional Title</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="e.g. Senior Full-Stack Developer"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
-                />
+                <h4 className="text-sm font-bold text-gray-800 mb-3 border-b pb-1">1. Personal Information</h4>
+                
+                {/* 📸 CLOUDINARY AVATAR UPLOAD DESIGN */}
+                <div className="flex items-center gap-4 mb-4 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                  <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-gray-200 border-2 border-white shadow-md shrink-0 flex items-center justify-center">
+                    {formData.profileImage ? (
+                      <img src={formData.profileImage} alt="Avatar Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xs text-gray-400 font-bold">No Image</span>
+                    )}
+                    {isUploadingImage && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-[10px] text-white font-medium animate-pulse">
+                        Uploading...
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-gray-700 block">Profile Picture</span>
+                    <p className="text-[11px] text-gray-400 mb-1.5">Upload a clean professional portrait from your computer</p>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef}
+                      onChange={handleImageChange}
+                      accept="image/*" 
+                      className="hidden" 
+                    />
+                    <button
+                      type="button"
+                      disabled={isUploadingImage}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-3 py-1 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-100 shadow-xs transition disabled:opacity-50"
+                    >
+                      {formData.profileImage ? "Change Image" : "Select Image from Laptop"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">First Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Last Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-3">
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-gray-50 text-gray-400 outline-none"
+                    readOnly
+                  />
+                </div>
               </div>
 
-              {/* Hourly Rate */}
+              {/* 💼 SECTION 2: PROFESSIONAL DETAILS */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Hourly Rate ($)</label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  value={formData.hourlyRate || ""}
-                  onChange={(e) => setFormData({ ...formData, hourlyRate: Number(e.target.value) })}
-                  placeholder="e.g. 35"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
-                />
-              </div>
+                <h4 className="text-sm font-bold text-gray-800 mb-3 border-b pb-1">2. Professional Profiles</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Professional Title</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="e.g. Fullstack Developer"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Hourly Rate ($/hr)</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      value={formData.hourlyRate || ""}
+                      onChange={(e) => setFormData({ ...formData, hourlyRate: Number(e.target.value) })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
 
-              {/* Skills Input */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Skills (Comma separated)</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.skills}
-                  onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
-                  placeholder="React, Node.js, TypeScript, UI Design"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              {/* Professional Bio */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Professional Bio</label>
-                <textarea
-                  required
-                  rows={3}
-                  value={formData.bio}
-                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                  placeholder="Tell clients about your expertise, experience, and workflow..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 resize-none"
-                />
-              </div>
-
-              {/* Location Data */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="sm:col-span-1">
-                  <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Address</label>
+                <div className="mb-3">
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Company Name (Optional)</label>
                   <input
                     type="text"
-                    required
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="Street address"
+                    value={formData.companyName}
+                    onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">City</label>
-                  <input
-                    type="text"
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Professional Bio</label>
+                  <textarea
                     required
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="Colombo"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
+                    rows={3}
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 resize-none"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Country</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.country}
-                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                    placeholder="Sri Lanka"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
-                  />
+              </div>
+
+              {/* 🎯 SECTION 3: SKILL SELECTOR */}
+              <div>
+                <h4 className="text-sm font-bold text-gray-800 mb-2 flex items-center justify-between border-b pb-1">
+                  <span>3. Select Your Skills</span>
+                  <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">{selectedSkills.length} Selected</span>
+                </h4>
+
+                {selectedSkills.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 p-2 bg-gray-50 rounded-xl border border-dashed border-gray-200 mb-3">
+                    {selectedSkills.map(skill => (
+                      <span key={skill} className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-xs font-medium">
+                        {skill}
+                        <button type="button" onClick={() => toggleSkill(skill)} className="hover:bg-emerald-700 p-0.5 rounded-full">✕</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <input
+                  type="text"
+                  value={customSkill}
+                  onChange={(e) => setCustomSkill(e.target.value)}
+                  onKeyDown={handleAddCustomSkill}
+                  placeholder="Type a custom skill and press 'Enter'..."
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs mb-3 focus:outline-none focus:border-emerald-500"
+                />
+
+                <div className="space-y-3 max-h-48 overflow-y-auto border p-3 rounded-xl bg-white shadow-inner">
+                  {Object.entries(SKILL_POOL).map(([category, skills]) => (
+                    <div key={category} className="space-y-1">
+                      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">{category}</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {skills.map(skill => {
+                          const isSelected = selectedSkills.includes(skill);
+                          return (
+                            <button
+                              type="button" key={skill} onClick={() => toggleSkill(skill)}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${
+                                isSelected ? "bg-emerald-50 border-emerald-500 text-emerald-700 font-semibold" : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+                              }`}
+                            >
+                              {skill} {isSelected && "✓"}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 📍 SECTION 4: LOCATION INFO */}
+              <div>
+                <h4 className="text-sm font-bold text-gray-800 mb-3 border-b pb-1">4. Location Info</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Street Address</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">City</label>
+                      <input
+                        type="text" required value={formData.city}
+                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Province</label>
+                      <input
+                        type="text" required value={formData.province}
+                        onChange={(e) => setFormData({ ...formData, province: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Country</label>
+                      <input
+                        type="text" required value={formData.country}
+                        onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Action Buttons */}
               <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 bg-gray-100 text-gray-600 text-xs font-semibold rounded-xl hover:bg-gray-200 transition"
-                >
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 bg-gray-100 text-gray-600 text-xs font-semibold rounded-xl hover:bg-gray-200 transition">
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isUpdatingProfile}
-                  className="px-5 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 shadow-sm transition disabled:opacity-50"
+                  disabled={isUpdatingProfile || isUploadingImage}
+                  className="px-5 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 shadow-sm transition disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  {isUpdatingProfile ? "Saving..." : "Save & Apply Now"}
+                  {isUpdatingProfile ? "Syncing Database..." : "Save Profile & Apply"}
                 </button>
               </div>
             </form>

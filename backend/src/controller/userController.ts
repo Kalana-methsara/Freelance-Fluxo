@@ -161,7 +161,7 @@ export const updateUserApproval = asyncHandler(async (req: Request, res: Respons
     const user = await UserModel.findByIdAndUpdate(
         req.params.id,
         { approvalStatus: status },
-        { new: true }
+        { returnDocument: 'after' }
     ).select("-password");
 
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -205,7 +205,7 @@ export const updateUserProfile = asyncHandler(async (req: Request, res: Response
     const updates = buildProfileUpdatePayload(req.body);
 
     const user = await UserModel.findByIdAndUpdate(targetId, updates, {
-        new: true,
+        returnDocument: 'after',
         runValidators: true,
         context: "query",
     }).select("-password");
@@ -226,7 +226,7 @@ export const updateMyProfile = asyncHandler(async (req: Request, res: Response) 
     const updates = buildProfileUpdatePayload(req.body);
 
     const user = await UserModel.findByIdAndUpdate(targetId, updates, {
-        new: true,
+        returnDocument: 'after',
         runValidators: true,
         context: "query",
     }).select("-password");
@@ -288,7 +288,7 @@ export const updateUserRole = asyncHandler(async (req: Request, res: Response) =
     const user = await UserModel.findByIdAndUpdate(
         req.params.id,
         { userRole: updatedRoles },
-        { new: true }
+        { returnDocument: 'after' }
     ).select("-password");
 
     if (!user) return res.status(404).json({ message: "User not found" });

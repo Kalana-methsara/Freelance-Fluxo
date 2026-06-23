@@ -13,6 +13,7 @@ interface BackendUser {
   skills?: string[];
   hourlyRate?: number;
   companyName?: string;
+  profileImage?: string; // 👈 ✅ 1. මෙතනට profileImage එක දාන්න
 }
 
 export function normalizeBackendUser(
@@ -34,6 +35,7 @@ export function normalizeBackendUser(
     skills: raw.skills,
     hourlyRate: raw.hourlyRate,
     companyName: raw.companyName,
+    profileImage: raw.profileImage || "", // 👈 💥 ✅ 2. මෙන්න මේ ලයින් එක අනිවාර්යයෙන්ම එකතු කරන්න!
   };
 }
 

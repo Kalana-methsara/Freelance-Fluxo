@@ -19,6 +19,8 @@ import TechStack from '../components/Skills';
 import Slide from '../components/Slide';
 import CatCard from '../components/CatCard';
 import { cards, items } from '../../data';
+import api from '../services/api';
+
 
 // ============================================================
 // 1. TYPES & INTERFACES
@@ -33,7 +35,8 @@ interface User {
   hourlyRate?: number;
   bio?: string;
   skills?: string[];
-  profilePic?: string;
+  profileImage?: string;
+  companyName?: string;
   rating?: number;
   reviewCount?: number;
   location?: {
@@ -41,6 +44,7 @@ interface User {
     city?: string;
     province?: string;
     country?: string;
+    coordinates?: { lat: number; lng: number };
   };
 }
 
@@ -106,6 +110,12 @@ const NAV_LINKS = [
   { label: 'Messages', id: 'messages' },
   { label: 'Profile', id: 'profile' },
 ];
+const SKILL_POOL = {
+  "Development": ["React", "Node.js", "TypeScript", "JavaScript", "Python", "Java", "Spring Boot", "Express", "MongoDB", "PostgreSQL", "Next.js", "Docker"],
+  "Design & Creative": ["UI/UX Design", "Figma", "Adobe Photoshop", "Illustrator", "Web Design", "Graphic Design"],
+  "Writing & Translation": ["Content Writing", "Technical Writing", "Copywriting", "Translation", "SEO Writing"],
+  "Marketing & Sales": ["SEO", "Digital Marketing", "Social Media Management", "Google Analytics", "Lead Generation"]
+};
 
 const POPULAR_TAGS = ['Web Design', 'React Developer', 'UI/UX Design', 'Node.js', 'WordPress'];
 const AVATAR_COLORS = ['#14a800', '#7c3aed', '#dc2626', '#d97706', '#0891b2'];
@@ -564,12 +574,9 @@ function JobDetailDrawer({ job, onClose, onMessage, onSubmitWork, onApply }: Job
   );
 }
 
-
-
 // ============================================================
-// 7. PROFILE EDITOR
+// 7. PROFILE EDITOR (FULLY SYNCED WITH SEARCHPAGE LOGIC)
 // ============================================================
-
 interface ProfileEditorProps {
   user: User;
   onSave: (data: Partial<User>) => void;
@@ -578,75 +585,229 @@ interface ProfileEditorProps {
 }
 
 function ProfileEditor({ user, onSave, onCancel, onError }: ProfileEditorProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [customSkill, setCustomSkill] = useState('');
+  
   const [form, setForm] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || '',
+    profileImage: user?.profileImage || '',
     title: user?.title || '',
     hourlyRate: user?.hourlyRate || 0,
     bio: user?.bio || '',
-    skills: (user?.skills || []).join(', '),
+    companyName: user?.companyName || '',
+    address: user?.location?.address || '',
+    city: user?.location?.city || '',
+    province: user?.location?.province || '',
+    country: user?.location?.country || '',
   });
+
+  const [selectedSkills, setSelectedSkills] = useState<string[]>(user?.skills || []);
+
+  const toggleSkill = (skill: string) => {
+    setSelectedSkills((prev) =>
+      prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill]
+    );
+  };
+
+  const handleAddCustomSkill = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && customSkill.trim()) {
+      e.preventDefault();
+      if (!selectedSkills.includes(customSkill.trim())) {
+        setSelectedSkills([...selectedSkills, customSkill.trim()]);
+      }
+      setCustomSkill("");
+    }
+  };
+
+  // ── 📸 Laptop එකෙන් Image එක අරන් Cloudinary යවන තැන (SearchPage logic synced) ──
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const data = new FormData();
+    data.append("image", file); // ✅ SearchPage එකේ වගේම 'image' කියා යෙදිය යුතුයි
+
+    setIsUploadingImage(true);
+    try {
+      const res = await api.post("/upload/upload-avatar", data, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      
+      if (res.data && res.data.url) {
+        // Form එකට සෙට් කරනවා
+        setForm((f) => ({ ...f, profileImage: res.data.url }));
+        
+        // ක්ෂණිකව Local Storage එකත් Update කරනවා Navbar එකට යන්න
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          const parsed = JSON.parse(storedUser);
+          parsed.profileImage = res.data.url;
+          localStorage.setItem("user", JSON.stringify(parsed));
+        }
+      }
+    } catch (err) {
+      console.error("Image upload failed:", err);
+      onError("Failed to upload image to Cloudinary.");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.hourlyRate < 0) {
-      onError('Hourly rate cannot be negative.');
+    if (!form.firstName.trim() || !form.lastName.trim()) {
+      onError('First and last name are required.');
       return;
     }
+    if (selectedSkills.length === 0) {
+      onError('Please select at least one skill!');
+      return;
+    }
+
     onSave({
-      title: form.title,
-      hourlyRate: form.hourlyRate,
+      firstName: form.firstName.trim(),
+      lastName: form.lastName.trim(),
+      profileImage: form.profileImage,
+      title: form.title.trim(),
+      hourlyRate: Number(form.hourlyRate),
       bio: form.bio,
-      skills: form.skills.split(',').map((s) => s.trim()).filter(Boolean),
+      companyName: form.companyName.trim(),
+      skills: selectedSkills,
+      location: {
+        address: form.address.trim(),
+        city: form.city.trim(),
+        province: form.province.trim(),
+        country: form.country.trim(),
+        coordinates: user?.location?.coordinates || { lat: 6.0329, lng: 80.2170 }
+      },
     });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Title</label>
-        <input
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-          className="w-full border rounded-md px-3 py-2 mt-1 focus:border-green-600 outline-hidden"
-        />
+    <div className="bg-white rounded-2xl border border-gray-200/80 shadow-xl overflow-hidden max-w-3xl mx-auto">
+      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4 text-white">
+        <h3 className="text-lg font-semibold">Complete Your Full Profile Details</h3>
+        <p className="text-xs text-emerald-100 mt-0.5">Please fill in the required fields to get verified and apply for jobs.</p>
       </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Hourly Rate ($)</label>
-        <input
-          type="number"
-          min="0"
-          step="0.5"
-          value={form.hourlyRate}
-          onChange={(e) => setForm({ ...form, hourlyRate: Number(e.target.value) })}
-          className="w-full border rounded-md px-3 py-2 mt-1 focus:border-green-600 outline-hidden"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Bio</label>
-        <textarea
-          rows={3}
-          value={form.bio}
-          onChange={(e) => setForm({ ...form, bio: e.target.value })}
-          className="w-full border rounded-md px-3 py-2 mt-1 focus:border-green-600 outline-hidden"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Skills (comma separated)</label>
-        <input
-          value={form.skills}
-          onChange={(e) => setForm({ ...form, skills: e.target.value })}
-          placeholder="React, Node, UI/UX"
-          className="w-full border rounded-md px-3 py-2 mt-1 focus:border-green-600 outline-hidden"
-        />
-      </div>
-      <div className="flex gap-2 pt-2">
-        <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700">
-          Save
-        </button>
-        <button type="button" onClick={onCancel} className="px-4 py-2 border rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
-          Cancel
-        </button>
-      </div>
-    </form>
+
+      <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Avatar Upload Sector */}
+        <div className="flex flex-col sm:flex-row items-center gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+          <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+            {form.profileImage ? (
+              <img src={form.profileImage} alt="Avatar" className="w-20 h-20 rounded-full object-cover border-2 border-emerald-500 shadow-sm" />
+            ) : (
+              <div className="w-20 h-20 rounded-full flex items-center justify-center text-xl font-bold text-white shadow-sm" style={{ backgroundColor: '#059669' }}>
+                {form.firstName ? form.firstName[0].toUpperCase() : 'U'}
+              </div>
+            )}
+            <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+              <span className="text-[10px] text-white font-medium">Change</span>
+            </div>
+          </div>
+          <div className="flex-1 text-center sm:text-left">
+            <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isUploadingImage} className="px-3 py-1.5 bg-white border border-gray-200 text-xs font-semibold rounded-lg shadow-xs hover:bg-gray-50 text-gray-700 transition">
+              {isUploadingImage ? "Uploading to Cloudinary..." : "Upload Profile Picture"}
+            </button>
+            <p className="text-[11px] text-gray-400 mt-1">Supported formats: JPG, PNG. Max 2MB.</p>
+            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
+          </div>
+        </div>
+
+        {/* Basic Info */}
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">First Name *</label>
+            <input type="text" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-emerald-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Last Name *</label>
+            <input type="text" required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-emerald-500" />
+          </div>
+        </div>
+
+        {/* Title & Hourly Rate */}
+        <div className="grid sm:grid-cols-3 gap-4">
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Professional Title *</label>
+            <input type="text" required placeholder="e.g. Full Stack Developer / Content Writer" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-emerald-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Hourly Rate ($) *</label>
+            <input type="number" required min="1" value={form.hourlyRate} onChange={(e) => setForm({ ...form, hourlyRate: Number(e.target.value) })} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-emerald-500" />
+          </div>
+        </div>
+
+        {/* Bio */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1">Professional Bio *</label>
+          <textarea rows={4} required placeholder="Describe your experience, skills, and what you can bring to clients..." value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-emerald-500" />
+        </div>
+
+        {/* Skills Sector (Categorized Pool) */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1">Skills & Expertise * (Select at least one)</label>
+          <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 max-h-48 overflow-y-auto">
+            {Object.entries(SKILL_POOL).map(([category, skills]) => (
+              <div key={category} className="space-y-1.5">
+                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400">{category}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {skills.map((skill) => {
+                    const isSelected = selectedSkills.includes(skill);
+                    return (
+                      <button key={skill} type="button" onClick={() => toggleSkill(skill)} className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition ${isSelected ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                        {skill} {isSelected ? "✓" : "+"}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Custom Skills input */}
+          <div className="mt-2">
+            <input type="text" placeholder="Add custom skill and press Enter..." value={customSkill} onChange={(e) => setCustomSkill(e.target.value)} onKeyDown={handleAddCustomSkill} className="w-full px-3 py-1.5 border border-gray-200 rounded-xl text-xs focus:outline-hidden focus:border-emerald-500" />
+          </div>
+        </div>
+
+        {/* Location Fields */}
+        <div className="space-y-3">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Location Details *</p>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Street Address</label>
+            <input type="text" required value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-emerald-500" />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">City</label>
+              <input type="text" required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-emerald-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Province/State</label>
+              <input type="text" required value={form.province} onChange={(e) => setForm({ ...form, province: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-emerald-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Country</label>
+              <input type="text" required value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-emerald-500" />
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
+          <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-100 text-gray-600 text-xs font-semibold rounded-xl hover:bg-gray-200 transition">
+            Cancel
+          </button>
+          <button type="submit" disabled={isUploadingImage} className="px-5 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 shadow-sm transition disabled:opacity-50">
+            Save Profile & Apply
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
 
@@ -831,7 +992,7 @@ function ProfileCompletionModal({
 
 type ToastMessage = { type: 'success' | 'error'; text: string } | null;
 
-export default function FreelancerPlatform() {
+export default function FreelancerDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [freelancers, setFreelancers] = useState<any[]>([]);
@@ -970,20 +1131,37 @@ export default function FreelancerPlatform() {
     );
   }, []);
 
-  const handleSaveProfile = useCallback(
-    async (updated: Partial<User>) => {
-      if (!dashboardData?.user?._id) return;
-      try {
-        await jobService.updateFreelancerProfile(dashboardData.user._id, updated);
-        await fetchDashboardData();
-        setEditingProfile(false);
-        showToast('success', 'Profile updated successfully.');
-      } catch (err) {
-        showToast('error', 'Failed to update profile.');
-      }
-    },
-    [dashboardData?.user?._id, fetchDashboardData, showToast]
-  );
+  const handleSaveProfile = async (updatedFields: Partial<User>) => {
+  try {
+    // 1. Backend එකට update එක යැවීම
+    const responseData = await platformService.updateProfile(updatedFields);
+    
+    // 2. දැනට ඉන්න currentUser (or state user) සමඟ Response එක merge කිරීම
+    const fullUpdatedUser = {
+      ...user,
+      ...responseData,
+      ...updatedFields,
+    };
+
+    // 3. Local Storage එක update කිරීම (Header/Navbar sync වෙන්න)
+    localStorage.setItem('user', JSON.stringify(fullUpdatedUser));
+    
+    // 4. Dashboard data state එක update කිරීම (Banner එක අයින් වෙන්න සහ UI refresh වෙන්න)
+    setDashboardData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        user: fullUpdatedUser,
+      };
+    });
+
+    setEditingProfile(false);
+    showToast('success', 'Profile updated successfully!');
+  } catch (error) {
+    console.error('Profile update failed:', error);
+    showToast('error', 'Something went wrong while updating your profile.');
+  }
+};
 
   const handleSaveProfileAndApply = useCallback(
     async (updated: Partial<User>) => {
@@ -1151,8 +1329,8 @@ export default function FreelancerPlatform() {
               className="flex items-center gap-2 pl-2 border-l border-gray-200 cursor-pointer rounded-md transition-colors duration-200 hover:bg-gray-50"
               onClick={() => setActiveNav('profile')}
             >
-              {user?.profilePic ? (
-                <img src={user.profilePic} alt={userFullName} className="w-8 h-8 rounded-full object-cover" />
+              {user?.profileImage ? (
+                <img src={user.profileImage} alt={userFullName} className="w-8 h-8 rounded-full object-cover" />
               ) : (
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
@@ -1177,8 +1355,8 @@ export default function FreelancerPlatform() {
               className="flex items-center gap-2 cursor-pointer"
               onClick={() => setActiveNav('profile')}
             >
-              {user?.profilePic ? (
-                <img src={user.profilePic} alt={userFullName} className="w-8 h-8 rounded-full object-cover" />
+              {user?.profileImage ? (
+                <img src={user.profileImage} alt={userFullName} className="w-8 h-8 rounded-full object-cover" />
               ) : (
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
@@ -1578,72 +1756,75 @@ export default function FreelancerPlatform() {
           </div>
         )}
 
-        {/* Profile */}
+        {/* Profile — display only (editor opens as modal) */}
         {activeNav === 'profile' && user && (
           <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            {!editingProfile ? (
-              <div>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                  <div className="flex items-center gap-4">
-                    <div
-                      className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-sm"
-                      style={{ background: avatarColor(user._id) }}
-                    >
-                      {getInitials(userFullName)}
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900">{userFullName}</h2>
-                      <p className="text-sm text-gray-500">{user.title || 'Professional Specialist'}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setEditingProfile(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 border border-green-200 text-green-700 text-sm font-medium rounded-full hover:bg-green-50 transition"
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-4">
+                {user.profileImage ? (
+                  <img src={user.profileImage} alt={userFullName} className="w-16 h-16 rounded-full object-cover shadow-sm" />
+                ) : (
+                  <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-sm"
+                    style={{ background: avatarColor(user._id) }}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                    Edit Profile
-                  </button>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4 text-sm border-t border-gray-100 pt-4">
-                  <div>
-                    <span className="text-xs uppercase tracking-wider text-gray-400 block">Email</span>
-                    <p className="text-gray-800 font-medium mt-0.5">{user.email}</p>
+                    {getInitials(userFullName)}
                   </div>
-                  <div>
-                    <span className="text-xs uppercase tracking-wider text-gray-400 block">Hourly Rate</span>
-                    <p className="text-gray-800 font-medium mt-0.5">${user.hourlyRate || 0}/hr</p>
-                  </div>
-                  {user.bio && (
-                    <div className="sm:col-span-2">
-                      <span className="text-xs uppercase tracking-wider text-gray-400 block">Bio</span>
-                      <p className="text-gray-700 mt-0.5 bg-gray-50 p-3 rounded-lg">{user.bio}</p>
-                    </div>
-                  )}
-                  {user.skills && user.skills.length > 0 && (
-                    <div className="sm:col-span-2">
-                      <span className="text-xs uppercase tracking-wider text-gray-400 block">Skills</span>
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        {user.skills.map((s) => (
-                          <span key={s} className="px-3 py-1 bg-gray-100 rounded-full text-xs text-gray-700 font-medium">
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                )}
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">{userFullName}</h2>
+                  <p className="text-sm text-gray-500">{user.title || 'Professional Specialist'}</p>
                 </div>
               </div>
-            ) : (
-              <ProfileEditor
-                user={user}
-                onSave={handleSaveProfile}
-                onCancel={() => setEditingProfile(false)}
-                onError={(msg) => showToast('error', msg)}
-              />
-            )}
+              <button
+                onClick={() => setEditingProfile(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 border border-green-200 text-green-700 text-sm font-medium rounded-full hover:bg-green-50 transition"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+                Edit Profile
+              </button>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4 text-sm border-t border-gray-100 pt-4">
+              <div>
+                <span className="text-xs uppercase tracking-wider text-gray-400 block">Email</span>
+                <p className="text-gray-800 font-medium mt-0.5">{user.email}</p>
+              </div>
+              <div>
+                <span className="text-xs uppercase tracking-wider text-gray-400 block">Hourly Rate</span>
+                <p className="text-gray-800 font-medium mt-0.5">${user.hourlyRate || 0}/hr</p>
+              </div>
+              {user.bio && (
+                <div className="sm:col-span-2">
+                  <span className="text-xs uppercase tracking-wider text-gray-400 block">Bio</span>
+                  <p className="text-gray-700 mt-0.5 bg-gray-50 p-3 rounded-lg">{user.bio}</p>
+                </div>
+              )}
+              {user.skills && user.skills.length > 0 && (
+                <div className="sm:col-span-2">
+                  <span className="text-xs uppercase tracking-wider text-gray-400 block">Skills</span>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {user.skills.map((s) => (
+                      <span key={s} className="px-3 py-1 bg-gray-100 rounded-full text-xs text-gray-700 font-medium">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {user.location?.city && (
+                <div className="sm:col-span-2">
+                  <span className="text-xs uppercase tracking-wider text-gray-400 block">Location</span>
+                  <p className="text-gray-800 font-medium mt-0.5">
+                    {[user.location.address, user.location.city, user.location.province, user.location.country]
+                      .filter(Boolean)
+                      .join(', ')}
+                  </p>
+                </div>
+              )}
+            </div>
           </section>
         )}
 
@@ -1862,6 +2043,24 @@ export default function FreelancerPlatform() {
           onSuccess={handleWorkSuccess}
           onError={(msg) => showToast('error', msg)}
         />
+      )}
+
+      {/* ─── PROFILE EDITOR MODAL ─── */}
+      {editingProfile && user && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setEditingProfile(false)}
+          />
+          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
+            <ProfileEditor
+              user={user}
+              onSave={handleSaveProfile}
+              onCancel={() => setEditingProfile(false)}
+              onError={(msg) => showToast('error', msg)}
+            />
+          </div>
+        </div>
       )}
     </>
   );

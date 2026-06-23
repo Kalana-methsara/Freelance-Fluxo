@@ -7,6 +7,7 @@ import jobRouter from "./routes/jobRouter";
 import platformRouter from "./routes/platformRouter";
 import dashboardRouter from "./routes/dashboardRouter";
 import conversationRouter from "./routes/conversationRouter";
+import uploadRoute from "./routes/uploadRoute"; // 👈 1. මෙතනින් uploadRoute එක import කරගත්තා
 import mongoDB from "./config/db";
 import { errorHandler } from "./middleware/errorMiddleware";
 import passport from 'passport';
@@ -16,6 +17,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import authRoutes from './routes/authRoutes';
 import { ConversationModel } from './models/conversationModel';
 import { MessageModel } from './models/messageModel';
+import { upload } from './middleware/uploadMiddleware';
 
 const PORT = process.env.PORT || 5000; 
 
@@ -38,12 +40,14 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
+
 app.use('/api/v1/auth', authRoutes);
 app.use("/api/v1", userRouter);
 app.use("/api/v1/jobs", jobRouter);
 app.use("/api/v1/platform", platformRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/conversations", conversationRouter);
+app.use("/api/v1/upload", uploadRoute); // 👈 2. මෙතනට semicolon (;) එකක් දාලා ලයින් එක fix කරා
 
 app.get("/api/v1/health", (_req, res) => {
   res.json({ success: true, message: "Freelance-Fluxo API is running" });

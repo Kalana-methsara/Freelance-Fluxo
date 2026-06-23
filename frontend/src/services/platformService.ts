@@ -25,6 +25,11 @@ const platformService = {
     const response = await api.get("/platform/search", { params: { q } });
     return response.data.data;
   },
+
+  updateProfile: async (profileData: any) => {
+    const response = await api.patch("/users/profile", profileData);
+    return response.data.data;
+  },
 };
 
 export default platformService;
