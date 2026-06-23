@@ -20,7 +20,7 @@ import Slide from '../components/Slide';
 import CatCard from '../components/CatCard';
 import { cards, items } from '../../data';
 import api from '../services/api';
-
+import { MapPin, Code2, FolderOpen, Mail, DollarSign, Award, Clock } from "lucide-react";
 
 // ============================================================
 // 1. TYPES & INTERFACES
@@ -1530,7 +1530,7 @@ export default function FreelancerDashboard() {
       </section>
 
       {/* ─── MAIN DASHBOARD SECTIONS ─── */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-10 py-8 space-y-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 space-y-10">
         <div key={activeNav} className="space-y-10 animate-tab-in">
         {/* Overview Stats */}
         {activeNav === 'overview' && (
@@ -1756,77 +1756,166 @@ export default function FreelancerDashboard() {
           </div>
         )}
 
-        {/* Profile — display only (editor opens as modal) */}
-        {activeNav === 'profile' && user && (
-          <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-4">
-                {user.profileImage ? (
-                  <img src={user.profileImage} alt={userFullName} className="w-16 h-16 rounded-full object-cover shadow-sm" />
-                ) : (
-                  <div
-                    className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-sm"
-                    style={{ background: avatarColor(user._id) }}
-                  >
-                    {getInitials(userFullName)}
-                  </div>
-                )}
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">{userFullName}</h2>
-                  <p className="text-sm text-gray-500">{user.title || 'Professional Specialist'}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setEditingProfile(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 border border-green-200 text-green-700 text-sm font-medium rounded-full hover:bg-green-50 transition"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-                Edit Profile
-              </button>
-            </div>
+{activeNav === 'profile' && user && (
+  <section className="bg-white rounded-2xl border border-zinc-200 p-6 md:p-8 text-zinc-900 shadow-sm">
+    {/* Edit Button */}
+    <div className="flex justify-end mb-6">
+      <button
+        onClick={() => setEditingProfile(true)}
+        className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-zinc-200 text-zinc-500 text-xs font-medium rounded-full hover:bg-zinc-50 hover:text-zinc-900 hover:border-zinc-300 transition"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+        </svg>
+        Edit Profile
+      </button>
+    </div>
 
-            <div className="grid sm:grid-cols-2 gap-4 text-sm border-t border-gray-100 pt-4">
-              <div>
-                <span className="text-xs uppercase tracking-wider text-gray-400 block">Email</span>
-                <p className="text-gray-800 font-medium mt-0.5">{user.email}</p>
-              </div>
-              <div>
-                <span className="text-xs uppercase tracking-wider text-gray-400 block">Hourly Rate</span>
-                <p className="text-gray-800 font-medium mt-0.5">${user.hourlyRate || 0}/hr</p>
-              </div>
-              {user.bio && (
-                <div className="sm:col-span-2">
-                  <span className="text-xs uppercase tracking-wider text-gray-400 block">Bio</span>
-                  <p className="text-gray-700 mt-0.5 bg-gray-50 p-3 rounded-lg">{user.bio}</p>
-                </div>
-              )}
-              {user.skills && user.skills.length > 0 && (
-                <div className="sm:col-span-2">
-                  <span className="text-xs uppercase tracking-wider text-gray-400 block">Skills</span>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {user.skills.map((s) => (
-                      <span key={s} className="px-3 py-1 bg-gray-100 rounded-full text-xs text-gray-700 font-medium">
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {user.location?.city && (
-                <div className="sm:col-span-2">
-                  <span className="text-xs uppercase tracking-wider text-gray-400 block">Location</span>
-                  <p className="text-gray-800 font-medium mt-0.5">
-                    {[user.location.address, user.location.city, user.location.province, user.location.country]
-                      .filter(Boolean)
-                      .join(', ')}
-                  </p>
-                </div>
-              )}
-            </div>
-          </section>
+    {/* Main Layout */}
+    <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8 w-full">
+
+      {/* LEFT — Avatar */}
+      <div className="flex-none flex flex-col items-center gap-4">
+        <div className="relative group">
+          <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 opacity-30 group-hover:opacity-50 transition duration-300 blur-sm" />
+          <div className="relative w-[200px] sm:w-[220px] aspect-square overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 flex items-center justify-center">
+            {user?.profileImage ? (
+              <img
+                src={user.profileImage}
+                alt={userFullName}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            ) : (
+              <span className="text-4xl font-semibold text-zinc-400 uppercase tracking-widest">
+                {getInitials(userFullName)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Availability Bar */}
+        <div className="w-full px-1">
+          <div className="flex justify-between text-[10px] text-zinc-400 mb-1.5 font-medium uppercase tracking-wider">
+            <span>Availability</span>
+            <span className="text-emerald-500">72%</span>
+          </div>
+          <div className="h-1 bg-zinc-100 rounded-full overflow-hidden">
+            <div className="h-full w-[72%] bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full" />
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT — Info */}
+      <div className="flex-1 space-y-5 text-center lg:text-left w-full">
+
+        {/* Badges */}
+        <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
+          {/* Online Status */}
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-medium text-emerald-700">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+            </span>
+            Exploring AI/ML & Cloud
+          </span>
+
+          {/* Hourly Rate */}
+          {user?.hourlyRate && user.hourlyRate > 0 && (
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-[11px] font-semibold text-teal-700">
+              <DollarSign className="h-3 w-3" />
+              ${user.hourlyRate}/hr
+            </span>
+          )}
+
+          {/* Rating */}
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-[11px] font-medium text-amber-700">
+            <Award className="h-3 w-3" />
+            {(user?.rating || 5.0).toFixed(1)} ({user?.reviewCount || 0} reviews)
+          </span>
+        </div>
+
+        {/* Name & Title */}
+        <div className="space-y-1">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-900">
+            Hi, I'm {user?.firstName || ''} {user?.lastName || ''}
+          </h1>
+          {user?.title && (
+            <p className="text-sm font-medium text-emerald-600">
+              {user.title}
+            </p>
+          )}
+        </div>
+
+        {/* Bio */}
+        {user?.bio && (
+          <p className="text-sm leading-relaxed text-zinc-500 max-w-2xl mx-auto lg:mx-0">
+            {user.bio}
+          </p>
         )}
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'Projects', value: '12' },
+            { label: 'Avg. Rating', value: (user?.rating || 5.0).toFixed(1) },
+            { label: 'Reviews', value: String(user?.reviewCount || 0) },
+          ].map(({ label, value }) => (
+            <div key={label} className="bg-zinc-50 border border-zinc-100 rounded-xl p-3 text-center">
+              <p className="text-lg font-bold text-zinc-900">{value}</p>
+              <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium mt-0.5">{label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Skills */}
+        {user?.skills && user.skills.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400">Expertise</p>
+            <div className="flex flex-wrap justify-center lg:justify-start gap-2">
+              {user.skills.map((skill) => (
+                <span
+                  key={skill}
+                  className="px-2.5 py-1 rounded-md bg-zinc-50 border border-zinc-200 text-xs font-medium text-zinc-600 hover:border-zinc-300 hover:bg-white transition"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <hr className="border-zinc-100" />
+
+        {/* Footer Meta */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs text-zinc-400">
+            {user?.location?.city && user?.location?.country && (
+              <span className="flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 text-zinc-300" />
+                {user.location.city}, {user.location.country}
+              </span>
+            )}
+            
+            {user?.location?.city && user?.location?.country && <span className="text-zinc-200">•</span>}
+            
+            <span className="flex items-center gap-1.5">
+              <Code2 className="h-3.5 w-3.5 text-zinc-300" />
+              Full-Stack Developer
+            </span>
+            
+            <span className="text-zinc-200">•</span>
+            
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 text-zinc-300" />
+              UTC+5:30
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+)}
 
         </div>
 
@@ -1896,49 +1985,6 @@ export default function FreelancerDashboard() {
               100% { transform: translate3d(-50%, 0, 0); }
             }
           `}</style>
-        </div>
-      </section>
-
-      {/* ─── TALENT LISTINGS ─── */}
-      <section className="py-10 sm:py-14 px-4 sm:px-6 lg:px-10 bg-gray-50">
-        <div className="max-w-5xl mx-auto">
-          <SectionBadge label="Top freelancers" />
-          <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">Work alongside peer talent</h2>
-          <p className="text-sm sm:text-base text-gray-500 mb-6 sm:mb-8 max-w-lg">
-            Handpicked professionals with verified skills and top-rated ecosystem reviews.
-          </p>
-          <div className="flex gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-4">
-            {freelancers.map((fl, i) => (
-              <button
-                key={fl._id}
-                className="snap-start shrink-0 w-[72vw] xs:w-64 sm:w-auto bg-white border border-gray-200 rounded-xl p-4 sm:p-5 text-left hover:border-green-600 hover:shadow-md transition-all"
-                onClick={() => navigate(`/freelancers/${fl._id}`)}
-              >
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-white mb-3"
-                  style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}
-                >
-                  {getInitials(`${fl.firstName} ${fl.lastName}`)}
-                </div>
-                <div className="font-semibold text-gray-900 text-sm mb-0.5">
-                  {fl.firstName} {fl.lastName}
-                </div>
-                <div className="text-xs text-gray-500 mb-2">{fl.title || 'Freelancer'}</div>
-                <div className="text-amber-500 text-xs mb-1.5">
-                  {renderStars(fl.rating || 5)}{' '}
-                  <span className="text-gray-500">({fl.reviewCount || 0})</span>
-                </div>
-                <div className="font-semibold text-gray-800 text-sm">${fl.hourlyRate || 0}/hr</div>
-                <div className="flex gap-1.5 flex-wrap mt-2">
-                  {(fl.skills || []).slice(0, 3).map((skill: string) => (
-                    <span key={skill} className="px-2 py-0.5 bg-gray-100 rounded-full text-xs text-gray-500 font-medium">
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </button>
-            ))}
-          </div>
         </div>
       </section>
 
