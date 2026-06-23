@@ -18,6 +18,9 @@ const LegalPage = lazy(() => import("../pages/LegalPage"));
 const JobsPage = lazy(() => import("../pages/JobsPage"));
 const HireFreelancerPage = lazy(() => import("../pages/HireFreelancerPage"));
 
+// 1. අලුතින් හදපු PaymentSettingsPage එක මෙතනට Lazy-load කරන්න
+const PaymentSettingsPage = lazy(() => import("../pages/PaymentSettingsPage"));
+
 const Router = () => {
   return (
     <BrowserRouter>
@@ -36,6 +39,17 @@ const Router = () => {
         <Route path="/terms" element={<LegalPage type="terms" />} />
         <Route path="/user-agreement" element={<LegalPage type="user-agreement" />} />
         <Route path="/privacy" element={<LegalPage type="privacy" />} />
+
+        {/* 2. මෙතනට /settings/payment රවුට් එක ඇතුළත් කරන්න */}
+        {/* මේක සාමාන්‍යයෙන් Client කෙනෙක්ට විතරක් අයිති නිසා RequireAuth එකක් ඇතුළට දාන එක වඩාත් ආරක්ෂිතයි */}
+        <Route
+          path="/settings/payment"
+          element={
+            <RequireAuth roles={["CLIENT", "FREELANCER"]}>
+              <PaymentSettingsPage />
+            </RequireAuth>
+          }
+        />
 
         <Route
           path="/dashboard/freelancer"
