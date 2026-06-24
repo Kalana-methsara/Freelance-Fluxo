@@ -18,6 +18,7 @@ import toast from 'react-hot-toast';
 import dashboardService from '../services/dashboardService';
 import jobService from '../services/jobService';
 import chatService from '../services/chatService';
+import platformService from '../services/platformService';
 
 // Redux
 import { logout } from '../features/authSlice';
@@ -767,6 +768,9 @@ export default function ClientDashboard() {
   // Chat state
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
   const [selectedParticipant, setSelectedParticipant] = useState<any>(null);
+  const [activeContracts, setActiveContracts] = useState<any[]>([]);
+  const [pendingOffers, setPendingOffers] = useState<any[]>([]);
+  const [contractsLoading, setContractsLoading] = useState(false);
 
   // Project detail / delete state
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -785,6 +789,23 @@ export default function ClientDashboard() {
 
   // Chat connection
   useChatConnection(data?.user?._id);
+
+  useEffect(() => {
+    const loadClientContracts = async () => {
+      setContractsLoading(true);
+      try {
+        const allContracts = await platformService.getMyContracts();
+        setActiveContracts(allContracts.filter((c: any) => c.status === 'accepted'));
+        setPendingOffers(allContracts.filter((c: any) => c.status === 'pending'));
+      } catch (err) {
+        console.error('Failed to load client contracts', err);
+      } finally {
+        setContractsLoading(false);
+      }
+    };
+
+    loadClientContracts();
+  }, []);
 
   // Handlers
   const handleLogout = useCallback(() => {
@@ -1143,6 +1164,71 @@ export default function ClientDashboard() {
                     </button>
                   }
                 />
+              )}
+            </section>
+
+            <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b bg-gray-50/50 flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-gray-700">Active Contracts</h2>
+                <span className="text-xs font-semibold text-emerald-700">{activeContracts.length} in progress</span>
+              </div>
+              {contractsLoading ? (
+                <div className="p-6 text-center text-sm text-gray-500">Loading contracts…</div>
+              ) : activeContracts.length > 0 ? (
+                <div className="divide-y divide-gray-100">
+                  {activeContracts.map((contract) => (
+                    <div key={contract._id} className="px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-widest font-semibold text-emerald-700">
+                          <span className="inline-flex h-6 items-center rounded-full bg-emerald-50 px-3">In Progress</span>
+                        </div>
+                        <h3 className="text-base font-bold text-gray-900 mt-3">{contract.contractTitle}</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Freelancer: {typeof contract.freelancerId === 'object' ? `${contract.freelancerId.firstName || ''} ${contract.freelancerId.lastName || ''}`.trim() : contract.freelancerId}
+                        </p>
+                        <div className="text-xs font-semibold text-gray-700 mt-3 flex flex-wrap gap-4">
+                          <span>Budget: <strong className="text-emerald-600">${contract.totalAmount}</strong></span>
+                          <span>Deadline: <strong>{new Date(contract.deadline).toLocaleDateString()}</strong></span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/dashboard/freelancer/contracts/${contract._id}`)}
+                        className="self-start text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-xl transition shrink-0"
+                      >
+                        View contract details
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-6 text-center text-xs text-gray-400">No active contracts at the moment.</div>
+              )}
+            </section>
+
+            <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b bg-gray-50/50 flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-gray-700">Sent Offers (Pending Approval)</h2>
+                <span className="text-xs font-semibold text-amber-700">{pendingOffers.length} waiting</span>
+              </div>
+              {contractsLoading ? (
+                <div className="p-6 text-center text-sm text-gray-500">Loading offers…</div>
+              ) : pendingOffers.length > 0 ? (
+                <div className="divide-y divide-gray-100">
+                  {pendingOffers.map((offer) => (
+                    <div key={offer._id} className="px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 opacity-90">
+                      <div>
+                        <h3 className="text-base font-bold text-gray-900">{offer.contractTitle}</h3>
+                        <p className="text-xs text-gray-400 mt-1">Sent on: {new Date(offer.createdAt).toLocaleDateString()}</p>
+                      </div>
+                      <span className="text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1 rounded-full animate-pulse">
+                        Waiting for Freelancer
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-6 text-center text-xs text-gray-400">No pending offers right now.</div>
               )}
             </section>
           </>

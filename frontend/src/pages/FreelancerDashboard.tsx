@@ -1064,9 +1064,16 @@ export default function FreelancerDashboard() {
     platformService.getFreelancers().catch(() => {});
     fetchDashboardData();
 
-    platformService.getPendingOffers()
-      .then(setOffers)
-      .catch(() => setOffers([]));
+    const loadContractsAndOffers = async () => {
+      try {
+        const offersData = await platformService.getPendingOffers();
+        setOffers(offersData);
+      } catch (err) {
+        console.error('Failed to load dashboard data', err);
+      }
+    };
+
+    loadContractsAndOffers();
   }, [fetchDashboardData]);
 
   // Measure the active desktop nav link so the indicator can glide to it
@@ -1138,7 +1145,39 @@ export default function FreelancerDashboard() {
     );
   }, []);
 
-  const handleSaveProfile = async (updatedFields: Partial<User>) => {
+//   const handleSaveProfile = async (updatedFields: Partial<User>) => {
+//   try {
+//     // 1. Backend එකට update එක යැවීම
+//     const responseData = await platformService.updateProfile(updatedFields);
+    
+//     // 2. දැනට ඉන්න currentUser (or state user) සමඟ Response එක merge කිරීම
+//     const fullUpdatedUser = {
+//       ...user,
+//       ...responseData,
+//       ...updatedFields,
+//     };
+
+//     // 3. Local Storage එක update කිරීම (Header/Navbar sync වෙන්න)
+//     localStorage.setItem('user', JSON.stringify(fullUpdatedUser));
+    
+//     // 4. Dashboard data state එක update කිරීම (Banner එක අයින් වෙන්න සහ UI refresh වෙන්න)
+//     setDashboardData((prev) => {
+//       if (!prev) return prev;
+//       return {
+//         ...prev,
+//         user: fullUpdatedUser,
+//       };
+//     });
+
+//     setEditingProfile(false);
+//     showToast('success', 'Profile updated successfully!');
+//   } catch (error) {
+//     console.error('Profile update failed:', error);
+//     showToast('error', 'Something went wrong while updating your profile.');
+//   }
+// };
+
+const handleSaveProfile = async (updatedFields: Partial<User>) => {
   try {
     // 1. Backend එකට update එක යැවීම
     const responseData = await platformService.updateProfile(updatedFields);
@@ -1247,16 +1286,22 @@ export default function FreelancerDashboard() {
     [dashboardData?.user, fetchDashboardData, isProfileComplete, showToast]
   );
 
-  const handleAcceptOffer = useCallback(
-    async (offerId: string) => {
-      setProcessingId(offerId);
+  const handleOfferResponse = useCallback(
+    async (contractId: string, action: 'accept' | 'decline') => {
+      setProcessingId(contractId);
       try {
-        await platformService.acceptOffer(offerId);
-        setOffers((prev) => prev.filter((o) => o._id !== offerId));
-        showToast('success', 'Offer accepted.');
+        const res = await platformService.respondToOffer(contractId, action);
+        if (res?.success) {
+          showToast('success', `You have successfully ${action}ed the job offer!`);
+          setOffers((prev) => prev.filter((o) => o._id !== contractId));
+
+          // Accepted offers are removed from pending list in the UI immediately.
+        } else {
+          throw new Error('Offer response failed');
+        }
       } catch (err) {
-        console.error('Failed to accept offer', err);
-        showToast('error', 'Failed to accept offer.');
+        console.error('Failed to respond to offer', err);
+        showToast('error', 'Failed to respond to offer.');
       } finally {
         setProcessingId(null);
       }
@@ -1264,22 +1309,6 @@ export default function FreelancerDashboard() {
     [showToast]
   );
 
-  const handleDeclineOffer = useCallback(
-    async (offerId: string) => {
-      setProcessingId(offerId);
-      try {
-        await platformService.declineOffer(offerId);
-        setOffers((prev) => prev.filter((o) => o._id !== offerId));
-        showToast('success', 'Offer declined.');
-      } catch (err) {
-        console.error('Failed to decline offer', err);
-        showToast('error', 'Failed to decline offer.');
-      } finally {
-        setProcessingId(null);
-      }
-    },
-    [showToast]
-  );
 
   // ============================================================
   // 8e. Derived data
@@ -1620,14 +1649,14 @@ export default function FreelancerDashboard() {
 
                       <div className="flex gap-2 w-full md:w-auto shrink-0">
                         <button
-                          onClick={() => handleDeclineOffer(offer._id)}
+                          onClick={() => handleOfferResponse(offer._id, 'decline')}
                           disabled={isProcessing}
                           className="flex-1 md:flex-none text-xs font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Decline
                         </button>
                         <button
-                          onClick={() => handleAcceptOffer(offer._id)}
+                          onClick={() => handleOfferResponse(offer._id, 'accept')}
                           disabled={isProcessing}
                           className="flex-1 md:flex-none text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-xl shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
                         >
