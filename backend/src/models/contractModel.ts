@@ -73,4 +73,4 @@ const ContractSchema = new Schema<IContract>(
 );
 
 // --- MODEL EXPORT ---
-export const ContractModel = model<IContract>("Contract", ContractSchema);
+export const ContractModel = model<IContract>("contract", ContractSchema);

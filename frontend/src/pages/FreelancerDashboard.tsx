@@ -407,7 +407,6 @@ function WorkSubmissionModal({ jobId, onClose, onSuccess, onError }: WorkSubmiss
     </div>
   );
 }
-
 // ============================================================
 // 6b. JOB DETAIL DRAWER (view job + apply with a proposal)
 // ============================================================
@@ -1009,6 +1008,7 @@ export default function FreelancerDashboard() {
 
   // Dashboard state
   const [activeNav, setActiveNav] = useState('overview');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'offers'>('dashboard');
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
 
@@ -1328,56 +1328,6 @@ export default function FreelancerDashboard() {
         </div>
       )}
 
-      {offers.length > 0 && (
-        <div className="mb-8 space-y-4 px-4 sm:px-6 lg:px-10">
-          <h2 className="text-lg font-bold text-gray-950 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-            Pending Job Offers ({offers.length})
-          </h2>
-
-          <div className="grid grid-cols-1 gap-4">
-            {offers.map((offer) => {
-              const isProcessing = processingId === offer._id;
-              return (
-                <div
-                  key={offer._id}
-                  className="bg-white border border-amber-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-                >
-                  <div>
-                    <span className="text-[10px] uppercase font-bold tracking-wider bg-amber-50 text-amber-800 px-2 py-0.5 rounded-md">
-                      {offer.budgetType} Price Contract
-                    </span>
-                    <h3 className="text-base font-bold text-gray-900 mt-1">{offer.contractTitle}</h3>
-                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">"{offer.message}"</p>
-                    <p className="text-xs font-semibold text-gray-700 mt-2">
-                      Budget: <span className="text-emerald-600">${offer.totalAmount}</span> |
-                      Deadline: {new Date(offer.deadline).toLocaleDateString()}
-                    </p>
-                  </div>
-
-                  <div className="flex gap-2 w-full md:w-auto shrink-0">
-                    <button
-                      onClick={() => handleDeclineOffer(offer._id)}
-                      disabled={isProcessing}
-                      className="flex-1 md:flex-none text-xs font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Decline
-                    </button>
-                    <button
-                      onClick={() => handleAcceptOffer(offer._id)}
-                      disabled={isProcessing}
-                      className="flex-1 md:flex-none text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-xl shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isProcessing ? 'Processing…' : 'Accept Offer'}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* ─── NAV ─── */}
       <nav className="sticky top-0 z-50 bg-white border-b border-gray-200">
         <div className="flex items-center justify-between px-4 sm:px-6 lg:px-10 py-3">
@@ -1622,8 +1572,88 @@ export default function FreelancerDashboard() {
 
       {/* ─── MAIN DASHBOARD SECTIONS ─── */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 space-y-10">
-        <div key={activeNav} className="space-y-10 animate-tab-in">
-        {/* Overview Stats */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-900">Workspace</h2>
+            <p className="text-sm text-gray-500 mt-1">Keep your dashboard and offers in one place.</p>
+          </div>
+          <div className="inline-flex rounded-full bg-gray-100 p-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab('dashboard')}
+              className={`px-4 py-2 text-sm font-medium rounded-full transition ${activeTab === 'dashboard' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-white'}`}
+            >
+              Dashboard
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('offers')}
+              className={`px-4 py-2 text-sm font-medium rounded-full transition ${activeTab === 'offers' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-white'}`}
+            >
+              Offers {offers.length ? `(${offers.length})` : ''}
+            </button>
+          </div>
+        </div>
+
+        {activeTab === 'offers' ? (
+          <section className="space-y-6">
+            {offers.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4">
+                {offers.map((offer) => {
+                  const isProcessing = processingId === offer._id;
+                  return (
+                    <div
+                      key={offer._id}
+                      className="bg-white border border-amber-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                    >
+                      <div>
+                        <span className="text-[10px] uppercase font-bold tracking-wider bg-amber-50 text-amber-800 px-2 py-0.5 rounded-md">
+                          {offer.budgetType} Price Contract
+                        </span>
+                        <h3 className="text-base font-bold text-gray-900 mt-1">{offer.contractTitle}</h3>
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">"{offer.message}"</p>
+                        <p className="text-xs font-semibold text-gray-700 mt-2">
+                          Budget: <span className="text-emerald-600">${offer.totalAmount}</span> |
+                          Deadline: {new Date(offer.deadline).toLocaleDateString()}
+                        </p>
+                      </div>
+
+                      <div className="flex gap-2 w-full md:w-auto shrink-0">
+                        <button
+                          onClick={() => handleDeclineOffer(offer._id)}
+                          disabled={isProcessing}
+                          className="flex-1 md:flex-none text-xs font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Decline
+                        </button>
+                        <button
+                          onClick={() => handleAcceptOffer(offer._id)}
+                          disabled={isProcessing}
+                          className="flex-1 md:flex-none text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-xl shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isProcessing ? 'Processing…' : 'Accept Offer'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-3xl border border-dashed border-gray-300 bg-white/80 p-8 text-center">
+                <p className="text-sm text-gray-500 mb-4">You don't have any pending offers right now.</p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/search')}
+                  className="inline-flex items-center justify-center rounded-full bg-green-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-green-700 transition"
+                >
+                  Browse jobs
+                </button>
+              </div>
+            )}
+          </section>
+        ) : (
+          <div key={activeNav} className="space-y-10 animate-tab-in">
+            {/* Overview Stats */}
         {activeNav === 'overview' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <EnhancedStatCard
@@ -2007,10 +2037,10 @@ export default function FreelancerDashboard() {
     </div>
   </section>
 )}
-
         </div>
+      )}
 
-        {showProfileModal && user && (
+      {showProfileModal && user && (
           <ProfileCompletionModal
             user={user}
             onSave={handleSaveProfileAndApply}
