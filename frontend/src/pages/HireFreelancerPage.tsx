@@ -219,7 +219,7 @@ export default function HireFreelancerPage() {
           </div>
           <div className="flex gap-3 pt-2">
             <button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/dashboard/client")}
               className="flex-1 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl hover:bg-emerald-700 transition shadow-sm"
             >
               Go to Dashboard

@@ -219,6 +219,7 @@ const Icons = {
   ),
 };
 
+
 // ── Enhanced Stat Card ──
 const EnhancedStatCard = memo(({ label, value, icon: Icon, sub, trend }: { label: string; value: string; icon: React.ElementType; sub?: string; trend?: 'up' | 'down' }) => (
   <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow duration-200">
@@ -571,6 +572,7 @@ function JobDetailDrawer({ job, onClose, onMessage, onSubmitWork, onApply }: Job
     </div>
   );
 }
+
 
 // ============================================================
 // 7. PROFILE EDITOR (FULLY SYNCED WITH SEARCHPAGE LOGIC)
@@ -1017,6 +1019,8 @@ export default function FreelancerDashboard() {
   const [showWorkModal, setShowWorkModal] = useState<string | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [toast, setToast] = useState<ToastMessage>(null);
+  const [offers, setOffers] = useState<any[]>([]);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   // Chat state
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
@@ -1059,6 +1063,10 @@ export default function FreelancerDashboard() {
     // optionally fetch freelancers for future features; ignore result for now
     platformService.getFreelancers().catch(() => {});
     fetchDashboardData();
+
+    platformService.getPendingOffers()
+      .then(setOffers)
+      .catch(() => setOffers([]));
   }, [fetchDashboardData]);
 
   // Measure the active desktop nav link so the indicator can glide to it
@@ -1239,6 +1247,40 @@ export default function FreelancerDashboard() {
     [dashboardData?.user, fetchDashboardData, isProfileComplete, showToast]
   );
 
+  const handleAcceptOffer = useCallback(
+    async (offerId: string) => {
+      setProcessingId(offerId);
+      try {
+        await platformService.acceptOffer(offerId);
+        setOffers((prev) => prev.filter((o) => o._id !== offerId));
+        showToast('success', 'Offer accepted.');
+      } catch (err) {
+        console.error('Failed to accept offer', err);
+        showToast('error', 'Failed to accept offer.');
+      } finally {
+        setProcessingId(null);
+      }
+    },
+    [showToast]
+  );
+
+  const handleDeclineOffer = useCallback(
+    async (offerId: string) => {
+      setProcessingId(offerId);
+      try {
+        await platformService.declineOffer(offerId);
+        setOffers((prev) => prev.filter((o) => o._id !== offerId));
+        showToast('success', 'Offer declined.');
+      } catch (err) {
+        console.error('Failed to decline offer', err);
+        showToast('error', 'Failed to decline offer.');
+      } finally {
+        setProcessingId(null);
+      }
+    },
+    [showToast]
+  );
+
   // ============================================================
   // 8e. Derived data
   // ============================================================
@@ -1283,6 +1325,56 @@ export default function FreelancerDashboard() {
           }`}
         >
           {toast.text}
+        </div>
+      )}
+
+      {offers.length > 0 && (
+        <div className="mb-8 space-y-4 px-4 sm:px-6 lg:px-10">
+          <h2 className="text-lg font-bold text-gray-950 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+            Pending Job Offers ({offers.length})
+          </h2>
+
+          <div className="grid grid-cols-1 gap-4">
+            {offers.map((offer) => {
+              const isProcessing = processingId === offer._id;
+              return (
+                <div
+                  key={offer._id}
+                  className="bg-white border border-amber-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                >
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-wider bg-amber-50 text-amber-800 px-2 py-0.5 rounded-md">
+                      {offer.budgetType} Price Contract
+                    </span>
+                    <h3 className="text-base font-bold text-gray-900 mt-1">{offer.contractTitle}</h3>
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">"{offer.message}"</p>
+                    <p className="text-xs font-semibold text-gray-700 mt-2">
+                      Budget: <span className="text-emerald-600">${offer.totalAmount}</span> |
+                      Deadline: {new Date(offer.deadline).toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2 w-full md:w-auto shrink-0">
+                    <button
+                      onClick={() => handleDeclineOffer(offer._id)}
+                      disabled={isProcessing}
+                      className="flex-1 md:flex-none text-xs font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Decline
+                    </button>
+                    <button
+                      onClick={() => handleAcceptOffer(offer._id)}
+                      disabled={isProcessing}
+                      className="flex-1 md:flex-none text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-xl shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isProcessing ? 'Processing…' : 'Accept Offer'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

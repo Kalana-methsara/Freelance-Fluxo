@@ -52,7 +52,7 @@ export default function SearchPage() {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
-  const [isUploadingImage, setIsUploadingImage] = useState(false); 
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const [customSkill, setCustomSkill] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -62,7 +62,7 @@ export default function SearchPage() {
     firstName: "",
     lastName: "",
     email: "",
-    profileImage: "", 
+    profileImage: "",
     title: "",
     bio: "",
     hourlyRate: 0,
@@ -89,7 +89,7 @@ export default function SearchPage() {
           firstName: parsed.firstName || "",
           lastName: parsed.lastName || "",
           email: parsed.email || "",
-          profileImage: parsed.profileImage || "", 
+          profileImage: parsed.profileImage || "",
           title: parsed.title || "",
           bio: parsed.bio || "",
           hourlyRate: parsed.hourlyRate || 0,
@@ -150,16 +150,16 @@ export default function SearchPage() {
       const res = await api.post("/upload/upload-avatar", data, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      
+
       if (res.data && res.data.url) {
         setFormData(prev => ({ ...prev, profileImage: res.data.url }));
-        
+
         const storedUser = localStorage.getItem("user");
         if (storedUser) {
           const parsed = JSON.parse(storedUser);
           parsed.profileImage = res.data.url;
           localStorage.setItem("user", JSON.stringify(parsed));
-          setCurrentUser(parsed); 
+          setCurrentUser(parsed);
         }
       }
     } catch (err) {
@@ -196,7 +196,7 @@ export default function SearchPage() {
       user.email?.trim() &&
       user.title?.trim() &&
       user.bio?.trim() &&
-      user.profileImage?.trim() && 
+      user.profileImage?.trim() &&
       Number(user.hourlyRate) > 0 &&
       user.skills?.length > 0 &&
       user.location?.address?.trim() &&
@@ -278,10 +278,10 @@ export default function SearchPage() {
       };
 
       const responseData = await platformService.updateProfile(updatedPayload);
-      
+
       const fullUpdatedUser = {
         ...currentUser,
-        ...responseData, 
+        ...responseData,
         firstName: updatedPayload.firstName,
         lastName: updatedPayload.lastName,
         email: updatedPayload.email,
@@ -340,21 +340,24 @@ export default function SearchPage() {
           </div>
 
           <div className="shrink-0 flex items-center gap-4">
-            <Link to="/" className="hidden md:inline-block text-sm font-medium text-gray-600 hover:text-gray-900 px-2 py-2 transition">
+            <Link
+              to={isFreelancer ? "/dashboard/freelancer" : isClient ? "/dashboard/client" : "/"}
+              className="hidden md:inline-block text-sm font-medium text-gray-600 hover:text-gray-900 px-2 py-2 transition"
+            >
               Back to Home
             </Link>
 
             {currentUser ? (
-              <div 
-                onClick={() => setShowModal(true)} 
+              <div
+                onClick={() => setShowModal(true)}
                 className="flex items-center gap-2 pl-2 border-l border-gray-200 cursor-pointer rounded-xl p-1 hover:bg-gray-50 transition"
                 title="Edit Profile"
               >
                 {currentUser.profileImage ? (
-                  <img 
-                    src={currentUser.profileImage} 
-                    alt={userFullName} 
-                    className="w-8 h-8 rounded-full object-cover border border-emerald-500 shadow-xs" 
+                  <img
+                    src={currentUser.profileImage}
+                    alt={userFullName}
+                    className="w-8 h-8 rounded-full object-cover border border-emerald-500 shadow-xs"
                   />
                 ) : (
                   <div
@@ -413,7 +416,7 @@ export default function SearchPage() {
                         <div>
                           <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black mb-3 shadow-sm overflow-hidden border bg-gray-100">
                             {fl.profileImage ? (
-                              <img src={fl.profileImage} alt="" className="w-full h-full object-cover"/>
+                              <img src={fl.profileImage} alt="" className="w-full h-full object-cover" />
                             ) : (
                               <span className="text-sm font-bold text-gray-400">
                                 {getInitials(`${fl.firstName} ${fl.lastName}`)}
@@ -524,7 +527,7 @@ export default function SearchPage() {
               {/* SECTION 1: PERSONAL INFO */}
               <div>
                 <h4 className="text-sm font-bold text-gray-800 mb-3 border-b pb-1">1. Personal Information</h4>
-                
+
                 <div className="flex items-center gap-4 mb-4 p-3 bg-gray-50 rounded-2xl border border-gray-100">
                   <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-gray-200 border-2 border-white shadow-md shrink-0 flex items-center justify-center">
                     {formData.profileImage ? (
@@ -541,12 +544,12 @@ export default function SearchPage() {
                   <div>
                     <span className="text-xs font-bold text-gray-700 block">Profile Picture</span>
                     <p className="text-[11px] text-gray-400 mb-1.5">Upload a clean professional portrait from your computer</p>
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       ref={fileInputRef}
                       onChange={handleImageChange}
-                      accept="image/*" 
-                      className="hidden" 
+                      accept="image/*"
+                      className="hidden"
                     />
                     <button
                       type="button"
@@ -682,9 +685,8 @@ export default function SearchPage() {
                           return (
                             <button
                               type="button" key={skill} onClick={() => toggleSkill(skill)}
-                              className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${
-                                isSelected ? "bg-emerald-50 border-emerald-500 text-emerald-700 font-semibold" : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
-                              }`}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${isSelected ? "bg-emerald-50 border-emerald-500 text-emerald-700 font-semibold" : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+                                }`}
                             >
                               {skill} {isSelected && "✓"}
                             </button>

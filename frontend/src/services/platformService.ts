@@ -69,6 +69,14 @@ const platformService = {
     const res = await api.patch(`/contracts/${contractId}/respond`, { action });
     return res.data;
   },
+
+  acceptOffer: async (contractId: string) => {
+    return platformService.respondToOffer(contractId, "accept");
+  },
+
+  declineOffer: async (contractId: string) => {
+    return platformService.respondToOffer(contractId, "decline");
+  },
  
   updateProfile: async (updates: Partial<Record<string, any>>) => {
     const res = await api.patch("/users/profile", updates);
