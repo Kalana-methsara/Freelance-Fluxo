@@ -20,6 +20,7 @@ import Slide from '../components/Slide';
 import CatCard from '../components/CatCard';
 import { cards, items } from '../../data';
 import api from '../services/api';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { MapPin, Code2, DollarSign, Award, Clock } from "lucide-react";
 
 // ============================================================
@@ -110,6 +111,74 @@ const NAV_LINKS = [
   { label: 'Messages', id: 'messages' },
   { label: 'Profile', id: 'profile' },
 ];
+
+interface EarningsData {
+  month: string;
+  amount: number;
+}
+
+function EarningsChart({ data }: { data: EarningsData[] }) {
+  const chartData = data && data.length > 0 ? data : [
+    { month: 'Jan', amount: 0 },
+    { month: 'Feb', amount: 0 },
+    { month: 'Mar', amount: 0 },
+  ];
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-base font-semibold text-gray-900">Earnings Overview</h3>
+          <p className="text-xs text-gray-500">Track your monthly freelance revenue</p>
+        </div>
+        <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
+          Real-time
+        </span>
+      </div>
+
+      <div className="h-64 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <defs>
+              <linearGradient id="colorEarnings" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <XAxis
+              dataKey="month"
+              stroke="#9ca3af"
+              fontSize={11}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              stroke="#9ca3af"
+              fontSize={11}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(value) => `$${value}`}
+            />
+            <CartesianGrid vertical={false} stroke="#e5e7eb" strokeDasharray="3 3" />
+            <Tooltip
+              contentStyle={{ background: '#fff', borderRadius: '12px', borderColor: '#e5e7eb' }}
+              formatter={(value: any) => `$${value ?? 0}`}
+            />
+            <Area
+              type="monotone"
+              dataKey="amount"
+              stroke="#10b981"
+              strokeWidth={2}
+              fillOpacity={1}
+              fill="url(#colorEarnings)"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
 const SKILL_POOL = {
   "Development": ["React", "Node.js", "TypeScript", "JavaScript", "Python", "Java", "Spring Boot", "Express", "MongoDB", "PostgreSQL", "Next.js", "Docker"],
   "Design & Creative": ["UI/UX Design", "Figma", "Adobe Photoshop", "Illustrator", "Web Design", "Graphic Design"],
@@ -1819,25 +1888,9 @@ const handleSaveProfile = async (updatedFields: Partial<User>) => {
               )}
             </div>
 
-            {earnings.length > 0 && (
-              <div className="mt-6">
-                <div className="flex items-end gap-2 h-32 border-b border-gray-200 pb-2">
-                  {earnings.map(({ month, amount }) => (
-                    <div key={month} className="flex-1 flex flex-col items-center gap-1">
-                      <span className="text-[10px] font-medium text-gray-500">${amount}</span>
-                      <div
-                        className="w-full bg-gradient-to-t from-green-500 to-green-400 rounded-t-md transition-all duration-300"
-                        style={{
-                          height: `${Math.max(20, (amount / (stats.totalEarnings || 1)) * 100)}%`,
-                          minHeight: '4px',
-                        }}
-                      />
-                      <span className="text-[10px] text-gray-400 mt-1">{month}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="mt-6">
+              <EarningsChart data={earnings} />
+            </div>
 
             <div className="mt-8">
               <h3 className="text-sm font-semibold text-gray-800 mb-3">Recent Transactions</h3>

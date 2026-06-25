@@ -80,7 +80,7 @@ const platformService = {
  
   updateProfile: async (updates: Partial<Record<string, any>>) => {
     const res = await api.patch("/users/profile", updates);
-    return res.data;
+    return res.data?.data ?? res.data;
   },
 };
 

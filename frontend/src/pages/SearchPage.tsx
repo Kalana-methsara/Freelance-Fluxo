@@ -217,7 +217,7 @@ export default function SearchPage() {
     const isProfileComplete = checkIsProfileComplete(currentUser);
 
     if (isProfileComplete) {
-      navigate(`/jobs/${jobId}/apply`);
+      navigate(`/jobs/${jobId}`);
     } else {
       setSelectedJobId(jobId);
       setShowModal(true);
@@ -277,21 +277,11 @@ export default function SearchPage() {
         }
       };
 
-      const responseData = await platformService.updateProfile(updatedPayload);
+      const updatedUser = await platformService.updateProfile(updatedPayload);
 
       const fullUpdatedUser = {
         ...currentUser,
-        ...responseData,
-        firstName: updatedPayload.firstName,
-        lastName: updatedPayload.lastName,
-        email: updatedPayload.email,
-        profileImage: updatedPayload.profileImage,
-        title: updatedPayload.title,
-        bio: updatedPayload.bio,
-        hourlyRate: updatedPayload.hourlyRate,
-        companyName: updatedPayload.companyName,
-        skills: updatedPayload.skills,
-        location: updatedPayload.location
+        ...(updatedUser || updatedPayload),
       };
 
       localStorage.setItem("user", JSON.stringify(fullUpdatedUser));
@@ -299,7 +289,7 @@ export default function SearchPage() {
       setShowModal(false);
 
       if (selectedJobId) {
-        navigate(`/jobs/${selectedJobId}/apply`);
+        navigate(`/jobs/${selectedJobId}`);
       }
     } catch (error: any) {
       console.error("Profile update failed:", error);
