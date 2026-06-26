@@ -123,7 +123,11 @@ const dashboardService = {
     return response.data;
   },
 
-  // ─── NEW: Extended platform stats (optional) ───────────────────────
+  createReport: async (payload: { type: string; description: string; jobId?: string }) => {
+    const response = await api.post("/reports", payload);
+    return response.data.data;
+  },
+
   getPlatformStats: async () => {
     const response = await api.get("/admin/stats");
     return response.data;

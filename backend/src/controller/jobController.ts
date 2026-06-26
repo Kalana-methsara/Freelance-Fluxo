@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
 import { JobModel } from "../models/jobModel";
 import { ApplicationModel } from "../models/applicationModel";
+import { SubmissionModel } from "../models/submissionModel";
 import { UserModel } from "../models/userModel";
+import cloudinary from "../config/cloudinary";
 import { asyncHandler } from "../middleware/asyncHandler";
 import { AuthRequest } from "../middleware/authMiddleware";
-import { UserRole } from "../enums/userRole";
 
 export const getJobs = asyncHandler(async (req: Request, res: Response) => {
   const { q, category, status } = req.query;
@@ -199,4 +200,64 @@ export const getFreelancerJobs = asyncHandler(async (req: Request, res: Response
     .sort({ createdAt: -1 });
 
   res.status(200).json({ success: true, data: jobs });
+});
+
+export const withdrawApplication = asyncHandler(async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
+  const application = await ApplicationModel.findById(req.params.id);
+
+  if (!application) return res.status(404).json({ message: "Application not found" });
+  if (application.freelancerId.toString() !== authReq.user!._id) {
+    return res.status(403).json({ message: "Not authorized to withdraw this proposal" });
+  }
+  if (!["pending", "shortlisted"].includes(application.status)) {
+    return res.status(400).json({ message: "Only pending or shortlisted proposals can be withdrawn" });
+  }
+
+  application.status = "withdrawn";
+  await application.save();
+
+  res.status(200).json({ success: true, data: application });
+});
+
+export const submitWork = asyncHandler(async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
+  const jobId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const { description } = req.body;
+  const file = req.file;
+
+  if (!description?.trim()) {
+    return res.status(400).json({ message: "Description is required" });
+  }
+  if (!file) {
+    return res.status(400).json({ message: "File attachment is required" });
+  }
+
+  const job = await JobModel.findById(jobId);
+  if (!job) return res.status(404).json({ message: "Job not found" });
+  if (job.freelancerId?.toString() !== authReq.user!._id) {
+    return res.status(403).json({ message: "Only the assigned freelancer can submit work" });
+  }
+  if (!["in_progress", "under_review"].includes(job.status)) {
+    return res.status(400).json({ message: "This job is not accepting submissions" });
+  }
+
+  const fileBase64 = `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
+  const uploadResponse = await cloudinary.uploader.upload(fileBase64, {
+    folder: "work_submissions",
+    resource_type: "auto",
+  });
+
+  const submission = await SubmissionModel.create({
+    jobId,
+    freelancerId: authReq.user!._id,
+    description: description.trim(),
+    fileUrl: uploadResponse.secure_url,
+    fileName: file.originalname,
+  });
+
+  job.status = "under_review";
+  await job.save();
+
+  res.status(201).json({ success: true, data: submission });
 });

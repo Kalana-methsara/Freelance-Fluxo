@@ -21,6 +21,9 @@ import {
     flagJob,
     getAllReports,
     resolveReport,
+    deleteReport,
+    createReport,
+    getPlatformStats,
 } from "../controller/adminController";
 import { validate } from "../middleware/validateMiddleware";
 import { loginSchema, registerSchema, registerAdminSchema, updateProfileSchema } from "../schemas/authSchema";
@@ -127,6 +130,22 @@ router.patch(
     resolveReport
 );
 
+router.delete(
+    "/admin/reports/:reportId",
+    authenticate,
+    requireRole([UserRole.ADMIN]),
+    deleteReport
+);
+
+router.get(
+    "/admin/stats",
+    authenticate,
+    requireRole([UserRole.ADMIN]),
+    getPlatformStats
+);
+
+router.post("/reports", authenticate, createReport);
+
 // ─── Super Admin only ──────────────────────────────────────────
 router.delete(
     "/users/:userId",
@@ -136,6 +155,7 @@ router.delete(
 );
 
 // ======================== Development Helper ========================
+if (process.env.NODE_ENV !== "production") {
 router.get('/dev/token', async (req, res) => {
   try {
     const roleParam = (req.query.role as string) || '';
@@ -159,5 +179,6 @@ router.get('/dev/token', async (req, res) => {
     res.status(500).json({ success: false, message: 'Dev token error', error: err });
   }
 });
+}
 
 export default router;

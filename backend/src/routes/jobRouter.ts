@@ -9,9 +9,12 @@ import {
   updateApplicationStatus,
   getClientJobs,
   getFreelancerJobs,
+  withdrawApplication,
+  submitWork,
 } from "../controller/jobController";
 import { authenticate } from "../middleware/authMiddleware";
 import { requireRole } from "../middleware/requireRole";
+import { workUpload } from "../middleware/workUploadMiddleware";
 import { UserRole } from "../enums/userRole";
 
 const router = Router();
@@ -29,6 +32,19 @@ router.patch(
   authenticate,
   requireRole([UserRole.CLIENT]),
   updateApplicationStatus
+);
+router.patch(
+  "/applications/:id/withdraw",
+  authenticate,
+  requireRole([UserRole.FREELANCER]),
+  withdrawApplication
+);
+router.post(
+  "/:id/submissions",
+  authenticate,
+  requireRole([UserRole.FREELANCER]),
+  workUpload.single("file"),
+  submitWork
 );
 
 export default router;

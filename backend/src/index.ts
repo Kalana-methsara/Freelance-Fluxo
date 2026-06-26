@@ -159,6 +159,20 @@ const start = async () => {
       }
     });
 
+    socket.on("mark_read", async (payload: { conversationId: string }) => {
+      const { conversationId } = payload || {};
+      if (!conversationId || !userId) return;
+
+      try {
+        await MessageModel.updateMany(
+          { conversationId, readBy: { $ne: userId } },
+          { $addToSet: { readBy: userId } }
+        );
+      } catch (err) {
+        console.error("Socket mark_read error:", err);
+      }
+    });
+
     socket.on("disconnect", () => {
       if (!userId) return;
       const sockets = onlineUsers.get(userId);

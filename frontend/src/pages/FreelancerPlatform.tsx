@@ -211,66 +211,67 @@ export default function FreelancerPlatform() {
           <SectionBadge label="Browse categories" />
           <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">Explore talent by category</h2>
           <p className="text-sm text-gray-500 mb-6 sm:mb-8 max-w-lg">Find skilled professionals across every field, ready to help your business grow.</p>
-          
+
         </div>
       </section>
-  <section className="flex justify-center -mt-20 mb-10 overflow-hidden w-full">
-  <div className="w-350 max-[500px]:w-full max-[500px]:px-4">
-    
-    {/* 💻 Desktop එකේදී සාමාන්‍ය විදිහට පේනවා (No Auto-scroll) */}
-    <div className="hidden min-[501px]:flex w-full justify-between flex-wrap">
-      {items.map((item) => (
-        <div
-          key={`desktop-${item.id}`}
-          className="w-[250px] h-[150px] flex flex-col gap-[10px] items-center justify-center text-center cursor-pointer group"
-        >
-          <img src={item.img} alt={item.label} className="w-[50px] h-[50px]" />
-          <div className="w-[50px] h-[2px] bg-gray-200 transition-all duration-300 group-hover:w-[80px] group-hover:bg-[#1dbf73]" />
-          <span className="font-light text-sm">{item.label}</span>
-        </div>
-      ))}
-    </div>
+      <section className="flex justify-center -mt-20 mb-10 overflow-hidden w-full">
+        <div className="w-350 max-[500px]:w-full max-[500px]:px-4">
 
-    {/* 📱 Mobile (max-width: 500px) එකේදී විතරක් Auto Move වෙනවා */}
-    <div 
-      className="flex min-[501px]:hidden w-full overflow-hidden"
-      style={{
-        maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
-        WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
-      }}
-    >
-      <div 
-        className="flex flex-nowrap gap-4 animation-marquee"
-        style={{
-          display: 'flex',
-          width: 'max-content',
-          animation: 'scrollMarquee 20s linear infinite'
-        }}
-      >
-        {/* Array එක දෙපාරක් map කරනවා නොනැවතී loop වෙන්න */}
-        {[...items, ...items].map((item, index) => (
-          <div
-            key={`mobile-${item.id}-${index}`}
-            className="w-[200px] h-[150px] flex flex-col gap-[10px] items-center justify-center text-center flex-shrink-0"
-          >
-            <img src={item.img} alt={item.label} className="w-[50px] h-[50px]" />
-            <div className="w-[50px] h-[2px] bg-gray-200" />
-            <span className="font-light text-sm">{item.label}</span>
+          {/* 💻 Desktop එකේදී සාමාන්‍ය විදිහට පේනවා (No Auto-scroll) */}
+          <div className="hidden min-[501px]:flex w-full justify-between flex-wrap">
+            {items.map((item) => (
+              <div
+                key={`desktop-${item.id}`}
+                className="w-[250px] h-[150px] flex flex-col gap-[10px] items-center justify-center text-center cursor-pointer group"
+              >
+                <img src={item.img} alt={item.label} className="w-[50px] h-[50px]" />
+                <div className="w-[50px] h-[2px] bg-gray-200 transition-all duration-300 group-hover:w-[80px] group-hover:bg-[#1dbf73]" />
+                <span className="font-light text-sm">{item.label}</span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-    </div>
 
-    {/* 🛠️ Animation එක වැඩ කරන්න මේ CSS ටික Global CSS (index.css) එකට හෝ මෙතනටම දාන්න */}
-    <style dangerouslySetInnerHTML={{__html: `
+          {/* 📱 Mobile (max-width: 500px) එකේදී විතරක් Auto Move වෙනවා */}
+          <div
+            className="flex min-[501px]:hidden w-full overflow-hidden"
+            style={{
+              maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+            }}
+          >
+            <div
+              className="flex flex-nowrap gap-4 animation-marquee"
+              style={{
+                display: 'flex',
+                width: 'max-content',
+                animation: 'scrollMarquee 20s linear infinite'
+              }}
+            >
+              {/* Array එක දෙපාරක් map කරනවා නොනැවතී loop වෙන්න */}
+              {[...items, ...items].map((item, index) => (
+                <div
+                  key={`mobile-${item.id}-${index}`}
+                  className="w-[200px] h-[150px] flex flex-col gap-[10px] items-center justify-center text-center flex-shrink-0"
+                >
+                  <img src={item.img} alt={item.label} className="w-[50px] h-[50px]" />
+                  <div className="w-[50px] h-[2px] bg-gray-200" />
+                  <span className="font-light text-sm">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 🛠️ Animation එක වැඩ කරන්න මේ CSS ටික Global CSS (index.css) එකට හෝ මෙතනටම දාන්න */}
+          <style dangerouslySetInnerHTML={{
+            __html: `
       @keyframes scrollMarquee {
         0% { transform: translate3d(0, 0, 0); }
         100% { transform: translate3d(-50%, 0, 0); }
       }
     `}} />
 
-  </div>
-</section>
+        </div>
+      </section>
 
       <section>
         <img src="/web_page.png" alt="Web page preview" className="w-full" />
@@ -303,7 +304,6 @@ export default function FreelancerPlatform() {
           </div>
         </div>
       </section>
-
       <TechStack />
 
       {/* ─── HOW IT WORKS ─── */}
@@ -318,11 +318,7 @@ export default function FreelancerPlatform() {
             {HOW_IT_WORKS.map(({ n, title, desc }) => (
               <div
                 key={n}
-                className="group flex sm:flex-col items-start sm:items-center gap-5 sm:gap-6 
-                     p-6 sm:p-8 rounded-2xl bg-white border border-gray-100 
-                     shadow-sm hover:shadow-lg hover:border-green-200/60 
-                     transition-all duration-300 hover:-translate-y-1"
-              >
+                className="group flex sm:flex-col items-start sm:items-center gap-5 sm:gap-6 p-6 sm:p-8 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg hover:border-green-200/60 transition-all duration-300 hover:-translate-y-1"              >
                 <div className="w-12 h-12 shrink-0 rounded-full 
                         bg-linear-to-br from-green-600 to-emerald-500 
                         text-white text-lg font-bold flex items-center justify-center 

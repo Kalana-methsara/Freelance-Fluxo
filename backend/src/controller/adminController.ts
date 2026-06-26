@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { UserModel } from "../models/userModel";
 import { JobModel } from "../models/jobModel";
 import { ReportModel } from "../models/reportModel";
+import { UserRole } from "../enums/userRole";
 import { asyncHandler } from "../middleware/asyncHandler";
 
 export const getAdminDashboard = asyncHandler(async (req: Request, res: Response) => {
@@ -96,4 +97,68 @@ export const resolveReport = asyncHandler(async (req: Request, res: Response) =>
     report.resolvedBy = (req as any).user?._id;
     await report.save();
     res.status(200).json({ success: true, message: "Report resolved" });
+});
+
+export const deleteReport = asyncHandler(async (req: Request, res: Response) => {
+    const report = await ReportModel.findById(req.params.reportId);
+    if (!report) return res.status(404).json({ success: false, message: "Report not found" });
+    await report.deleteOne();
+    res.status(200).json({ success: true, message: "Report deleted" });
+});
+
+export const createReport = asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as any;
+    const { type, description, jobId } = req.body;
+
+    if (!type || !description?.trim()) {
+        return res.status(400).json({ success: false, message: "Type and description are required" });
+    }
+
+    const report = await ReportModel.create({
+        type,
+        description: description.trim(),
+        jobId: jobId || undefined,
+        reportedBy: authReq.user?._id,
+    });
+
+    res.status(201).json({ success: true, data: report });
+});
+
+export const getPlatformStats = asyncHandler(async (_req: Request, res: Response) => {
+    const [
+        totalUsers,
+        totalFreelancers,
+        totalClients,
+        totalJobs,
+        openJobs,
+        completedJobs,
+        openReports,
+        flaggedJobs,
+        totalContracts,
+    ] = await Promise.all([
+        UserModel.countDocuments(),
+        UserModel.countDocuments({ userRole: UserRole.FREELANCER }),
+        UserModel.countDocuments({ userRole: UserRole.CLIENT }),
+        JobModel.countDocuments(),
+        JobModel.countDocuments({ status: "open" }),
+        JobModel.countDocuments({ status: "completed" }),
+        ReportModel.countDocuments({ resolved: false }),
+        JobModel.countDocuments({ flagged: true }),
+        JobModel.countDocuments({ status: { $in: ["in_progress", "under_review"] } }),
+    ]);
+
+    res.status(200).json({
+        success: true,
+        data: {
+            totalUsers,
+            totalFreelancers,
+            totalClients,
+            totalJobs,
+            openJobs,
+            completedJobs,
+            openReports,
+            flaggedJobs,
+            activeContracts: totalContracts,
+        },
+    });
 });

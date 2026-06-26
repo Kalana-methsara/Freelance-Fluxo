@@ -84,7 +84,7 @@ interface DashboardData {
   invoices: Invoice[];
 }
 
-interface FreelancerMock {
+interface FreelancerPreview {
   _id: string;
   firstName: string;
   lastName: string;
@@ -121,49 +121,6 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const AVATAR_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
-
-const MOCK_FREELANCERS: FreelancerMock[] = [
-  {
-    _id: 'fl_1',
-    firstName: 'Alex',
-    lastName: 'Morgan',
-    title: 'Full-Stack Developer',
-    rating: 5,
-    reviewCount: 38,
-    hourlyRate: 65,
-    skills: ['React', 'Node.js', 'Next.js'],
-  },
-  {
-    _id: 'fl_2',
-    firstName: 'Elena',
-    lastName: 'Rostova',
-    title: 'UI/UX Product Designer',
-    rating: 5,
-    reviewCount: 24,
-    hourlyRate: 55,
-    skills: ['Figma', 'Wireframing', 'Tailwind'],
-  },
-  {
-    _id: 'fl_3',
-    firstName: 'Marcus',
-    lastName: 'Chen',
-    title: 'DevOps Engineer',
-    rating: 4,
-    reviewCount: 19,
-    hourlyRate: 75,
-    skills: ['AWS', 'Docker', 'Kubernetes'],
-  },
-  {
-    _id: 'fl_4',
-    firstName: 'Sarah',
-    lastName: 'Jenkins',
-    title: 'Technical Content Writer',
-    rating: 5,
-    reviewCount: 42,
-    hourlyRate: 40,
-    skills: ['SEO', 'Copywriting', 'Editing'],
-  },
-];
 
 function getStatusStyle(status: string): string {
   return STATUS_STYLES[status] || 'bg-gray-100 text-gray-600';
@@ -778,6 +735,7 @@ export default function ClientDashboard() {
     open: false,
     id: null,
   });
+  const [featuredFreelancers, setFeaturedFreelancers] = useState<FreelancerPreview[]>([]);
 
   // Auth check
   useEffect(() => {
@@ -805,6 +763,12 @@ export default function ClientDashboard() {
     };
 
     loadClientContracts();
+  }, []);
+
+  useEffect(() => {
+    platformService.getFreelancers()
+      .then((data) => setFeaturedFreelancers((data || []).slice(0, 4)))
+      .catch(() => setFeaturedFreelancers([]));
   }, []);
 
   // Handlers
@@ -1086,7 +1050,7 @@ export default function ClientDashboard() {
                   </p>
                 </div>
                 <div className="flex gap-4 overflow-x-auto pb-3 sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-4 scrollbar-thin">
-                  {MOCK_FREELANCERS.map((fl, i) => (
+                  {featuredFreelancers.length > 0 ? featuredFreelancers.map((fl, i) => (
                     <button
                       key={fl._id}
                       type="button"
@@ -1116,7 +1080,9 @@ export default function ClientDashboard() {
                         ))}
                       </div>
                     </button>
-                  ))}
+                  )) : (
+                    <p className="text-sm text-gray-400 col-span-full py-4">No freelancers available yet.</p>
+                  )}
                 </div>
               </section>
             )}

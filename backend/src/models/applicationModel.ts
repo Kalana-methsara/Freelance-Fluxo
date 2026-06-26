@@ -1,6 +1,6 @@
 import { Document, model, Schema, Types } from "mongoose";
 
-export type ApplicationStatus = "pending" | "shortlisted" | "rejected" | "accepted";
+export type ApplicationStatus = "pending" | "shortlisted" | "rejected" | "accepted" | "withdrawn";
 
 export interface IApplication extends Document {
   jobId: Types.ObjectId;
@@ -18,7 +18,7 @@ const applicationSchema = new Schema<IApplication>(
     coverLetter: { type: String },
     status: {
       type: String,
-      enum: ["pending", "shortlisted", "rejected", "accepted"],
+      enum: ["pending", "shortlisted", "rejected", "accepted", "withdrawn"],
       default: "pending",
     },
   },
