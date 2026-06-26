@@ -419,6 +419,23 @@ export default function SearchPage() {
                           <p className="text-xs font-medium text-emerald-600 mt-0.5">
                             {fl.title || "Professional Freelancer"}
                           </p>
+                          {fl.bio ? (
+                            <p className="mt-2 text-sm text-gray-600 leading-relaxed line-clamp-3">
+                              {fl.bio}
+                            </p>
+                          ) : (
+                            <p className="mt-2 text-sm text-gray-400">Professional bio coming soon.</p>
+                          )}
+                          <div className="mt-2 flex items-center gap-1.5 text-xs text-gray-500">
+                            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-gray-400">
+                              <path fillRule="evenodd" d="M9.695 1.5a.75.75 0 0 1 .61 0l6.75 2.812a.75.75 0 0 1 .445.69v5.56a8.25 8.25 0 0 1-4.2 7.16L10 19.5l-2.3-1.78a8.25 8.25 0 0 1-4.2-7.16v-5.56a.75.75 0 0 1 .445-.69L9.695 1.5Zm.305 2.06-5.25 2.188v4.936a6.75 6.75 0 0 0 3.45 5.86l1.8 1.39 1.8-1.39a6.75 6.75 0 0 0 3.45-5.86V5.748l-5.25-2.188Z" clipRule="evenodd" />
+                            </svg>
+                            <span>
+                              {fl.location?.city || fl.location?.province || fl.location?.country
+                                ? [fl.location?.city, fl.location?.province, fl.location?.country].filter(Boolean).join(", ")
+                                : "Location not added yet"}
+                            </span>
+                          </div>
                         </div>
 
                         <div className="pt-3 border-t border-gray-100 mt-2 flex items-center justify-between gap-2">
