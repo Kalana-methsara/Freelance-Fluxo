@@ -148,7 +148,8 @@ export const getJobApplications = asyncHandler(async (req: Request, res: Respons
   }
 
   const applications = await ApplicationModel.find({ jobId: job._id })
-    .populate("freelancerId", "firstName lastName title skills hourlyRate rating reviewCount")
+    .populate("freelancerId", "firstName lastName title skills hourlyRate rating reviewCount profileImage")
+    .populate("jobId", "title budget status")
     .sort({ createdAt: -1 });
 
   res.status(200).json({ success: true, data: applications });

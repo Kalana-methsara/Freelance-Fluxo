@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { LoaderCircle, UserPlus, X } from "lucide-react";
 import chatService from "../services/chatService";
 import jobService from "../services/jobService";
+import authService from "../services/authService";
 
 interface Message {
   _id?: string;
@@ -10,16 +12,36 @@ interface Message {
   createdAt: string;
 }
 
-export default function ChatRoom({ conversationId, currentUserId, otherUser }: {
+interface ConversationParticipant {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  profileImage?: string;
+}
+
+interface ConversationLike {
+  _id?: string;
+  title?: string | null;
+  participants?: ConversationParticipant[];
+}
+
+export default function ChatRoom({ conversationId, currentUserId, conversation, otherUser }: {
   conversationId: string;
   currentUserId: string;
-  otherUser: { _id: string; firstName: string; lastName: string };
+  conversation?: ConversationLike;
+  otherUser?: { _id: string; firstName: string; lastName: string; profileImage?: string };
 }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [typingLabel, setTypingLabel] = useState<string | null>(null);
-  const [isOtherOnline, setIsOtherOnline] = useState(false);
+  const [onlineParticipantIds, setOnlineParticipantIds] = useState<string[]>([]);
+  const [participants, setParticipants] = useState<ConversationParticipant[]>([]);
+  const [isAddParticipantOpen, setIsAddParticipantOpen] = useState(false);
+  const [participantInput, setParticipantInput] = useState("");
+  const [isAddingParticipant, setIsAddingParticipant] = useState(false);
+  const [addParticipantError, setAddParticipantError] = useState<string | null>(null);
+  const [addParticipantSuccess, setAddParticipantSuccess] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -42,9 +64,70 @@ export default function ChatRoom({ conversationId, currentUserId, otherUser }: {
   }, [loadMessages]);
 
   useEffect(() => {
+    const normalizedParticipants = (conversation?.participants || (otherUser ? [otherUser] : []))
+      .filter((participant): participant is ConversationParticipant => Boolean(participant && participant._id));
+
+    setParticipants(normalizedParticipants.filter((participant) => participant._id !== currentUserId));
+  }, [conversation?.participants, currentUserId, otherUser]);
+
+  const resolveParticipantTarget = useCallback(async (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      throw new Error("Please enter a user ID, email, or username.");
+    }
+
+    if (/^[0-9a-fA-F]{24}$/.test(trimmed)) {
+      return trimmed;
+    }
+
+    try {
+      const response = await authService.getUsers({ search: trimmed, page: 1, limit: 10 });
+      const match = response?.users?.find((user: any) => {
+        const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim().toLowerCase();
+        return user.email?.toLowerCase() === trimmed.toLowerCase() || fullName === trimmed.toLowerCase();
+      });
+      if (match?._id) {
+        return match._id;
+      }
+    } catch {
+      // fall back to the raw identifier and let the server validate it
+    }
+
+    return trimmed;
+  }, []);
+
+  const handleAddParticipant = useCallback(async (event?: React.FormEvent) => {
+    event?.preventDefault();
+    if (!conversationId) return;
+
+    setAddParticipantError(null);
+    setAddParticipantSuccess(null);
+    setIsAddingParticipant(true);
+
+    try {
+      const targetUserId = await resolveParticipantTarget(participantInput);
+      const response = await jobService.addParticipantToConversation(conversationId, targetUserId);
+      const addedParticipant = response?.participant;
+
+      if (addedParticipant?._id) {
+        setParticipants((prev) => (prev.some((participant) => participant._id === addedParticipant._id) ? prev : [...prev, addedParticipant]));
+      }
+
+      setAddParticipantSuccess(`${addedParticipant?.firstName || "User"} was added to the room.`);
+      setParticipantInput("");
+      setIsAddParticipantOpen(false);
+    } catch (error: any) {
+      setAddParticipantError(error?.response?.data?.message || error?.message || "Unable to add that participant right now.");
+    } finally {
+      setIsAddingParticipant(false);
+    }
+  }, [conversationId, participantInput, resolveParticipantTarget]);
+
+  useEffect(() => {
     if (!conversationId) return;
 
     chatService.joinConversation(conversationId);
+    chatService.markAsRead(conversationId);
 
     const handleIncoming = (msg: Message) => {
       setMessages((prev) => {
@@ -59,8 +142,10 @@ export default function ChatRoom({ conversationId, currentUserId, otherUser }: {
       if (payload.conversationId !== conversationId) return;
       if (payload.userId === currentUserId) return;
 
+      const typingUser = participants.find((participant) => participant._id === payload.userId);
+
       if (payload.isTyping) {
-        setTypingLabel(`${otherUser.firstName} is typing...`);
+        setTypingLabel(typingUser ? `${typingUser.firstName} is typing...` : 'Someone is typing...');
         if (typingTimeoutRef.current) {
           clearTimeout(typingTimeoutRef.current);
         }
@@ -71,23 +156,34 @@ export default function ChatRoom({ conversationId, currentUserId, otherUser }: {
     };
 
     const handleUserStatus = (payload: { userId: string; online: boolean }) => {
-      if (payload.userId !== otherUser._id) return;
-      setIsOtherOnline(payload.online);
+      setOnlineParticipantIds((prev) => {
+        if (payload.online) {
+          return prev.includes(payload.userId) ? prev : [...prev, payload.userId];
+        }
+        return prev.filter((id) => id !== payload.userId);
+      });
+    };
+
+    const handleParticipantAdded = (payload: { conversationId?: string; participant?: ConversationParticipant }) => {
+      if (payload.conversationId !== conversationId || !payload.participant?._id) return;
+      setParticipants((prev) => (prev.some((participant) => participant._id === payload.participant!._id) ? prev : [...prev, payload.participant!]));
     };
 
     chatService.onNewMessage(handleIncoming);
     chatService.onTyping(handleTyping);
     chatService.onUserStatus(handleUserStatus);
+    chatService.onParticipantAdded(handleParticipantAdded);
 
     return () => {
       chatService.offNewMessage();
       chatService.offTyping();
       chatService.offUserStatus();
+      chatService.offParticipantAdded();
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [conversationId, currentUserId, otherUser.firstName]);
+  }, [conversationId, currentUserId, participants]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -110,19 +206,116 @@ export default function ChatRoom({ conversationId, currentUserId, otherUser }: {
 
   if (loading) return <div className="p-4 text-center">Loading messages…</div>;
 
+  const isAnyOnline = participants.some((participant) => onlineParticipantIds.includes(participant._id));
+  const headerTitle = conversation?.title || participants.map((participant) => `${participant.firstName} ${participant.lastName}`).join(', ') || 'Conversation';
+
   return (
     <div className="flex flex-col h-full border rounded-lg bg-white">
       <div className="border-b p-4 bg-gray-50 rounded-t-lg flex items-center justify-between gap-3">
-        <div>
-          <div className="text-sm font-semibold text-gray-900">
-            {otherUser.firstName} {otherUser.lastName}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex -space-x-2 shrink-0">
+            {participants.slice(0, 3).map((participant) => (
+              <div
+                key={participant._id}
+                className="w-9 h-9 rounded-full border-2 border-white bg-emerald-600 text-white text-[11px] font-bold flex items-center justify-center overflow-hidden"
+              >
+                {participant.profileImage ? (
+                  <img src={participant.profileImage} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  participant.firstName?.[0] || '?'
+                )}
+              </div>
+            ))}
+            {participants.length > 3 && (
+              <div className="w-9 h-9 rounded-full border-2 border-white bg-slate-700 text-white text-[11px] font-semibold flex items-center justify-center">
+                +{participants.length - 3}
+              </div>
+            )}
           </div>
-          <div className="text-xs text-gray-500">Live conversation</div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-gray-900 truncate">{headerTitle}</div>
+            <div className="text-xs text-gray-500">{typingLabel || (isAnyOnline ? 'Online now' : 'Live conversation')}</div>
+          </div>
         </div>
-        <div className={`text-xs ${isOtherOnline ? 'text-green-600' : 'text-slate-500'}`}>
-          {isOtherOnline ? 'Online' : 'Offline'}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setAddParticipantError(null);
+              setAddParticipantSuccess(null);
+              setIsAddParticipantOpen(true);
+            }}
+            className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-2 text-sm font-medium text-emerald-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50"
+          >
+            <UserPlus className="h-4 w-4" />
+            <span className="hidden sm:inline">Add Person</span>
+          </button>
+          <div className={`text-xs ${isAnyOnline ? 'text-green-600' : 'text-slate-500'}`}>
+            {isAnyOnline ? 'Online' : 'Offline'}
+          </div>
         </div>
       </div>
+
+      {isAddParticipantOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl transition-all duration-200">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Add someone to this chat</h3>
+                <p className="mt-1 text-sm text-slate-500">Enter a user ID, email address, or username to invite them to this room.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddParticipantOpen(false);
+                  setAddParticipantError(null);
+                  setAddParticipantSuccess(null);
+                  setParticipantInput("");
+                }}
+                className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddParticipant} className="space-y-3">
+              <input
+                type="text"
+                value={participantInput}
+                onChange={(e) => setParticipantInput(e.target.value)}
+                placeholder="user@example.com or user ID"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+              />
+
+              {addParticipantError && <p className="text-sm text-rose-600">{addParticipantError}</p>}
+              {addParticipantSuccess && <p className="text-sm text-emerald-600">{addParticipantSuccess}</p>}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddParticipantOpen(false);
+                    setAddParticipantError(null);
+                    setAddParticipantSuccess(null);
+                    setParticipantInput("");
+                  }}
+                  className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAddingParticipant}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isAddingParticipant ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                  {isAddingParticipant ? "Adding..." : "Add"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
         {messages.map((msg) => (

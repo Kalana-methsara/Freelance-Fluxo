@@ -100,8 +100,23 @@ const start = async () => {
     }
 
     socket.on("join", async (conversationId: string) => {
-      if (!conversationId) return;
-      socket.join(conversationId);
+      if (!conversationId || !userId) return;
+
+      try {
+        const conversation = await ConversationModel.findById(conversationId);
+        if (!conversation) {
+          return socket.emit("chat_error", { message: "Conversation not found" });
+        }
+
+        if (!conversation.participants.some((p) => p.toString() === userId)) {
+          return socket.emit("chat_error", { message: "Unauthorized to join this conversation" });
+        }
+
+        socket.join(conversationId);
+      } catch (err) {
+        console.error("Socket join error:", err);
+        socket.emit("chat_error", { message: "Could not join conversation" });
+      }
     });
 
     socket.on("typing", (payload: { conversationId: string; isTyping: boolean }) => {
@@ -152,6 +167,7 @@ const start = async () => {
           senderId: populatedMessage.senderId,
           text: populatedMessage.text,
           createdAt: populatedMessage.createdAt,
+          readBy: populatedMessage.readBy,
         });
       } catch (err) {
         console.error("Socket send_message error:", err);
@@ -159,15 +175,27 @@ const start = async () => {
       }
     });
 
-    socket.on("mark_read", async (payload: { conversationId: string }) => {
-      const { conversationId } = payload || {};
+    socket.on("mark_read", async (payload: string | { conversationId: string }) => {
+      const conversationId =
+        typeof payload === "string" ? payload : payload?.conversationId;
       if (!conversationId || !userId) return;
 
       try {
+        const conversation = await ConversationModel.findById(conversationId);
+        if (!conversation) {
+          return socket.emit("chat_error", { message: "Conversation not found" });
+        }
+
+        if (!conversation.participants.some((p) => p.toString() === userId)) {
+          return socket.emit("chat_error", { message: "Unauthorized to mark messages as read" });
+        }
+
         await MessageModel.updateMany(
           { conversationId, readBy: { $ne: userId } },
           { $addToSet: { readBy: userId } }
         );
+
+        io.to(conversationId).emit("messages_read", { conversationId, userId });
       } catch (err) {
         console.error("Socket mark_read error:", err);
       }

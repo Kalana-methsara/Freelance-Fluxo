@@ -90,6 +90,11 @@ const jobService = {
     return response.data.data;
   },
 
+  addParticipantToConversation: async (conversationId: string, userId: string) => {
+    const response = await api.post(`/conversations/${conversationId}/participants`, { userId });
+    return response.data;
+  },
+
   // ==================== FREELANCER PROFILE ====================
   updateFreelancerProfile: async (userId: string, updates: any) => {
     const response = await api.patch(`/auth/users/${userId}/profile`, updates);

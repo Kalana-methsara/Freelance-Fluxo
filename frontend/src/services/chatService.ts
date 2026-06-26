@@ -55,9 +55,24 @@ class ChatService {
     this.socket?.off('user_status');
   }
 
-  // Optional: mark messages as read
+  onParticipantAdded(callback: (payload: any) => void): void {
+    this.socket?.on('participant_added', callback);
+  }
+
+  offParticipantAdded(): void {
+    this.socket?.off('participant_added');
+  }
+
+  onMessagesRead(callback: (payload: any) => void): void {
+    this.socket?.on('messages_read', callback);
+  }
+
+  offMessagesRead(): void {
+    this.socket?.off('messages_read');
+  }
+
   markAsRead(conversationId: string): void {
-    this.socket?.emit('mark_read', conversationId);
+    this.socket?.emit('mark_read', { conversationId });
   }
 }
 

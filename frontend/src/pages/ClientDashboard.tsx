@@ -57,9 +57,20 @@ interface Project {
 
 interface Applicant {
   _id: string;
-  jobId?: { _id: string; title: string };
-  freelancerId?: { _id: string; firstName: string; lastName: string };
+  jobId?: { _id: string; title: string; budget?: number; status?: string };
+  freelancerId?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    title?: string;
+    profileImage?: string;
+    skills?: string[];
+    hourlyRate?: number;
+    rating?: number;
+    reviewCount?: number;
+  };
   bid: number;
+  coverLetter?: string;
   status: string;
 }
 
@@ -470,19 +481,67 @@ const ProjectCard = memo(({
   );
 });
 
-const ApplicantItem = memo(({ applicant }: { applicant: Applicant }) => (
-  <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
-    <div className="min-w-0 flex-1">
-      <p className="font-medium text-gray-900 truncate">
-        {applicant.freelancerId?.firstName} {applicant.freelancerId?.lastName}
-      </p>
-      <p className="text-xs text-gray-500 mt-0.5 truncate">
-        {applicant.jobId?.title || 'Untitled job'} · Bid ${applicant.bid}
-      </p>
+const ApplicantItem = memo(({
+  applicant,
+  onHire,
+  isHiring,
+}: {
+  applicant: Applicant;
+  onHire: (applicant: Applicant) => void;
+  isHiring: boolean;
+}) => {
+  const fullName = `${applicant.freelancerId?.firstName || ''} ${applicant.freelancerId?.lastName || ''}`.trim();
+  const skills = applicant.freelancerId?.skills?.slice(0, 4).join(', ') || 'No skills listed';
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700">
+            {applicant.freelancerId?.profileImage ? (
+              <img src={applicant.freelancerId.profileImage} alt={fullName} className="h-full w-full object-cover" />
+            ) : (
+              getInitials(fullName || 'Freelancer')
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate font-semibold text-gray-900">{fullName || 'Unnamed freelancer'}</p>
+              <StatusBadge status={applicant.status} />
+            </div>
+            <p className="mt-1 text-sm text-gray-600">
+              {applicant.freelancerId?.title || 'Freelancer'}
+            </p>
+            <p className="mt-1 text-xs text-gray-500">
+              Applied to <span className="font-medium text-gray-700">{applicant.jobId?.title || 'Untitled job'}</span>
+              {' · '}Bid <span className="font-semibold text-emerald-700">${applicant.bid}</span>
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => onHire(applicant)}
+          disabled={isHiring || ['accepted', 'rejected'].includes(applicant.status)}
+          className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+        >
+          {isHiring ? 'Hiring…' : 'Hire Freelancer'}
+        </button>
+      </div>
+
+      <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 p-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500">Proposal</p>
+        <p className="mt-2 text-sm leading-6 text-gray-700">
+          {applicant.coverLetter?.trim() || 'No proposal message was provided.'}
+        </p>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
+        <span>Skills: {skills}</span>
+        <span>{applicant.freelancerId?.rating ? `${applicant.freelancerId.rating.toFixed(1)} ★` : 'New freelancer'}</span>
+      </div>
     </div>
-    <StatusBadge status={applicant.status} />
-  </div>
-));
+  );
+});
 
 const InvoiceItem = memo(({ invoice }: { invoice: Invoice }) => (
   <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
@@ -728,6 +787,9 @@ export default function ClientDashboard() {
   const [activeContracts, setActiveContracts] = useState<any[]>([]);
   const [pendingOffers, setPendingOffers] = useState<any[]>([]);
   const [contractsLoading, setContractsLoading] = useState(false);
+  const [applicationsByJob, setApplicationsByJob] = useState<Record<string, Applicant[]>>({});
+  const [applicationsLoading, setApplicationsLoading] = useState(false);
+  const [hiringApplicationId, setHiringApplicationId] = useState<string | null>(null);
 
   // Project detail / delete state
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -809,6 +871,31 @@ export default function ClientDashboard() {
     }
   }, [deleteModal.id, handleDeleteProject]);
 
+  const handleHireApplicant = useCallback(async (application: Applicant) => {
+    const freelancerId = application.freelancerId?._id;
+    const jobId = typeof application.jobId === 'object' ? application.jobId._id : application.jobId;
+
+    if (!freelancerId || !jobId) {
+      toast.error('This application is missing the freelancer or job details.');
+      return;
+    }
+
+    setHiringApplicationId(application._id);
+    try {
+      await jobService.updateApplicationStatus(application._id, 'accepted');
+      const conversation = await jobService.createConversation(freelancerId, jobId);
+      setSelectedConvId(conversation._id);
+      setSelectedParticipant(conversation);
+      setActiveNav('messages');
+      toast.success('Freelancer hired and chat room opened.');
+    } catch (error: any) {
+      console.error('Failed to hire freelancer', error);
+      toast.error(error?.response?.data?.message || error?.message || 'Could not hire freelancer.');
+    } finally {
+      setHiringApplicationId(null);
+    }
+  }, [setActiveNav]);
+
   // Derived data
   const user = data?.user;
   const stats = data?.stats || { totalBudget: 0, totalSpent: 0, activeProjects: 0, pendingInvoices: 0 };
@@ -816,6 +903,41 @@ export default function ClientDashboard() {
   const projects = data?.projects || [];
   const applicants = data?.applicants || [];
   const invoices = data?.invoices || [];
+
+  useEffect(() => {
+    if (activeNav !== 'applicants' || !projects.length) return;
+
+    let isMounted = true;
+    const loadApplications = async () => {
+      setApplicationsLoading(true);
+      try {
+        const results = await Promise.all(
+          projects.map(async (project) => {
+            const applications = await jobService.getJobApplications(project._id);
+            return [project._id, Array.isArray(applications) ? applications : []];
+          })
+        );
+
+        if (isMounted) {
+          setApplicationsByJob(Object.fromEntries(results));
+        }
+      } catch (error) {
+        console.error('Failed to load job applications', error);
+        if (isMounted) {
+          setApplicationsByJob({});
+        }
+      } finally {
+        if (isMounted) {
+          setApplicationsLoading(false);
+        }
+      }
+    };
+
+    loadApplications();
+    return () => {
+      isMounted = false;
+    };
+  }, [activeNav, projects]);
 
   // Memoized filtered lists for overview
   const recentApplicants = useMemo(() => applicants.slice(0, 5), [applicants]);
@@ -1204,7 +1326,9 @@ export default function ClientDashboard() {
         {(activeNav === 'overview' || activeNav === 'applicants') && (
           <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b bg-gray-50/50 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-700">Recent applicants</h2>
+              <h2 className="text-sm font-semibold text-gray-700">
+                {activeNav === 'applicants' ? 'Applications by job post' : 'Recent applicants'}
+              </h2>
               {activeNav === 'overview' && (
                 <button
                   type="button"
@@ -1215,10 +1339,54 @@ export default function ClientDashboard() {
                 </button>
               )}
             </div>
-            {applicants.length > 0 ? (
-              <div className="divide-y divide-gray-100">
-                {(activeNav === 'overview' ? recentApplicants : applicants).map((applicant) => (
-                  <ApplicantItem key={applicant._id} applicant={applicant} />
+
+            {activeNav === 'applicants' ? (
+              applicationsLoading ? (
+                <div className="p-6 text-sm text-gray-500">Loading applications…</div>
+              ) : projects.some((project) => (applicationsByJob[project._id] || []).length > 0) ? (
+                <div className="divide-y divide-gray-100">
+                  {projects.map((project) => {
+                    const jobApplications = applicationsByJob[project._id] || [];
+                    if (!jobApplications.length) return null;
+
+                    return (
+                      <div key={project._id} className="px-6 py-5">
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{project.title}</h3>
+                            <p className="text-xs text-gray-500">{jobApplications.length} applicant{jobApplications.length > 1 ? 's' : ''}</p>
+                          </div>
+                          <StatusBadge status={project.status} />
+                        </div>
+                        <div className="space-y-3">
+                          {jobApplications.map((applicant) => (
+                            <ApplicantItem
+                              key={applicant._id}
+                              applicant={applicant}
+                              onHire={handleHireApplicant}
+                              isHiring={hiringApplicationId === applicant._id}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <EmptyState
+                  title="No applications yet"
+                  description="Applicants for your jobs will appear here as soon as they apply."
+                />
+              )
+            ) : applicants.length > 0 ? (
+              <div className="divide-y divide-gray-100 p-2">
+                {recentApplicants.map((applicant) => (
+                  <ApplicantItem
+                    key={applicant._id}
+                    applicant={applicant}
+                    onHire={handleHireApplicant}
+                    isHiring={hiringApplicationId === applicant._id}
+                  />
                 ))}
               </div>
             ) : (
@@ -1266,9 +1434,9 @@ export default function ClientDashboard() {
             <div className="grid md:grid-cols-3 h-[calc(100vh-14rem)] min-h-[500px]">
               <div className="border-r border-gray-200 overflow-y-auto bg-gray-50/30">
                 <ChatConversationList
-                  onSelectConversation={(convId, participant) => {
+                  onSelectConversation={(convId, conversation) => {
                     setSelectedConvId(convId);
-                    setSelectedParticipant(participant);
+                    setSelectedParticipant(conversation);
                   }}
                   selectedId={selectedConvId || undefined}
                 />
@@ -1278,7 +1446,7 @@ export default function ClientDashboard() {
                   <ChatRoom
                     conversationId={selectedConvId}
                     currentUserId={user._id}
-                    otherUser={selectedParticipant}
+                    conversation={selectedParticipant}
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-3">

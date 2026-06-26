@@ -1932,9 +1932,9 @@ const handleSaveProfile = async (updatedFields: Partial<User>) => {
             <div className="grid md:grid-cols-3 h-[600px]">
               <div className="border-r border-gray-200 overflow-y-auto bg-gray-50/40">
                 <ChatConversationList
-                  onSelectConversation={(convId, participant) => {
+                  onSelectConversation={(convId, conversation) => {
                     setSelectedConvId(convId);
-                    setSelectedParticipant(participant);
+                    setSelectedParticipant(conversation);
                   }}
                   selectedId={selectedConvId || undefined}
                 />
@@ -1944,7 +1944,7 @@ const handleSaveProfile = async (updatedFields: Partial<User>) => {
                   <ChatRoom
                     conversationId={selectedConvId}
                     currentUserId={user._id}
-                    otherUser={selectedParticipant}
+                    conversation={selectedParticipant}
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-2">
