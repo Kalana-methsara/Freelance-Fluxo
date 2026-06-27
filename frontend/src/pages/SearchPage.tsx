@@ -501,7 +501,6 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 font-sans flex flex-col">
-      {/* ── 🟢 HEADER NAVBAR ── */}
       <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4 justify-between w-full">
           <Link to="/" className="shrink-0 flex items-center gap-2">
@@ -643,7 +642,6 @@ export default function SearchPage() {
                           </p>
 
                           <div className="flex items-center gap-2">
-                            {/* ✅ HIRE BUTTON */}
                             {isClient && (
                               <button
                                 type="button"
