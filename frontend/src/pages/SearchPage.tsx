@@ -78,48 +78,30 @@ export default function SearchPage() {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
 
   // Local Storage Sync
- // Local Storage Sync & Fresh Database Fetch
-useEffect(() => {
-  if (!showModal) return; // Modal එක open වෙද්දී විතරක් රන් වෙන්න
-
-  const fetchFreshUserData = async () => {
+  useEffect(() => {
     try {
-      // 1. මුලින්ම local storage එකේ තියෙන data ටික load කරගන්න
       const storedUser = localStorage.getItem("user");
-      let parsed = storedUser ? JSON.parse(storedUser) : null;
-
-      // 2. 🟢 DATABASE එකෙන් FRESH DATA Fetch කරන්න (මේක තමයි වැදගත්ම කොටස)
-      // ඔයාගේ profile එක ගන්න තියෙන API route එක මෙතනට දාන්න (e.g., /auth/profile හෝ /users/me)
-      const res = await api.get("/auth/profile"); 
-      if (res.data) {
-        parsed = res.data;
-        // fresh data ටික local storage එකටත් දාන්න සින්ක් වෙන්න
-        localStorage.setItem("user", JSON.stringify(parsed));
-      }
-
-      if (parsed) {
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
         setCurrentUser(parsed);
 
-        // 3. Form එකට data සෙට් කිරීම
         setFormData({
           firstName: parsed.firstName || "",
           lastName: parsed.lastName || "",
           email: parsed.email || "",
           profileImage: parsed.profileImage || "",
           title: parsed.title || "",
-          bio: parsed.bio || "", // Database එකෙන් එන bio එක මෙතනට වැටෙනවා
+          bio: parsed.bio || "",
           hourlyRate: parsed.hourlyRate || 0,
           companyName: parsed.companyName || "",
-          // Location fields ආරක්ෂිතව check කිරීම:
-          address: parsed.location?.address || parsed.address || "",
-          city: parsed.location?.city || parsed.city || "",
-          province: parsed.location?.province || parsed.province || "",
-          country: parsed.location?.country || parsed.country || "",
-          lat: parsed.location?.coordinates?.lat || parsed.lat || 6.0329,
-          lng: parsed.location?.coordinates?.lng || parsed.lng || 80.2170
+          address: parsed.location?.address || "",
+          city: parsed.location?.city || "",
+          province: parsed.location?.province || "",
+          country: parsed.location?.country || "",
+          lat: parsed.location?.coordinates?.lat || 6.0329,
+          lng: parsed.location?.coordinates?.lng || 80.2170
         });
 
-        // Skills සෙට් කිරීම
         if (parsed.skills && Array.isArray(parsed.skills)) {
           setSelectedSkills(parsed.skills);
         } else if (parsed.skills) {
@@ -129,12 +111,9 @@ useEffect(() => {
         }
       }
     } catch (e) {
-      console.error("Error loading fresh user data from database/localstorage", e);
+      console.error("Error loading user data from local storage", e);
     }
-  };
-
-  fetchFreshUserData();
-}, [showModal]);
+  }, [showModal]);
 
   const roles = currentUser?.userRole || currentUser?.roles || [];
   const isFreelancer = roles.map((r: string) => String(r).toUpperCase()).includes("FREELANCER");
