@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import platformService from "../services/platformService";
 import api from "../services/api";
 import { getInitials } from "../utils/auth";
+import { type Job } from "../services/dashboardService";
 
 const AVATAR_COLORS = ["#059669", "#7c3aed", "#dc2626", "#d97706", "#0891b2"];
 
@@ -11,6 +12,15 @@ const SKILL_POOL = {
   "Design & Creative": ["UI/UX Design", "Figma", "Adobe Photoshop", "Illustrator", "Web Design", "Graphic Design"],
   "Writing & Translation": ["Content Writing", "Technical Writing", "Copywriting", "Translation", "SEO Writing"],
   "Marketing & Sales": ["SEO", "Digital Marketing", "Social Media Management", "Google Analytics", "Lead Generation"]
+};
+
+const STATUS_PILL: Record<string, string> = {
+  approved: "bg-green-100 text-green-800 ring-green-600/20",
+  rejected: "bg-red-100 text-red-700 ring-red-600/20",
+  pending: "bg-amber-100 text-amber-700 ring-amber-600/20",
+  open: "bg-emerald-100 text-emerald-700 ring-emerald-600/20",
+  closed: "bg-gray-100 text-gray-600 ring-gray-400/20",
+  active: "bg-green-100 text-green-800 ring-green-600/20",
 };
 
 const STATUS_STYLES: Record<string, string> = {
@@ -37,6 +47,15 @@ const StatusBadge = memo(({ status }: { status: string }) => (
     {status?.replace('_', ' ')}
   </span>
 ));
+const StatusPill = ({ status }: { status: string }) => (
+  <span
+    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset capitalize ${STATUS_PILL[status?.toLowerCase()] ?? "bg-gray-100 text-gray-600 ring-gray-400/20"
+      }`}
+  >
+    {status}
+  </span>
+);
+
 
 export default function SearchPage() {
   const [searchParams] = useSearchParams();
@@ -53,6 +72,9 @@ export default function SearchPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  // ── Freelancer Detail Popup ──
+  const [selectedFreelancer, setSelectedFreelancer] = useState<any | null>(null);
 
   const [customSkill, setCustomSkill] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -224,6 +246,12 @@ export default function SearchPage() {
     }
   }, [currentUser, navigate]);
 
+  // ── Freelancer Detail Popup Open ──
+  const handleOpenFreelancer = useCallback((e: React.MouseEvent, fl: any) => {
+    e.stopPropagation();
+    setSelectedFreelancer(fl);
+  }, []);
+
   // ── 1. handleHireClick function එක (Patch) ──
   const handleHireClick = useCallback((e: React.MouseEvent, freelancerId: string) => {
     e.stopPropagation();
@@ -299,7 +327,168 @@ export default function SearchPage() {
     }
   };
 
+  const JobsTab = ({
+    jobs,
+    onViewJob,
+  }: {
+    jobs: Job[];
+    onDelete: (id: string) => void;
+    onViewJob: (id: string) => void;
+  }) => (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Job Listings</h1>
+        <p className="text-sm text-gray-500 mt-1">{jobs.length} total jobs</p>
+      </div>
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div className="divide-y divide-gray-100">
+          {jobs.length ? (
+            jobs.map(j => (
+              <div
+                key={j._id}
+                className="px-5 py-4 flex items-center justify-between gap-4 hover:bg-gray-50 transition cursor-pointer group"
+                onClick={() => onViewJob(j._id)}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-gray-800 truncate group-hover:text-green-600 transition">{j.title}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Client: {(j.clientId as any)?.firstName || (j.clientId as any)?.companyName || "Anonymous"}
+                    &nbsp;·&nbsp;Budget: ${j.budget}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <StatusPill status={j.status} />
+                                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-center text-gray-400 text-sm py-12">No jobs to display</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   const userFullName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : "User";
+
+  // ── Freelancer Detail Popup Component ──
+  const FreelancerDetailModal = () => {
+    if (!selectedFreelancer) return null;
+    const fl = selectedFreelancer;
+    const flName = `${fl.firstName} ${fl.lastName}`;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedFreelancer(null)}>
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+        <div
+          className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto bg-white rounded-3xl border border-gray-200 shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-6 py-4 flex items-start justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-gray-400 mb-0.5">Freelancer Profile</p>
+              <h3 className="text-lg font-semibold text-gray-900">{flName}</h3>
+            </div>
+            <button
+              onClick={() => setSelectedFreelancer(null)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition"
+            >
+              <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="p-6 space-y-5">
+            {/* Avatar + Basic Info */}
+            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+              <div className="w-14 h-14 rounded-xl overflow-hidden border border-gray-200 shrink-0 bg-gray-100 flex items-center justify-center">
+                {fl.profileImage ? (
+                  <img src={fl.profileImage} alt={flName} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-sm font-bold text-gray-400">{getInitials(flName)}</span>
+                )}
+              </div>
+              <div>
+                <p className="text-base font-semibold text-gray-900">{flName}</p>
+                <p className="text-xs font-medium text-emerald-600 mt-0.5">{fl.title || "Professional Freelancer"}</p>
+                {fl.email && <p className="text-xs text-gray-400 mt-0.5">{fl.email}</p>}
+              </div>
+            </div>
+
+            {/* Details Grid */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-gray-50 rounded-xl border border-gray-100 p-3">
+                <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Hourly Rate</p>
+                <p className="text-sm font-semibold text-gray-800">${fl.hourlyRate || 0}<span className="text-gray-400 font-normal text-xs">/hr</span></p>
+              </div>
+              <div className="bg-gray-50 rounded-xl border border-gray-100 p-3">
+                <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Location</p>
+                <p className="text-sm font-medium text-gray-800 truncate">
+                  {[fl.location?.city, fl.location?.country].filter(Boolean).join(", ") || "—"}
+                </p>
+              </div>
+              {fl.rating != null && (
+                <div className="bg-gray-50 rounded-xl border border-gray-100 p-3">
+                  <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Rating</p>
+                  <p className="text-sm font-semibold text-gray-800">⭐ {fl.rating} <span className="text-gray-400 text-xs font-normal">({fl.reviewCount || 0} reviews)</span></p>
+                </div>
+              )}
+              {fl.companyName && (
+                <div className="bg-gray-50 rounded-xl border border-gray-100 p-3">
+                  <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Company</p>
+                  <p className="text-sm font-medium text-gray-800">{fl.companyName}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Bio */}
+            {fl.bio && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">Bio</p>
+                <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+                  <p className="text-sm text-gray-700 leading-relaxed">{fl.bio}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Skills */}
+            {fl.skills?.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">Skills</p>
+                <div className="bg-gray-50 rounded-xl border border-gray-100 p-4 flex flex-wrap gap-2">
+                  {fl.skills.map((s: string) => (
+                    <span key={s} className="text-xs bg-white border border-gray-200 text-gray-600 px-2.5 py-1 rounded-lg shadow-sm">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="pt-2 flex gap-3">
+              <button
+                onClick={() => { setSelectedFreelancer(null); navigate(`/freelancers/${fl._id}`); }}
+                className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
+              >
+                View Full Profile
+              </button>
+              {isClient && (
+                <button
+                  onClick={(e) => { setSelectedFreelancer(null); handleHireClick(e, fl._id); }}
+                  className="flex-1 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition shadow-sm"
+                >
+                  Hire Now
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 font-sans flex flex-col">
@@ -444,16 +633,27 @@ export default function SearchPage() {
                             <span className="text-gray-400 font-normal text-xs">/hr</span>
                           </p>
 
-                          {/* ✅ HIRE BUTTON */}
-                          {isClient && (
+                          <div className="flex items-center gap-2">
+                            {/* ✅ OPEN BUTTON */}
                             <button
                               type="button"
-                              onClick={(e) => handleHireClick(e, fl._id)}
-                              className="px-3.5 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 shadow-sm shadow-emerald-600/10 transition-all shrink-0"
+                              onClick={(e) => handleOpenFreelancer(e, fl)}
+                              className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-200 transition-all shrink-0"
                             >
-                              Hire
+                              Open
                             </button>
-                          )}
+
+                            {/* ✅ HIRE BUTTON */}
+                            {isClient && (
+                              <button
+                                type="button"
+                                onClick={(e) => handleHireClick(e, fl._id)}
+                                className="px-3.5 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 shadow-sm shadow-emerald-600/10 transition-all shrink-0"
+                              >
+                                Hire
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -491,14 +691,17 @@ export default function SearchPage() {
                         </div>
 
                         <div className="flex items-center gap-3 shrink-0">
-                          <StatusBadge status={job.status || "open"} />
-                          <button
-                            type="button"
-                            onClick={(e) => handleApplyClick(e, job._id)}
-                            className="px-4 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 shadow-sm shadow-emerald-600/10 transition-all"
-                          >
-                            Apply Now
-                          </button>
+                          <StatusPill status={job.status || "open"} />
+                          
+                          {(isFreelancer || (!isFreelancer && !isClient)) && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleApplyClick(e, job._id)}
+                              className="px-4 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 shadow-sm shadow-emerald-600/10 transition-all"
+                            >
+                              Apply Now
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -513,6 +716,9 @@ export default function SearchPage() {
           </div>
         )}
       </main>
+
+      {/* ── 👤 FREELANCER DETAIL POPUP ── */}
+      <FreelancerDetailModal />
 
       {/* ── 📌 MODAL FORM ── */}
       {showModal && (
