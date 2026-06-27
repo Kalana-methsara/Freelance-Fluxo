@@ -43,7 +43,8 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      const userData = await authService.login({ email, password }) as AuthUser;
+      const userData = await authService.login({ email, password });
+      console.log("Login successful:", userData);
 
       if (!userData.accessToken) {
         setErrorMessage("Sign-in failed — no access token received.");

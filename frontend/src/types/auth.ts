@@ -19,13 +19,14 @@ export interface AuthUser {
   refreshToken?: string;
   approvalStatus?: "pending" | "approved" | "rejected";
   title?: string;
-  bio?: string;
   skills?: string[];
   hourlyRate?: number;
   companyName?: string;
   rating?: number;
   reviewCount?: number;
   profileImage?: string;
+  bio?: string;       
+  location?: any;
 }
 
 export interface RegisterUserPayload {
