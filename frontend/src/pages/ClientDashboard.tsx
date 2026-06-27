@@ -873,7 +873,7 @@ export default function ClientDashboard() {
 
   const handleHireApplicant = useCallback(async (application: Applicant) => {
     const freelancerId = application.freelancerId?._id;
-    const jobId = typeof application.jobId === 'object' ? application.jobId._id : application.jobId;
+    const jobId = typeof application.jobId === 'object' ? application.jobId?._id : (application.jobId as string | undefined);
 
     if (!freelancerId || !jobId) {
       toast.error('This application is missing the freelancer or job details.');
@@ -882,12 +882,29 @@ export default function ClientDashboard() {
 
     setHiringApplicationId(application._id);
     try {
+      // 1. Accept this application
       await jobService.updateApplicationStatus(application._id, 'accepted');
+
+      // 2. Close the job post so no more applications come in
+      await jobService.updateJob(jobId, { status: 'closed' });
+
+      // 3. Optimistically update local applicationsByJob status
+      setApplicationsByJob((prev) => {
+        const updated = { ...prev };
+        for (const key of Object.keys(updated)) {
+          updated[key] = updated[key].map((a) =>
+            a._id === application._id ? { ...a, status: 'accepted' } : a
+          );
+        }
+        return updated;
+      });
+
+      // 4. Open chat with the hired freelancer
       const conversation = await jobService.createConversation(freelancerId, jobId);
       setSelectedConvId(conversation._id);
       setSelectedParticipant(conversation);
       setActiveNav('messages');
-      toast.success('Freelancer hired and chat room opened.');
+      toast.success('Freelancer hired! Job post closed & chat opened.');
     } catch (error: any) {
       console.error('Failed to hire freelancer', error);
       toast.error(error?.response?.data?.message || error?.message || 'Could not hire freelancer.');

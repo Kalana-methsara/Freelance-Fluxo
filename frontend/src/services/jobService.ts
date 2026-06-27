@@ -24,6 +24,11 @@ const jobService = {
     return response.data.data;
   },
 
+  updateJob: async (id: string, updates: Partial<{ title: string; description: string; budget: number; deadline: string; status: string; skills: string[] }>) => {
+    const response = await api.patch(`/jobs/${id}`, updates);
+    return response.data.data;
+  },
+
   createJob: async (payload: CreateJobPayload) => {
     const response = await api.post("/jobs", payload);
     return response.data.data;
