@@ -76,6 +76,9 @@ export default function SearchPage() {
   // ── Freelancer Detail Popup ──
   const [selectedFreelancer, setSelectedFreelancer] = useState<any | null>(null);
 
+  // ── Job Detail Popup ──
+  const [selectedJobDetail, setSelectedJobDetail] = useState<any | null>(null);
+
   const [customSkill, setCustomSkill] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -250,6 +253,12 @@ export default function SearchPage() {
   const handleOpenFreelancer = useCallback((e: React.MouseEvent, fl: any) => {
     e.stopPropagation();
     setSelectedFreelancer(fl);
+  }, []);
+
+  // ── Job Detail Popup Open ──
+  const handleOpenJob = useCallback((e: React.MouseEvent, job: any) => {
+    e.stopPropagation();
+    setSelectedJobDetail(job);
   }, []);
 
   // ── 1. handleHireClick function එක (Patch) ──
@@ -634,15 +643,6 @@ export default function SearchPage() {
                           </p>
 
                           <div className="flex items-center gap-2">
-                            {/* ✅ OPEN BUTTON */}
-                            <button
-                              type="button"
-                              onClick={(e) => handleOpenFreelancer(e, fl)}
-                              className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-200 transition-all shrink-0"
-                            >
-                              Open
-                            </button>
-
                             {/* ✅ HIRE BUTTON */}
                             {isClient && (
                               <button
@@ -691,7 +691,13 @@ export default function SearchPage() {
                         </div>
 
                         <div className="flex items-center gap-3 shrink-0">
-                          <StatusPill status={job.status || "open"} />
+                          <button
+                            type="button"
+                            onClick={(e) => handleOpenJob(e, job)}
+                            className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-200 transition-all shrink-0"
+                          >
+                            Open
+                          </button>
                           
                           {(isFreelancer || (!isFreelancer && !isClient)) && (
                             <button
@@ -719,6 +725,121 @@ export default function SearchPage() {
 
       {/* ── 👤 FREELANCER DETAIL POPUP ── */}
       <FreelancerDetailModal />
+
+      {/* ── 💼 JOB DETAIL POPUP ── */}
+      {selectedJobDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedJobDetail(null)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto bg-white rounded-3xl border border-gray-200 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-6 py-4 flex items-start justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-gray-400 mb-0.5">Job Details</p>
+                <h3 className="text-lg font-semibold text-gray-900">{selectedJobDetail.title}</h3>
+              </div>
+              <button
+                onClick={() => setSelectedJobDetail(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition"
+              >
+                <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-5">
+              {/* Status + Budget grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-gray-50 rounded-xl border border-gray-100 p-3">
+                  <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1.5">Status</p>
+                  <StatusPill status={selectedJobDetail.status || "open"} />
+                </div>
+                <div className="bg-gray-50 rounded-xl border border-gray-100 p-3">
+                  <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Budget</p>
+                  <p className="text-sm font-semibold text-gray-800">${selectedJobDetail.budget || "—"}</p>
+                </div>
+                {selectedJobDetail.deadline && (
+                  <div className="bg-gray-50 rounded-xl border border-gray-100 p-3">
+                    <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Deadline</p>
+                    <p className="text-sm font-medium text-gray-800">{selectedJobDetail.deadline}</p>
+                  </div>
+                )}
+                {selectedJobDetail.createdAt && (
+                  <div className="bg-gray-50 rounded-xl border border-gray-100 p-3">
+                    <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Posted</p>
+                    <p className="text-sm font-medium text-gray-800">
+                      {new Date(selectedJobDetail.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Client info */}
+              {(selectedJobDetail.clientId?.firstName || selectedJobDetail.clientId?.companyName) && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">Client</p>
+                  <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+                    <p className="text-sm font-medium text-gray-800">
+                      {selectedJobDetail.clientId?.firstName
+                        ? `${selectedJobDetail.clientId.firstName} ${selectedJobDetail.clientId.lastName || ""}`.trim()
+                        : selectedJobDetail.clientId?.companyName}
+                    </p>
+                    {selectedJobDetail.clientId?.email && (
+                      <p className="text-xs text-gray-400 mt-0.5">{selectedJobDetail.clientId.email}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Skills required */}
+              {selectedJobDetail.skills?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">Skills Required</p>
+                  <div className="bg-gray-50 rounded-xl border border-gray-100 p-4 flex flex-wrap gap-2">
+                    {selectedJobDetail.skills.map((s: string) => (
+                      <span key={s} className="text-xs bg-white border border-gray-200 text-gray-600 px-2.5 py-1 rounded-lg shadow-sm">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Description */}
+              {selectedJobDetail.description && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">Description</p>
+                  <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{selectedJobDetail.description}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="pt-2 flex gap-3">
+                <button
+                  onClick={() => setSelectedJobDetail(null)}
+                  className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                {(isFreelancer || (!isFreelancer && !isClient)) && (
+                  <button
+                    onClick={(e) => { setSelectedJobDetail(null); handleApplyClick(e as any, selectedJobDetail._id); }}
+                    className="flex-1 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition shadow-sm"
+                  >
+                    Apply Now
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── 📌 MODAL FORM ── */}
       {showModal && (
