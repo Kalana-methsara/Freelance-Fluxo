@@ -32,7 +32,8 @@ const Router = () => {
         <Route path="/oauth-callback" element={<OAuthCallback />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/jobs" element={<JobsPage />} />
-        <Route path="/jobs/:id/*" element={<JobsPage />} />
+        <Route path="/jobs/:jobId" element={<JobsPage />} />
+        <Route path="/jobs/:jobId/apply" element={<JobsPage />} />
         <Route path="/hire/:freelancerId" element={<HireFreelancerPage />} />
         <Route path="/categories/:id" element={<CategoryPage />} />
         <Route path="/freelancers/:id" element={<FreelancerDetailPage />} />
