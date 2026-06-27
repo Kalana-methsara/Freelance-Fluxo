@@ -24,7 +24,7 @@ export const getCategoryById = asyncHandler(async (req: Request, res: Response) 
     approvalStatus: ApprovalStatus.APPROVED,
     skills: { $exists: true, $ne: [] },
   })
-    .select("-password +bio +location")
+    .select("-password")
     .limit(12);
 
   res.status(200).json({ success: true, data: { category, jobs, freelancers } });
@@ -47,7 +47,7 @@ export const getFreelancers = asyncHandler(async (req: Request, res: Response) =
   }
 
   const freelancers = await UserModel.find(filter)
-    .select("-password +bio +location")
+    .select("-password")
     .sort({ rating: -1, reviewCount: -1 });
 
   res.status(200).json({ success: true, data: freelancers });
@@ -58,7 +58,7 @@ export const getFreelancerById = asyncHandler(async (req: Request, res: Response
     _id: req.params.id,
     userRole: UserRole.FREELANCER,
     approvalStatus: ApprovalStatus.APPROVED,
-  }).select("-password +bio +location");
+  }).select("-password");
 
   if (!freelancer) return res.status(404).json({ message: "Freelancer not found" });
 
@@ -89,7 +89,7 @@ export const search = asyncHandler(async (req: Request, res: Response) => {
           ]
         : [{}],
     })
-      .select("-password +bio +location")
+      .select("-password")
       .limit(20),
     JobModel.find({
       status: "open",
