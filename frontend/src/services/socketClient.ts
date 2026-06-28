@@ -13,14 +13,30 @@
 // =============================================================
 
 import { io, Socket } from "socket.io-client";
+import { decodeJwtPayload } from "../utils/auth";
 
 let socket: Socket | null = null;
 let activeSocketConfig: { userId: string; token: string } | null = null;
 
-export function connectSocket(userId: string, token: string): Socket {
-  const desiredConfig = { userId, token };
+const normalizeUserId = (value: string): string => value.trim().toLowerCase();
 
-  if (socket?.connected && activeSocketConfig?.userId === userId && activeSocketConfig?.token === token) {
+const resolveSocketUserId = (candidateUserId: string, token: string): string => {
+  const normalizedCandidate = normalizeUserId(candidateUserId);
+  if (normalizedCandidate) return normalizedCandidate;
+
+  const jwtPayload = decodeJwtPayload(token);
+  const fallbackId = [jwtPayload?.sub, jwtPayload?.id, jwtPayload?._id, jwtPayload?.userId, jwtPayload?.uid]
+    .map((value) => (typeof value === "string" ? value : ""))
+    .find(Boolean);
+
+  return normalizeUserId(fallbackId || "");
+};
+
+export function connectSocket(userId: string, token: string): Socket {
+  const resolvedUserId = resolveSocketUserId(userId, token);
+  const desiredConfig = { userId: resolvedUserId, token };
+
+  if (socket?.connected && activeSocketConfig?.userId === resolvedUserId && activeSocketConfig?.token === token) {
     return socket;
   }
 
@@ -48,7 +64,7 @@ export function connectSocket(userId: string, token: string): Socket {
 
   socket = io(wsUrl, {
     auth: { token },
-    query: { userId },
+    query: { userId: resolvedUserId },
     path: "/socket.io",
     transports: ["websocket"],
   });

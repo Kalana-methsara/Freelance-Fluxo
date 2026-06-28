@@ -78,13 +78,21 @@ const start = async () => {
 
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
+    const queryUserId = Array.isArray(socket.handshake.query?.userId)
+      ? socket.handshake.query.userId[0]
+      : socket.handshake.query?.userId;
+
     if (!token) {
+      if (queryUserId) {
+        socket.data.userId = String(queryUserId);
+        return next();
+      }
       return next(new Error("Authentication error: token required"));
     }
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-      socket.data.userId = decoded.sub;
+      socket.data.userId = decoded.sub || decoded.id || decoded._id || queryUserId || "";
       return next();
     } catch (error) {
       return next(new Error("Authentication error: invalid token"));
@@ -92,13 +100,15 @@ const start = async () => {
   });
 
   io.on("connection", (socket) => {
-    const userId = socket.data.userId as string;
+    const rawUserId = String(socket.data.userId || "");
+    const userId = rawUserId.trim().toLowerCase();
     console.log("Socket connected:", socket.id, "userId:", userId);
 
     if (userId) {
       const existing = onlineUsers.get(userId) || new Set<string>();
       existing.add(socket.id);
       onlineUsers.set(userId, existing);
+      io.emit("get_online_users", Array.from(onlineUsers.keys()));
       io.emit("user_status", { userId, online: true });
     }
 
@@ -131,6 +141,10 @@ const start = async () => {
         userId,
         isTyping: payload.isTyping,
       });
+    });
+
+    socket.on("request_online_users", () => {
+      socket.emit("get_online_users", Array.from(onlineUsers.keys()));
     });
 
     socket.on("send_message", async (data: any) => {
@@ -170,18 +184,19 @@ const start = async () => {
         });
 
         const sender = populatedMessage.senderId as any;
+        const senderId = sender?._id ? sender._id.toString() : userId;
         const messagePayload = {
           _id: populatedMessage._id.toString(),
           conversationId: conversation._id.toString(),
-          senderId: sender?._id ? sender._id.toString() : userId,
+          senderId,
           sender: {
-            _id: sender?._id ? sender._id.toString() : userId,
+            _id: senderId,
             firstName: sender?.firstName || "",
             lastName: sender?.lastName || "",
             profileImage: sender?.profileImage || "",
           },
           text: populatedMessage.text,
-          createdAt: populatedMessage.createdAt,
+          createdAt: populatedMessage.createdAt.toISOString(),
           readBy: (populatedMessage.readBy || []).map((id: any) => id.toString()),
         };
 
@@ -221,12 +236,12 @@ const start = async () => {
     socket.on("disconnect", () => {
       if (!userId) return;
       const sockets = onlineUsers.get(userId);
-      if (sockets) {
-        sockets.delete(socket.id);
-        if (sockets.size === 0) {
-          onlineUsers.delete(userId);
-          io.emit("user_status", { userId, online: false });
-        }
+      if (!sockets) return;
+      sockets.delete(socket.id);
+      if (sockets.size === 0) {
+        onlineUsers.delete(userId);
+        io.emit("get_online_users", Array.from(onlineUsers.keys()));
+        io.emit("user_status", { userId, online: false });
       }
     });
   });

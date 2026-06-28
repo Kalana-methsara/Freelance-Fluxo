@@ -4,7 +4,7 @@ export type ConversationType = "direct" | "dispute" | "group";
 
 export interface IMessageSummary {
   text: string;
-  senderId: Types.ObjectId;
+  senderId: Types.ObjectId | string;
   createdAt: Date;
 }
 
@@ -23,7 +23,7 @@ const messageSummarySchema = new Schema<IMessageSummary>(
   {
     text: { type: String, required: true },
     senderId: { type: Schema.Types.ObjectId, ref: "user", required: true },
-    createdAt: { type: Date, required: true },
+    createdAt: { type: Date, required: true, default: Date.now },
   },
   { _id: false }
 );
@@ -39,7 +39,7 @@ const conversationSchema = new Schema<IConversation>(
     },
     title: { type: String },
     createdBy: { type: Schema.Types.ObjectId, ref: "user" },
-    lastMessage: { type: messageSummarySchema },
+    lastMessage: { type: messageSummarySchema, default: null },
   },
   {
     timestamps: true,

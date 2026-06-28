@@ -11,7 +11,8 @@ import StatusBadge from "./Statusbadge";
 interface Message {
   _id?: string;
   conversationId?: string;
-  senderId: string;
+  senderId?: string | { _id?: string } | null;
+  sender?: { _id?: string; firstName?: string; lastName?: string; profileImage?: string } | null;
   text: string;
   createdAt: string;
 }
@@ -41,6 +42,26 @@ interface ConversationLike {
    */
   job?: ConversationJob | null;
 }
+
+const normalizeId = (value: unknown): string => {
+  if (typeof value === "string") return value.trim().toLowerCase();
+  if (typeof value === "number") return String(value).trim().toLowerCase();
+  if (value && typeof value === "object") {
+    const typed = value as { _id?: unknown; id?: unknown };
+    const idValue = typed._id ?? typed.id;
+    if (typeof idValue === "string") return idValue.trim().toLowerCase();
+    if (typeof idValue === "number") return String(idValue).trim().toLowerCase();
+  }
+  return "";
+};
+
+const getMessageSenderId = (message: Message): string => {
+  if (!message) return "";
+  if (typeof message.senderId === "string") return normalizeId(message.senderId);
+  if (message.senderId && typeof message.senderId === "object") return normalizeId(message.senderId._id);
+  if (message.sender && typeof message.sender === "object") return normalizeId(message.sender._id);
+  return "";
+};
 
 export default function ChatRoom({ conversationId, currentUserId, conversation, otherUser }: {
   conversationId: string;
@@ -90,7 +111,7 @@ export default function ChatRoom({ conversationId, currentUserId, conversation, 
     const normalizedParticipants = (conversation?.participants || (otherUser ? [otherUser] : []))
       .filter((participant): participant is ConversationParticipant => Boolean(participant && participant._id));
 
-    setParticipants(normalizedParticipants.filter((participant) => participant._id !== currentUserId));
+    setParticipants(normalizedParticipants.filter((participant) => normalizeId(participant._id) !== normalizeId(currentUserId)));
   }, [conversation?.participants, currentUserId, otherUser]);
 
   const resolveParticipantTarget = useCallback(async (value: string) => {
@@ -163,9 +184,10 @@ export default function ChatRoom({ conversationId, currentUserId, conversation, 
 
     const handleTyping = (payload: { conversationId: string; userId: string; isTyping: boolean }) => {
       if (payload.conversationId !== conversationId) return;
-      if (payload.userId === currentUserId) return;
+      if (normalizeId(payload.userId) === normalizeId(currentUserId)) return;
 
-      const typingUser = participants.find((participant) => participant._id === payload.userId);
+      const normalizedPayloadUserId = normalizeId(payload.userId);
+      const typingUser = participants.find((participant) => normalizeId(participant._id) === normalizedPayloadUserId);
 
       if (payload.isTyping) {
         setTypingLabel(typingUser ? `${typingUser.firstName} is typing...` : 'Someone is typing...');
@@ -179,11 +201,12 @@ export default function ChatRoom({ conversationId, currentUserId, conversation, 
     };
 
     const handleUserStatus = (payload: { userId: string; online: boolean }) => {
+      const normalizedUserId = normalizeId(payload.userId);
       setOnlineParticipantIds((prev) => {
         if (payload.online) {
-          return prev.includes(payload.userId) ? prev : [...prev, payload.userId];
+          return prev.includes(normalizedUserId) ? prev : [...prev, normalizedUserId];
         }
-        return prev.filter((id) => id !== payload.userId);
+        return prev.filter((id) => id !== normalizedUserId);
       });
     };
 
@@ -202,13 +225,16 @@ export default function ChatRoom({ conversationId, currentUserId, conversation, 
     chatService.onNewMessage(handleIncoming);
     chatService.onTyping(handleTyping);
     chatService.onUserStatus(handleUserStatus);
+    chatService.onOnlineUsersUpdate((userIds) => setOnlineParticipantIds(userIds.map(normalizeId)));
     chatService.onParticipantAdded(handleParticipantAdded);
     chatService.onConversationUpdated(handleConversationUpdated);
+    chatService.requestOnlineUsers();
 
     return () => {
       chatService.offNewMessage(handleIncoming);
       chatService.offTyping(handleTyping);
       chatService.offUserStatus();
+      chatService.offOnlineUsersUpdate();
       chatService.offParticipantAdded();
       chatService.offConversationUpdated();
       if (typingTimeoutRef.current) {
@@ -238,7 +264,8 @@ export default function ChatRoom({ conversationId, currentUserId, conversation, 
 
   if (loading) return <div className="p-4 text-center">Loading messages…</div>;
 
-  const isAnyOnline = participants.some((participant) => onlineParticipantIds.includes(participant._id));
+  const normalizedOnlineParticipantIds = onlineParticipantIds.map(normalizeId);
+  const isAnyOnline = participants.some((participant) => normalizedOnlineParticipantIds.includes(normalizeId(participant._id)));
   const headerTitle = conversation?.title || participants.map((participant) => `${participant.firstName} ${participant.lastName}`).join(', ') || 'Conversation';
 
   return (
@@ -248,7 +275,7 @@ export default function ChatRoom({ conversationId, currentUserId, conversation, 
           {participants.length > 1 ? (
             <AvatarGroup people={participants} max={3} size="sm" />
           ) : participants[0] ? (
-            <Avatar person={participants[0]} size="sm" online={onlineParticipantIds.includes(participants[0]._id)} />
+            <Avatar person={participants[0]} size="sm" online={normalizedOnlineParticipantIds.includes(normalizeId(participants[0]._id))} />
           ) : null}
           <div className="min-w-0">
             <div className="text-sm font-semibold text-gray-900 truncate">{headerTitle}</div>
@@ -358,29 +385,35 @@ export default function ChatRoom({ conversationId, currentUserId, conversation, 
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
-        {messages.map((msg) => (
-          <div
-            key={msg._id || `${msg.senderId}-${msg.createdAt}`}
-            className={`flex ${msg.senderId === currentUserId ? "justify-end" : "justify-start"}`}
-          >
+      <div className="flex-1 overflow-y-auto max-h-[calc(100vh-250px)] p-4 space-y-3 bg-slate-50 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+        {messages.map((msg) => {
+          const senderId = getMessageSenderId(msg);
+          const normalizedCurrentUserId = normalizeId(currentUserId);
+          const isMe = senderId === normalizedCurrentUserId;
+
+          return (
             <div
-              className={`max-w-[80%] px-4 py-3 rounded-3xl text-sm leading-5 shadow-sm ${
-                msg.senderId === currentUserId
-                  ? "bg-emerald-600 text-white"
-                  : "bg-white text-slate-900 border border-slate-200"
-              }`}
+              key={msg._id || `${senderId}-${msg.createdAt}`}
+              className={`flex ${isMe ? "justify-end" : "justify-start"}`}
             >
-              <p>{msg.text}</p>
-              <div className="text-[11px] opacity-70 mt-2 text-right">
-                {new Date(msg.createdAt).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+              <div
+                className={`max-w-[80%] px-4 py-3 rounded-3xl text-sm leading-5 shadow-sm ${
+                  isMe
+                    ? "bg-emerald-600 text-white"
+                    : "bg-white text-slate-900 border border-slate-200"
+                }`}
+              >
+                <p>{msg.text}</p>
+                <div className="text-[11px] opacity-70 mt-2 text-right">
+                  {new Date(msg.createdAt).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 

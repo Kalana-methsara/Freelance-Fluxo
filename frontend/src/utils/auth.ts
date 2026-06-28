@@ -1,4 +1,5 @@
 import type { AuthUser } from "../types/auth";
+import { STORAGE_KEYS } from "./storageKeys";
 
 interface BackendUser {
   _id?: string;
@@ -41,6 +42,60 @@ export function normalizeBackendUser(
     bio: raw.bio || "",          // 👈 3. මෙන්න මේ ලයින් එක එකතු කරන්න
     location: raw.location || null, // 👈 4. මෙන්න මේ ලයින් එකත් එකතු කරන්න
   };
+}
+
+export function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  if (!token) return null;
+
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+
+  try {
+    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(atob(payload));
+  } catch {
+    return null;
+  }
+}
+
+export function resolveStoredUserIdentity(storage = window.localStorage): { userId: string; displayName: string } {
+  const rawUser = storage.getItem(STORAGE_KEYS.user) || storage.getItem("user") || storage.getItem("currentUser");
+  const rawUserId = storage.getItem("userId") || storage.getItem("id") || storage.getItem("_id");
+  const token = storage.getItem(STORAGE_KEYS.accessToken) || storage.getItem("token") || "";
+
+  let parsedUser: Record<string, any> | null = null;
+  if (rawUser) {
+    try {
+      parsedUser = JSON.parse(rawUser);
+    } catch {
+      parsedUser = null;
+    }
+  }
+
+  const jwtPayload = decodeJwtPayload(token);
+  const candidates = [
+    parsedUser?._id,
+    parsedUser?.id,
+    parsedUser?.userId,
+    parsedUser?.uid,
+    parsedUser?.sub,
+    rawUserId,
+    jwtPayload?.sub,
+    jwtPayload?.id,
+    jwtPayload?._id,
+    jwtPayload?.userId,
+    jwtPayload?.uid,
+    parsedUser?.email,
+  ].filter(Boolean);
+
+  const normalizedId = candidates.find((value) => String(value).trim()) || "";
+  const userId = String(normalizedId).trim().toLowerCase();
+
+  const firstName = String(parsedUser?.firstName || parsedUser?.firstname || "").trim();
+  const lastName = String(parsedUser?.lastName || parsedUser?.lastname || "").trim();
+  const displayName = [firstName, lastName].filter(Boolean).join(" ").trim();
+
+  return { userId, displayName };
 }
 
 export function getDashboardPath(roles: AuthUser["roles"] = []): string {

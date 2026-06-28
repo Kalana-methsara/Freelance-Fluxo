@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { formatDistance } from "date-fns";
 import jobService from "../services/jobService";
 import chatService from "../services/chatService";
+import { resolveStoredUserIdentity } from "../utils/auth";
 import { STORAGE_KEYS } from "../utils/storageKeys";
 
 interface ConversationParticipant {
@@ -29,7 +30,8 @@ interface Conversation {
 interface Message {
   _id?: string;
   conversationId?: string;
-  senderId: string;
+  senderId?: string | { _id?: string } | null;
+  sender?: { _id?: string; firstName?: string; lastName?: string; profileImage?: string } | null;
   text: string;
   createdAt: string;
 }
@@ -47,40 +49,6 @@ const normalizeId = (value: unknown): string => {
   return "";
 };
 
-const getStoredUserIdentity = () => {
-  const rawUser = localStorage.getItem(STORAGE_KEYS.user) || localStorage.getItem("user") || localStorage.getItem("currentUser");
-  const rawUserId = localStorage.getItem("userId") || localStorage.getItem("id") || localStorage.getItem("_id");
-
-  let parsedUser: Record<string, any> | null = null;
-  if (rawUser) {
-    try {
-      parsedUser = JSON.parse(rawUser);
-    } catch {
-      parsedUser = null;
-    }
-  }
-
-  const candidates = [
-    parsedUser?._id,
-    parsedUser?.id,
-    parsedUser?.userId,
-    parsedUser?.uid,
-    parsedUser?.sub,
-    rawUserId,
-    localStorage.getItem(STORAGE_KEYS.accessToken) ? parsedUser?.email : null,
-  ].filter(Boolean);
-
-  const userId = candidates.find((value) => normalizeId(value)) || "";
-  const firstName = parsedUser?.firstName || parsedUser?.firstname || "";
-  const lastName = parsedUser?.lastName || parsedUser?.lastname || "";
-  const displayName = [firstName, lastName].filter(Boolean).join(" ").trim();
-
-  return {
-    userId: normalizeId(userId),
-    displayName,
-  };
-};
-
 const WorkspacePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryRoomId = searchParams.get("room") || "";
@@ -96,7 +64,7 @@ const WorkspacePage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const activeRoomRef = useRef<string | null>(activeRoomId);
 
-  const { userId: currentUserId, displayName: currentUserDisplayName } = getStoredUserIdentity();
+  const { userId: currentUserId, displayName: currentUserDisplayName } = resolveStoredUserIdentity();
   const token = localStorage.getItem(STORAGE_KEYS.accessToken) || localStorage.getItem("token") || "";
   const effectiveUserId = currentUserId || "anonymous-user";
 
@@ -141,6 +109,12 @@ const WorkspacePage: React.FC = () => {
 
     const handleNewMessage = (msg: Message) => {
       const currentRoom = activeRoomRef.current;
+      const messageSenderId =
+        typeof msg.senderId === "string"
+          ? msg.senderId
+          : msg.sender && typeof msg.sender === "object"
+          ? msg.sender._id || ""
+          : "";
 
       if (msg.conversationId === currentRoom) {
         setMessages((prev) => {
@@ -156,7 +130,7 @@ const WorkspacePage: React.FC = () => {
                   lastMessage: {
                     text: msg.text,
                     createdAt: msg.createdAt,
-                    senderId: msg.senderId,
+                    senderId: messageSenderId,
                   },
                 }
               : conversation
@@ -172,7 +146,7 @@ const WorkspacePage: React.FC = () => {
                   lastMessage: {
                     text: msg.text,
                     createdAt: msg.createdAt,
-                    senderId: msg.senderId,
+                    senderId: messageSenderId,
                   },
                 }
               : conversation
@@ -245,11 +219,24 @@ const WorkspacePage: React.FC = () => {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, typingLabel]);
+  }, [messages.length]);
 
   const handleSelectConversation = (id: string) => {
     setActiveRoomId(id);
     setSearchParams({ room: id });
+  };
+
+  const getMessageSenderId = (message: Message) => {
+    if (typeof message.senderId === "string") return normalizeId(message.senderId);
+    if (message.senderId && typeof message.senderId === "object") {
+      const typed = message.senderId as { _id?: string; id?: string };
+      return normalizeId(typed._id ?? typed.id);
+    }
+    if (message.sender && typeof message.sender === "object") {
+      const typed = message.sender as { _id?: string; id?: string };
+      return normalizeId(typed._id ?? typed.id);
+    }
+    return "";
   };
 
   const handleSendMessage = (event: React.FormEvent) => {
@@ -380,12 +367,14 @@ const WorkspacePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto max-h-[calc(100vh-260px)] p-6 space-y-4">
               {loadingMessages ? (
                 <div className="text-center text-xs text-slate-400 my-4">Syncing secure connection logs...</div>
               ) : (
                 messages.map((message, index) => {
-                  const isMe = message.senderId === effectiveUserId || message.senderId === currentUserId;
+                  const messageSenderId = getMessageSenderId(message);
+                  const normalizedCurrentUserId = normalizeId(effectiveUserId || currentUserId);
+                  const isMe = messageSenderId === normalizedCurrentUserId;
                   return (
                     <div key={message._id || index} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
                       <div

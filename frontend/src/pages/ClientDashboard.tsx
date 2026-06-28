@@ -1436,7 +1436,7 @@ export default function ClientDashboard() {
         {/* ===== MESSAGES ===== */}
         {activeNav === 'messages' && user && (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="grid md:grid-cols-3 h-[calc(100vh-14rem)] min-h-[500px]">
+            <div className="grid md:grid-cols-3 min-h-125">
               <div className="border-r border-gray-200 overflow-y-auto bg-gray-50/30">
                 <ChatConversationList
                   onSelectConversation={(convId, conversation) => {

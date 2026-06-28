@@ -10,7 +10,7 @@ import React, {
   useCallback,
   memo,
 } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { logout } from "../features/authSlice";
 import platformService from "../services/platformService";
@@ -911,8 +911,9 @@ export default function FreelancerDashboard() {
   const dispatch = useDispatch();
 
   // ── Nav & UI state
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeNav, setActiveNav] = useState<NavId>("overview");
-  const [activeTab, setActiveTab] = useState<"dashboard" | "offers">("dashboard");
+  const activeTab = (searchParams.get("tab") === "offers" ? "offers" : "dashboard") as "dashboard" | "offers";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const [navIndicator, setNavIndicator] = useState({ left: 0, width: 0, ready: false });
@@ -1322,11 +1323,11 @@ export default function FreelancerDashboard() {
             <p className="text-xs text-gray-400 mt-0.5">Manage your jobs, proposals, and offers.</p>
           </div>
           <div className="inline-flex rounded-full bg-gray-100 p-1">
-            <button onClick={() => setActiveTab("dashboard")}
+            <button onClick={() => setSearchParams({ tab: "dashboard" })}
               className={`px-4 py-2 text-xs font-semibold rounded-full transition ${activeTab === "dashboard" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}>
               Dashboard
             </button>
-            <button onClick={() => setActiveTab("offers")}
+            <button onClick={() => setSearchParams({ tab: "offers" })}
               className={`px-4 py-2 text-xs font-semibold rounded-full transition ${activeTab === "offers" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}>
               Offers {offers.length ? `(${offers.length})` : ""}
             </button>
@@ -1592,7 +1593,7 @@ export default function FreelancerDashboard() {
             {/* ── MESSAGES ── */}
             {activeNav === "messages" && user && (
               <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-                <div className="grid md:grid-cols-3 h-[600px]">
+                <div className="grid md:grid-cols-3">
                   <div className="border-r border-gray-200 overflow-y-auto bg-gray-50/40">
                     <ChatConversationList
                       onSelectConversation={(convId, conversation) => {

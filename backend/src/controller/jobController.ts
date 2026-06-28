@@ -355,12 +355,13 @@ export const hireApplicant = asyncHandler(async (req: Request, res: Response) =>
 
   const ConversationModel = (await import('../models/conversationModel')).ConversationModel;
   const populated = await ConversationModel.findById(conversation._id).populate('participants', 'firstName lastName profileImage userRole').lean();
+  const participantIds = (populated?.participants || []).map((p: any) => (p._id || p).toString());
 
   try {
     const io = (req.app as any).locals?.io;
     if (io) {
       io.emit('contract_created', {
-        userId: (populated.participants || []).map((p: any) => (p._id || p).toString()),
+        userId: participantIds,
         conversationId: conversation._id,
         jobId,
       });

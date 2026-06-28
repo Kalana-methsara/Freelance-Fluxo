@@ -73,6 +73,18 @@ class ChatService {
     getSocket()?.off("user_status");
   }
 
+  onOnlineUsersUpdate(callback: (userIds: string[]) => void): void {
+    getSocket()?.on("get_online_users", callback);
+  }
+
+  offOnlineUsersUpdate(): void {
+    getSocket()?.off("get_online_users");
+  }
+
+  requestOnlineUsers(): void {
+    getSocket()?.emit("request_online_users");
+  }
+
   onParticipantAdded(callback: (payload: any) => void): void {
     getSocket()?.on("participant_added", callback);
   }
