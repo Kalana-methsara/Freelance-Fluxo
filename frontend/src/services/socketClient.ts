@@ -29,19 +29,14 @@ const resolveSocketUserId = (candidateUserId: string, token: string): string => 
 export function connectSocket(userId: string, token: string, overrideWsUrl?: string): Socket {
   const resolvedUserId = resolveSocketUserId(userId, token);
   
-  // 1. URL තීරණය කිරීමේ ක්‍රමය:
-  //    - පළමුව: Override URL (පවතී නම්)
-  //    - දෙවනුව: VITE_WS_URL (Environment variable - Production සඳහා හොඳම ක්‍රමය)
-  //    - තෙවනුව: localhost නම් 5000 පෝට් එකට මාරු කිරීම, නැතිනම් දැනට ඇති URL එකම භාවිතා කිරීම
+ // 1. URL තීරණය කිරීමේ ක්‍රමය (Refined)
   let wsUrl = overrideWsUrl || (import.meta as any).env?.VITE_WS_URL;
 
   if (!wsUrl) {
-    if (window.location.hostname === "localhost") {
-      wsUrl = "http://localhost:5000";
-    } else {
-      // Production වලදී සාමාන්‍යයෙන් ෆ්‍රොන්ටෙන්ඩ් එකේ URL එකම හෝ API URL එකම භාවිතා කරයි
-      wsUrl = window.location.origin;
-    }
+    // විකල්පයක් නොමැති නම් පමණක් පවතින URL එක භාවිතා වේ
+    wsUrl = window.location.hostname === "localhost" 
+      ? "http://localhost:5000" 
+      : window.location.origin;
   }
 
   const desiredConfig = { userId: resolvedUserId, token, wsUrl };
