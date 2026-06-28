@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { LoaderCircle, UserPlus, X } from "lucide-react";
 import chatService from "../services/chatService";
 import jobService from "../services/jobService";
 import authService from "../services/authService";
+import Avatar from "./Avatar";
+import AvatarGroup from "./Avatargroup";
+import StatusBadge from "./Statusbadge";
 
 interface Message {
   _id?: string;
@@ -19,10 +23,23 @@ interface ConversationParticipant {
   profileImage?: string;
 }
 
+interface ConversationJob {
+  _id: string;
+  title: string;
+  status: string;
+  budget: number;
+}
+
 interface ConversationLike {
   _id?: string;
   title?: string | null;
   participants?: ConversationParticipant[];
+  /**
+   * Present when this thread was created from a hire (the normal case).
+   * Absent for ad-hoc, non-job direct messages. See ARCHITECTURE.md ->
+   * ChatController -> GET /api/chat/conversations for the backend shape.
+   */
+  job?: ConversationJob | null;
 }
 
 export default function ChatRoom({ conversationId, currentUserId, conversation, otherUser }: {
@@ -31,12 +48,14 @@ export default function ChatRoom({ conversationId, currentUserId, conversation, 
   conversation?: ConversationLike;
   otherUser?: { _id: string; firstName: string; lastName: string; profileImage?: string };
 }) {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [typingLabel, setTypingLabel] = useState<string | null>(null);
   const [onlineParticipantIds, setOnlineParticipantIds] = useState<string[]>([]);
   const [participants, setParticipants] = useState<ConversationParticipant[]>([]);
+  const [job, setJob] = useState<ConversationJob | null | undefined>(conversation?.job);
   const [isAddParticipantOpen, setIsAddParticipantOpen] = useState(false);
   const [participantInput, setParticipantInput] = useState("");
   const [isAddingParticipant, setIsAddingParticipant] = useState(false);
@@ -62,6 +81,10 @@ export default function ChatRoom({ conversationId, currentUserId, conversation, 
   useEffect(() => {
     loadMessages();
   }, [loadMessages]);
+
+  useEffect(() => {
+    setJob(conversation?.job);
+  }, [conversation?.job]);
 
   useEffect(() => {
     const normalizedParticipants = (conversation?.participants || (otherUser ? [otherUser] : []))
@@ -169,16 +192,25 @@ export default function ChatRoom({ conversationId, currentUserId, conversation, 
       setParticipants((prev) => (prev.some((participant) => participant._id === payload.participant!._id) ? prev : [...prev, payload.participant!]));
     };
 
+    // Job status / budget changed (milestone submitted, job completed, etc.)
+    // — keeps the status pill in the header live without a page refresh.
+    const handleConversationUpdated = (payload: { conversationId: string; job?: ConversationJob }) => {
+      if (payload.conversationId !== conversationId || !payload.job) return;
+      setJob(payload.job);
+    };
+
     chatService.onNewMessage(handleIncoming);
     chatService.onTyping(handleTyping);
     chatService.onUserStatus(handleUserStatus);
     chatService.onParticipantAdded(handleParticipantAdded);
+    chatService.onConversationUpdated(handleConversationUpdated);
 
     return () => {
-      chatService.offNewMessage();
-      chatService.offTyping();
+      chatService.offNewMessage(handleIncoming);
+      chatService.offTyping(handleTyping);
       chatService.offUserStatus();
       chatService.offParticipantAdded();
+      chatService.offConversationUpdated();
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
@@ -213,25 +245,11 @@ export default function ChatRoom({ conversationId, currentUserId, conversation, 
     <div className="flex flex-col h-full border rounded-lg bg-white">
       <div className="border-b p-4 bg-gray-50 rounded-t-lg flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex -space-x-2 shrink-0">
-            {participants.slice(0, 3).map((participant) => (
-              <div
-                key={participant._id}
-                className="w-9 h-9 rounded-full border-2 border-white bg-emerald-600 text-white text-[11px] font-bold flex items-center justify-center overflow-hidden"
-              >
-                {participant.profileImage ? (
-                  <img src={participant.profileImage} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  participant.firstName?.[0] || '?'
-                )}
-              </div>
-            ))}
-            {participants.length > 3 && (
-              <div className="w-9 h-9 rounded-full border-2 border-white bg-slate-700 text-white text-[11px] font-semibold flex items-center justify-center">
-                +{participants.length - 3}
-              </div>
-            )}
-          </div>
+          {participants.length > 1 ? (
+            <AvatarGroup people={participants} max={3} size="sm" />
+          ) : participants[0] ? (
+            <Avatar person={participants[0]} size="sm" online={onlineParticipantIds.includes(participants[0]._id)} />
+          ) : null}
           <div className="min-w-0">
             <div className="text-sm font-semibold text-gray-900 truncate">{headerTitle}</div>
             <div className="text-xs text-gray-500">{typingLabel || (isAnyOnline ? 'Online now' : 'Live conversation')}</div>
@@ -255,6 +273,29 @@ export default function ChatRoom({ conversationId, currentUserId, conversation, 
           </div>
         </div>
       </div>
+
+      {/* Job context bar — the "this is a workspace, not a casual DM" marker */}
+      {job && (
+        <div className="border-b border-gray-100 bg-white px-4 py-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] text-gray-400 font-medium">Project</p>
+            <p className="text-sm font-semibold text-gray-900 truncate">{job.title}</p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="text-right hidden sm:block">
+              <p className="text-[11px] text-gray-400">Budget</p>
+              <p className="text-sm font-bold text-gray-900">${job.budget.toLocaleString()}</p>
+            </div>
+            <StatusBadge status={job.status} />
+            <button
+              onClick={() => navigate(`/jobs/${job._id}`)}
+              className="text-xs text-emerald-700 font-semibold hover:text-emerald-800 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition shrink-0"
+            >
+              View Job
+            </button>
+          </div>
+        </div>
+      )}
 
       {isAddParticipantOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6 backdrop-blur-sm">

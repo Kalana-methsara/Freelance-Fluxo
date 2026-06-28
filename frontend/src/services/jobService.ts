@@ -71,6 +71,16 @@ const jobService = {
     return response.data.data;
   },
 
+  getOpenJobs: async () => {
+    const response = await api.get('/jobs', { params: { status: 'open' } });
+    return response.data.data;
+  },
+
+  hireApplicant: async (jobId: string, applicationId: string) => {
+    const response = await api.patch(`/jobs/${jobId}/hire`, { applicationId });
+    return response.data.data;
+  },
+
   // ==================== WORK SUBMISSION ====================
   submitWork: async (jobId: string, formData: FormData) => {
     const response = await api.post(`/jobs/${jobId}/submissions`, formData, {

@@ -71,6 +71,9 @@ const start = async () => {
     },
   });
 
+  // expose io to controllers via app.locals
+  (app as any).locals.io = io;
+
   const onlineUsers = new Map<string, Set<string>>();
 
   io.use((socket, next) => {
@@ -100,10 +103,11 @@ const start = async () => {
     }
 
     socket.on("join", async (conversationId: string) => {
-      if (!conversationId || !userId) return;
+      const normalizedConversationId = String(conversationId || "").trim();
+      if (!normalizedConversationId || !userId) return;
 
       try {
-        const conversation = await ConversationModel.findById(conversationId);
+        const conversation = await ConversationModel.findById(normalizedConversationId);
         if (!conversation) {
           return socket.emit("chat_error", { message: "Conversation not found" });
         }
@@ -112,7 +116,7 @@ const start = async () => {
           return socket.emit("chat_error", { message: "Unauthorized to join this conversation" });
         }
 
-        socket.join(conversationId);
+        socket.join(normalizedConversationId);
       } catch (err) {
         console.error("Socket join error:", err);
         socket.emit("chat_error", { message: "Could not join conversation" });
@@ -120,17 +124,19 @@ const start = async () => {
     });
 
     socket.on("typing", (payload: { conversationId: string; isTyping: boolean }) => {
-      if (!payload?.conversationId) return;
-      socket.to(payload.conversationId).emit("typing", {
-        conversationId: payload.conversationId,
+      const normalizedConversationId = String(payload?.conversationId || "").trim();
+      if (!normalizedConversationId) return;
+      socket.to(normalizedConversationId).emit("typing", {
+        conversationId: normalizedConversationId,
         userId,
         isTyping: payload.isTyping,
       });
     });
 
     socket.on("send_message", async (data: any) => {
-      const { conversationId, text } = data;
-      if (!conversationId || !text || !text.trim()) return;
+      const conversationId = String(data?.conversationId || "").trim();
+      const text = String(data?.text || "").trim();
+      if (!conversationId || !text) return;
 
       try {
         const conversation = await ConversationModel.findById(conversationId);
@@ -142,10 +148,12 @@ const start = async () => {
           return socket.emit("chat_error", { message: "Unauthorized to send message in this conversation" });
         }
 
+        socket.join(conversationId);
+
         const savedMessage = await MessageModel.create({
           conversationId: conversation._id,
           senderId: userId,
-          text: text.trim(),
+          text,
           readBy: [userId],
         });
 
@@ -158,17 +166,26 @@ const start = async () => {
 
         const populatedMessage = await savedMessage.populate({
           path: "senderId",
-          select: "firstName lastName profileImage",
+          select: "_id firstName lastName profileImage",
         });
 
-        io.to(conversationId).emit("receive_message", {
-          _id: populatedMessage._id,
-          conversationId,
-          senderId: populatedMessage.senderId,
+        const sender = populatedMessage.senderId as any;
+        const messagePayload = {
+          _id: populatedMessage._id.toString(),
+          conversationId: conversation._id.toString(),
+          senderId: sender?._id ? sender._id.toString() : userId,
+          sender: {
+            _id: sender?._id ? sender._id.toString() : userId,
+            firstName: sender?.firstName || "",
+            lastName: sender?.lastName || "",
+            profileImage: sender?.profileImage || "",
+          },
           text: populatedMessage.text,
           createdAt: populatedMessage.createdAt,
-          readBy: populatedMessage.readBy,
-        });
+          readBy: (populatedMessage.readBy || []).map((id: any) => id.toString()),
+        };
+
+        io.to(conversationId).emit("receive_message", messagePayload);
       } catch (err) {
         console.error("Socket send_message error:", err);
         socket.emit("chat_error", { message: "Could not save message" });

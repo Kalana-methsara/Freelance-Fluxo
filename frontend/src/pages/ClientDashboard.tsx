@@ -882,25 +882,11 @@ export default function ClientDashboard() {
 
     setHiringApplicationId(application._id);
     try {
-      // 1. Accept this application
-      await jobService.updateApplicationStatus(application._id, 'accepted');
+      // Call atomic hire endpoint which accepts the application, updates job, creates conversation, and emits events
+      const result = await jobService.hireApplicant(jobId, application._id);
+      const conversation = result.conversation;
 
-      // 2. Close the job post so no more applications come in
-      await jobService.updateJob(jobId, { status: 'closed' });
-
-      // 3. Optimistically update local applicationsByJob status
-      setApplicationsByJob((prev) => {
-        const updated = { ...prev };
-        for (const key of Object.keys(updated)) {
-          updated[key] = updated[key].map((a) =>
-            a._id === application._id ? { ...a, status: 'accepted' } : a
-          );
-        }
-        return updated;
-      });
-
-      // 4. Open chat with the hired freelancer
-      const conversation = await jobService.createConversation(freelancerId, jobId);
+      // Update local state and navigate to chat
       setSelectedConvId(conversation._id);
       setSelectedParticipant(conversation);
       setActiveNav('messages');
@@ -1141,10 +1127,12 @@ export default function ClientDashboard() {
 
       {/* ===== MAIN CONTENT ===== */}
       <main className="flex-1 pt-20 px-4 sm:px-6 lg:px-8 pb-8 max-w-6xl mx-auto w-full space-y-8">
-        <h1 className="text-2xl font-bold text-gray-900 capitalize -mb-2">
+        <h1 className="text-2xl font-bold text-gray-900 capitalize mb-2">
           {activeNav}
         </h1>
-
+<div className="mb-8 rounded-2xl overflow-hidden shadow-sm border border-gray-200">
+          <img src="/web_page.png" alt="Web page preview" className="w-full h-auto object-cover" />
+        </div>
         {/* ===== OVERVIEW / PROJECTS ===== */}
         {(activeNav === 'overview' || activeNav === 'projects') && (
           <>

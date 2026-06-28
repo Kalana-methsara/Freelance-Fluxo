@@ -7,6 +7,7 @@ import {
   getMyApplications,
   getJobApplications,
   updateApplicationStatus,
+  hireApplicant,
   getClientJobs,
   getFreelancerJobs,
   withdrawApplication,
@@ -46,5 +47,7 @@ router.post(
   workUpload.single("file"),
   submitWork
 );
+
+router.patch("/:id/hire", authenticate, requireRole([UserRole.CLIENT]), hireApplicant);
 
 export default router;

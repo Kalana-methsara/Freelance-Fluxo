@@ -262,3 +262,112 @@ export const submitWork = asyncHandler(async (req: Request, res: Response) => {
 
   res.status(201).json({ success: true, data: submission });
 });
+
+export const hireApplicant = asyncHandler(async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
+  const jobId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const { applicationId } = req.body;
+
+  if (!applicationId) return res.status(400).json({ message: 'applicationId is required' });
+
+  const session = await JobModel.db.startSession();
+  let conversation: any = null;
+
+  try {
+    await session.withTransaction(async () => {
+      const job = await JobModel.findById(jobId).session(session);
+      if (!job) throw new Error('Job not found');
+
+      if (job.clientId.toString() !== authReq.user!._id.toString()) {
+        throw new Error('Not authorized to hire for this job');
+      }
+
+      const application = await ApplicationModel.findById(applicationId).session(session);
+      if (!application) throw new Error('Application not found');
+      if (application.jobId.toString() !== job._id.toString()) throw new Error('Application does not belong to this job');
+
+      application.status = 'accepted';
+      await application.save({ session });
+
+      await ApplicationModel.updateMany(
+        { jobId: job._id, _id: { $ne: application._id } },
+        { status: 'rejected' },
+        { session }
+      );
+
+      job.status = 'in_progress';
+      job.freelancerId = application.freelancerId;
+      await job.save({ session });
+
+      const clientId = job.clientId;
+      const freelancerId = application.freelancerId;
+
+      conversation = await (await import('../models/conversationModel')).ConversationModel.findOne({
+        participants: { $all: [clientId, freelancerId] },
+        jobId: job._id,
+      }).session(session);
+
+      if (!conversation) {
+        const created = await (await import('../models/conversationModel')).ConversationModel.create([
+          {
+            participants: [clientId, freelancerId],
+            jobId: job._id,
+            type: 'direct',
+            createdBy: authReq.user!._id,
+            lastMessage: {
+              text: 'Contract initiated! Job status updated to In Progress.',
+              senderId: authReq.user!._id,
+              createdAt: new Date(),
+            },
+          },
+        ], { session });
+
+        conversation = created[0];
+      } else {
+        conversation.lastMessage = {
+          text: 'Contract initiated! Job status updated to In Progress.',
+          senderId: authReq.user!._id,
+          createdAt: new Date(),
+        };
+        await conversation.save({ session });
+      }
+
+      await (await import('../models/messageModel')).MessageModel.create([
+        {
+          conversationId: conversation._id,
+          senderId: authReq.user!._id,
+          text: 'Contract initiated! Job status updated to In Progress.',
+          readBy: [authReq.user!._id],
+        },
+      ], { session });
+    });
+  } catch (err: any) {
+    await session.abortTransaction();
+    session.endSession();
+    if (err.message === 'Job not found') return res.status(404).json({ message: err.message });
+    if (err.message === 'Not authorized to hire for this job') return res.status(403).json({ message: err.message });
+    if (err.message === 'Application not found' || err.message === 'Application does not belong to this job') return res.status(400).json({ message: err.message });
+    console.error('hireApplicant error:', err);
+    return res.status(500).json({ message: 'Failed to hire applicant' });
+  }
+
+  session.endSession();
+
+  const ConversationModel = (await import('../models/conversationModel')).ConversationModel;
+  const populated = await ConversationModel.findById(conversation._id).populate('participants', 'firstName lastName profileImage userRole').lean();
+
+  try {
+    const io = (req.app as any).locals?.io;
+    if (io) {
+      io.emit('contract_created', {
+        userId: (populated.participants || []).map((p: any) => (p._id || p).toString()),
+        conversationId: conversation._id,
+        jobId,
+      });
+    }
+  } catch (emitErr) {
+    console.error('Failed to emit contract_created', emitErr);
+  }
+
+  res.status(200).json({ success: true, data: { conversation: populated } });
+});

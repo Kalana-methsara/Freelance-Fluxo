@@ -1,0 +1,67 @@
+// =============================================================
+// src/services/socketClient.ts
+// =============================================================
+// One Socket.IO connection per tab, shared by chatService and
+// notificationService. Previously chatService opened its own
+// socket — fine while only chat needed it, but once notifications
+// also need a live push channel, two independent sockets per user
+// is wasteful and makes auth/reconnect logic harder to keep in sync.
+//
+// Call connectSocket() once, right after login (e.g. in your
+// AuthProvider/App.tsx), and every service below just grabs the
+// existing instance with getSocket().
+// =============================================================
+
+import { io, Socket } from "socket.io-client";
+
+let socket: Socket | null = null;
+let activeSocketConfig: { userId: string; token: string } | null = null;
+
+export function connectSocket(userId: string, token: string): Socket {
+  const desiredConfig = { userId, token };
+
+  if (socket?.connected && activeSocketConfig?.userId === userId && activeSocketConfig?.token === token) {
+    return socket;
+  }
+
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+    activeSocketConfig = null;
+  }
+
+  // prefer explicit env var, fallback to derived backend origin when running on localhost
+  const envWs = (import.meta as any).env?.VITE_WS_URL;
+  let wsUrl = envWs || window.location.origin;
+
+  // In dev, Vite serves frontend on :5173; backend sockets usually run on :5000 — derive if not set
+  if (!envWs && wsUrl.includes("localhost")) {
+    try {
+      const url = new URL(wsUrl);
+      // if running on Vite dev server default 5173, map to backend port 5000
+      if (url.port === "5173") url.port = "5000";
+      wsUrl = url.toString();
+    } catch (e) {
+      // ignore and keep original
+    }
+  }
+
+  socket = io(wsUrl, {
+    auth: { token },
+    query: { userId },
+    path: "/socket.io",
+    transports: ["websocket"],
+  });
+  activeSocketConfig = desiredConfig;
+  return socket;
+}
+
+export function getSocket(): Socket | null {
+  return socket;
+}
+
+export function disconnectSocket(): void {
+  socket?.disconnect();
+  socket = null;
+  activeSocketConfig = null;
+}

@@ -17,73 +17,82 @@ const PostJobPage = lazy(() => import("../pages/PostJobPage"));
 const LegalPage = lazy(() => import("../pages/LegalPage"));
 const JobsPage = lazy(() => import("../pages/JobsPage"));
 const HireFreelancerPage = lazy(() => import("../pages/HireFreelancerPage"));
-
-// 1. අලුතින් හදපු PaymentSettingsPage එක මෙතනට Lazy-load කරන්න
 const PaymentSettingsPage = lazy(() => import("../pages/PaymentSettingsPage"));
+
+// ⭐ 1. WorkspacePage එක මෙතනට Lazy-load කරන්න
+const WorkspacePage = lazy(() => import("../pages/WorkspacePage"));
 
 const Router = () => {
   return (
     <BrowserRouter>
       <Suspense fallback={<div className="p-8 text-center">Loading…</div>}>
         <Routes>
-        <Route path="/" element={<FreelancerPlatform />} />
-        <Route path="/signup" element={<Signupflow />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/oauth-callback" element={<OAuthCallback />} />
-        <Route path="/search" element={<SearchPage />} />
-        <Route path="/jobs" element={<JobsPage />} />
-        <Route path="/jobs/:jobId" element={<JobsPage />} />
-        <Route path="/jobs/:jobId/apply" element={<JobsPage />} />
-        <Route path="/hire/:freelancerId" element={<HireFreelancerPage />} />
-        <Route path="/categories/:id" element={<CategoryPage />} />
-        <Route path="/freelancers/:id" element={<FreelancerDetailPage />} />
-        <Route path="/terms" element={<LegalPage type="terms" />} />
-        <Route path="/user-agreement" element={<LegalPage type="user-agreement" />} />
-        <Route path="/privacy" element={<LegalPage type="privacy" />} />
+          <Route path="/" element={<FreelancerPlatform />} />
+          <Route path="/signup" element={<Signupflow />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/oauth-callback" element={<OAuthCallback />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/jobs" element={<JobsPage />} />
+          <Route path="/jobs/:jobId" element={<JobsPage />} />
+          <Route path="/jobs/:jobId/apply" element={<JobsPage />} />
+          <Route path="/hire/:freelancerId" element={<HireFreelancerPage />} />
+          <Route path="/categories/:id" element={<CategoryPage />} />
+          <Route path="/freelancers/:id" element={<FreelancerDetailPage />} />
+          <Route path="/terms" element={<LegalPage type="terms" />} />
+          <Route path="/user-agreement" element={<LegalPage type="user-agreement" />} />
+          <Route path="/privacy" element={<LegalPage type="privacy" />} />
 
-        {/* 2. මෙතනට /settings/payment රවුට් එක ඇතුළත් කරන්න */}
-        {/* මේක සාමාන්‍යයෙන් Client කෙනෙක්ට විතරක් අයිති නිසා RequireAuth එකක් ඇතුළට දාන එක වඩාත් ආරක්ෂිතයි */}
-        <Route
-          path="/settings/payment"
-          element={
-            <RequireAuth roles={["CLIENT", "FREELANCER"]}>
-              <PaymentSettingsPage />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/settings/payment"
+            element={
+              <RequireAuth roles={["CLIENT", "FREELANCER"]}>
+                <PaymentSettingsPage />
+              </RequireAuth>
+            }
+          />
 
-        <Route
-          path="/dashboard/freelancer"
-          element={
-            <RequireAuth roles={["FREELANCER"]}>
-              <FreelancerDashboard />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dashboard/client"
-          element={
-            <RequireAuth roles={["CLIENT"]}>
-              <ClientDashboard />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/post-job"
-          element={
-            <RequireAuth roles={["CLIENT"]}>
-              <PostJobPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <RequireAuth roles={["ADMIN"]}>
-              <AdminDashboard />
-            </RequireAuth>
-          }
-        />
+          {/* ⭐ 2. මෙතනට /workspace රවුට් එක ඇතුළත් කළා (Client & Freelancer දෙන්නටම පුළුවන්) */}
+          <Route
+            path="/workspace"
+            element={
+              <RequireAuth roles={["CLIENT", "FREELANCER"]}>
+                <WorkspacePage />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/dashboard/freelancer"
+            element={
+              <RequireAuth roles={["FREELANCER"]}>
+                <FreelancerDashboard />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/dashboard/client"
+            element={
+              <RequireAuth roles={["CLIENT"]}>
+                <ClientDashboard />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/post-job"
+            element={
+              <RequireAuth roles={["CLIENT"]}>
+                <PostJobPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <RequireAuth roles={["ADMIN"]}>
+                <AdminDashboard />
+              </RequireAuth>
+            }
+          />
         </Routes>
       </Suspense>
     </BrowserRouter>

@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { STORAGE_KEYS } from "../utils/storageKeys";
 import { setCredentials } from "../features/authSlice";
 import authService from "../services/authService";
-import type { AuthUser } from "../types";
+// import type { AuthUser } from "../types"; (unused)
 import { getDashboardPath } from "../utils/auth";
 import {
   Logo,
