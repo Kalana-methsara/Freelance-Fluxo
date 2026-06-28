@@ -901,19 +901,31 @@ function ProfileCompletionModal({
     </div>
   );
 }
+function useActiveNav(): [NavId, (id: NavId) => void] {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const active = (searchParams.get('tab') as NavId) || 'overview';
+
+  const setActive = useCallback((id: NavId) => {
+    setSearchParams({ tab: id });
+  }, [setSearchParams]);
+
+  return [active, setActive];
+}
 
 // ============================================================
 // 12. MAIN COMPONENT
 // ============================================================
 
 export default function FreelancerDashboard() {
+  
   const navigate = useNavigate();
   const dispatch = useDispatch();
+    const [activeNav, setActiveNav] = useActiveNav();
+
 
   // ── Nav & UI state
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeNav, setActiveNav] = useState<NavId>("overview");
-  const activeTab = (searchParams.get("tab") === "offers" ? "offers" : "dashboard") as "dashboard" | "offers";
+  const activeTab = (searchParams.get("view") === "offers" ? "offers" : "dashboard") as "dashboard" | "offers";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const [navIndicator, setNavIndicator] = useState({ left: 0, width: 0, ready: false });
@@ -985,7 +997,7 @@ export default function FreelancerDashboard() {
   useLayoutEffect(() => {
     const el = navRefs.current[activeNav];
     if (el) setNavIndicator({ left: el.offsetLeft, width: el.offsetWidth, ready: true });
-  }, [activeNav, loadingDashboard]);
+  }, [activeNav]);
 
   useEffect(() => {
     const onResize = () => {
@@ -1074,8 +1086,9 @@ export default function FreelancerDashboard() {
       setActiveNav("proposals");
       fetchDashboardData();
       showToast("success", "Proposal submitted.");
-    } catch {
+    } catch (error) {
       showToast("error", "Could not submit proposal. Please try again.");
+      throw error; // Rethrow to let the internal modal catch context process failure state
     }
   }, [dashboardData?.user, fetchDashboardData, isProfileComplete, showToast]);
 
@@ -1323,11 +1336,11 @@ export default function FreelancerDashboard() {
             <p className="text-xs text-gray-400 mt-0.5">Manage your jobs, proposals, and offers.</p>
           </div>
           <div className="inline-flex rounded-full bg-gray-100 p-1">
-            <button onClick={() => setSearchParams({ tab: "dashboard" })}
+            <button onClick={() => setSearchParams((prev) => { const p = new URLSearchParams(prev); p.set("view", "dashboard"); return p; })}
               className={`px-4 py-2 text-xs font-semibold rounded-full transition ${activeTab === "dashboard" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}>
               Dashboard
             </button>
-            <button onClick={() => setSearchParams({ tab: "offers" })}
+            <button onClick={() => setSearchParams((prev) => { const p = new URLSearchParams(prev); p.set("view", "offers"); return p; })}
               className={`px-4 py-2 text-xs font-semibold rounded-full transition ${activeTab === "offers" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}>
               Offers {offers.length ? `(${offers.length})` : ""}
             </button>
