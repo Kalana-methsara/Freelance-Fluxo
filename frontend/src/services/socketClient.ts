@@ -1,67 +1,79 @@
+// =============================================================
+// src/services/socketClient.ts
+// =============================================================
+// One Socket.IO connection per tab, shared by chatService and
+// notificationService. Previously chatService opened its own
+// socket — fine while only chat needed it, but once notifications
+// also need a live push channel, two independent sockets per user
+// is wasteful and makes auth/reconnect logic harder to keep in sync.
+//
+// Call connectSocket() once, right after login (e.g. in your
+// AuthProvider/App.tsx), and every service below just grabs the
+// existing instance with getSocket().
+// =============================================================
+
 import { io, Socket } from "socket.io-client";
 import { decodeJwtPayload } from "../utils/auth";
 
 let socket: Socket | null = null;
-let activeSocketConfig: { userId: string; token: string } | null = null;
+let activeSocketConfig: { userId: string; token: string; wsUrl?: string } | null = null;
 
-// Backend URL එක Environment එක අනුව තීරණය කිරීම
-const getBackendUrl = () => {
-  // Vercel හෝ ඕනෑම Production එකකදී VITE_WS_URL පාවිච්චි කරන්න
-  // උදා: VITE_WS_URL=https://your-backend-api.onrender.com
-  if ((import.meta as any).env?.VITE_WS_URL) {
-    return (import.meta as any).env.VITE_WS_URL;
-  }
-  
-  // Local development සඳහා පමණක් :5000 පෝට් එක භාවිතා කරන්න
-  return "http://localhost:5000";
-};
+const normalizeUserId = (value: string): string => value.trim().toLowerCase();
 
-const resolveSocketUserId = (candidateUserId: unknown, token: string): string => {
+const resolveSocketUserId = (candidateUserId: string, token: string): string => {
+  const normalizedCandidate = normalizeUserId(candidateUserId);
+  if (normalizedCandidate) return normalizedCandidate;
+
   const jwtPayload = decodeJwtPayload(token);
-  
-  // 1. සියලුම අගයන් string බවට පත්කර Array එකක තබා ගැනීම
-  const ids = [
-    candidateUserId, 
-    jwtPayload?.sub, 
-    jwtPayload?.id, 
-    jwtPayload?._id, 
-    jwtPayload?.userId
-  ];
+  const fallbackId = [jwtPayload?.sub, jwtPayload?.id, jwtPayload?._id, jwtPayload?.userId, jwtPayload?.uid]
+    .map((value) => (typeof value === "string" ? value : ""))
+    .find(Boolean);
 
-  // 2. පළමුවෙන්ම හමුවන string එක සොයා ගැනීම
-  const foundId = ids.find((id): id is string => typeof id === "string" && id.trim().length > 0);
-
-  // 3. පිරිසිදු කර Return කිරීම
-  return (foundId || "").trim().toLowerCase();
+  return normalizeUserId(fallbackId || "");
 };
 
-export function connectSocket(userId: string, token: string): Socket {
+export function connectSocket(userId: string, token: string, overrideWsUrl?: string): Socket {
   const resolvedUserId = resolveSocketUserId(userId, token);
-  
-  // දැනටමත් සම්බන්ධ වී ඇත්නම් සහ config වෙනස් වී නැත්නම්, නැවත සම්බන්ධ නොවන්න
-  if (socket?.connected && activeSocketConfig?.userId === resolvedUserId) {
+  // determine WS url: prefer explicit override, then env var, then derive from window.location
+  const envWs = (import.meta as any).env?.VITE_WS_URL;
+  let wsUrl = overrideWsUrl || envWs || window.location.origin;
+  const desiredConfig = { userId: resolvedUserId, token, wsUrl };
+
+  if (socket?.connected && activeSocketConfig?.userId === resolvedUserId && activeSocketConfig?.token === token && activeSocketConfig?.wsUrl === wsUrl) {
     return socket;
   }
 
-  // පවතින සම්බන්ධතාවය ඉවත් කිරීම
   if (socket) {
     socket.disconnect();
+    socket = null;
+    activeSocketConfig = null;
   }
 
-  const wsUrl = getBackendUrl();
+  // prefer explicit env var, fallback to derived backend origin when running on localhost
+  // If no env var or override is provided and we're on a production frontend host, warn devs.
+  if (!envWs && !overrideWsUrl && !wsUrl.includes("localhost")) {
+    console.warn("socketClient: no VITE_WS_URL set — attempting to connect to frontend origin. If your Socket.IO server runs on a different host, set VITE_WS_URL to the backend URL.");
+  }
+
+  // In dev, Vite serves frontend on :5173; backend sockets usually run on :5000 — derive if not set
+  if (!envWs && wsUrl.includes("localhost")) {
+    try {
+      const url = new URL(wsUrl);
+      // if running on Vite dev server default 5173, map to backend port 5000
+      if (url.port === "5173") url.port = "5000";
+      wsUrl = url.toString();
+    } catch (e) {
+      // ignore and keep original
+    }
+  }
 
   socket = io(wsUrl, {
     auth: { token },
     query: { userId: resolvedUserId },
-    transports: ["websocket"], // WebSocket පමණක් භාවිතා කිරීම වඩාත් සුදුසුයි
+    path: "/socket.io",
+    // allow negotiation to pick best transport (websocket or polling)
   });
-
-  activeSocketConfig = { userId: resolvedUserId, token };
-  
-  socket.on("connect_error", (err) => {
-    console.error("Socket Connection Error:", err.message);
-  });
-
+  activeSocketConfig = desiredConfig;
   return socket;
 }
 
