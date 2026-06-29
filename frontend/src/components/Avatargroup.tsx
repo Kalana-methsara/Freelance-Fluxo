@@ -1,15 +1,12 @@
-// ============================================================
-// components/ui/AvatarGroup.tsx
-// ============================================================
-
 import Avatar, { type AvatarPerson, type AvatarSize } from "./Avatar";
+import { cn } from "@/lib/utils";
 
 const SIZE_CLS: Record<AvatarSize, string> = {
-  xs: "w-7  h-7  text-[10px]",
-  sm: "w-8  h-8  text-xs",
-  md: "w-10 h-10 text-sm",
-  lg: "w-12 h-12 text-base",
-  xl: "w-16 h-16 text-lg",
+  xs: "h-6 w-6 text-[10px]",
+  sm: "h-8 w-8 text-xs",
+  md: "h-10 w-10 text-sm",
+  lg: "h-12 w-12 text-base",
+  xl: "h-16 w-16 text-lg",
 };
 
 export default function AvatarGroup({
@@ -21,7 +18,7 @@ export default function AvatarGroup({
   max?: number;
   size?: AvatarSize;
 }) {
-  const visible  = people.slice(0, max);
+  const visible = people.slice(0, max);
   const overflow = people.length - visible.length;
 
   return (
@@ -31,7 +28,10 @@ export default function AvatarGroup({
       ))}
       {overflow > 0 && (
         <div
-          className={`${SIZE_CLS[size]} rounded-full ring-2 ring-white bg-slate-700 text-white font-semibold flex items-center justify-center text-xs`}
+          className={cn(
+            SIZE_CLS[size],
+            "rounded-full ring-2 ring-background bg-muted text-muted-foreground flex items-center justify-center font-semibold"
+          )}
         >
           +{overflow}
         </div>

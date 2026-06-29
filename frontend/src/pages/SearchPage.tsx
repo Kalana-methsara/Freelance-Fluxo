@@ -38,7 +38,6 @@ export default function SearchPage() {
   const [tab, setTab] = useState<"freelancers" | "jobs">("freelancers");
 
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -163,7 +162,6 @@ export default function SearchPage() {
         estimatedDays: 7,
       });
       alert("Proposal submitted!");
-      setSelectedJobId(null);
     } catch (err: any) {
       alert(err.response?.data?.message || "Failed to apply.");
     }

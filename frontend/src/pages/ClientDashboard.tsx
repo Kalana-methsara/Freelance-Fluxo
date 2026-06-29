@@ -363,15 +363,14 @@ const ProjectDetailDrawer = memo(({ project, canDelete, onClose, onMessage, onDe
 // ================================================================
 
 // ── OVERVIEW TAB ─────────────────────────────────────────────────
-const OverviewTab = memo(({ data, freelancers, navigate, onMessage, onSelectNav, onViewProject, onDeleteProject, userId }: {
+const OverviewTab = memo(({ data, freelancers, navigate, onSelectNav, onViewProject }: {
   data: DashboardData | null; freelancers: FreelancerPreview[];
-  navigate: any; onMessage: (f: string, j: string) => void;
+  navigate: any;
   onSelectNav: (id: NavId) => void; onViewProject: (p: Project) => void;
-  onDeleteProject: (id: string) => void; userId?: string;
 }) => {
   const stats = data?.stats;
-  const projects: Project[] = data?.projects ?? [];
   const applicants: Applicant[] = (data?.applicants ?? []).slice(0, 3);
+  const projects: Project[] = data?.projects ?? [];
 
   return (
     <div className="p-5 md:p-8 max-w-6xl mx-auto space-y-8">
@@ -544,7 +543,6 @@ const ApplicantsTab = memo(({ data, navigate, onHireApplicant, hiringId }: {
   onHireApplicant: (a: Applicant) => void; hiringId: string | null;
 }) => {
   const applicants: Applicant[] = data?.applicants ?? [];
-  const projects: Project[] = data?.projects ?? [];
 
   // Group by job
   const byJob = useMemo(() => {
@@ -803,9 +801,8 @@ export default function ClientDashboard() {
     }
   }, [setActiveNav]);
 
-  const user     = data?.user;
-  const projects = data?.projects ?? [];
-  const name     = user?.companyName || `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "Client";
+  const user = data?.user;
+  const name = user?.companyName || `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "Client";
 
   if (loading) {
     return (
@@ -935,11 +932,8 @@ export default function ClientDashboard() {
             data={data}
             freelancers={freelancers}
             navigate={navigate}
-            onMessage={handleMessageFreelancer}
             onSelectNav={setActiveNav}
             onViewProject={setSelectedProject}
-            onDeleteProject={handleDeleteProject}
-            userId={user?._id}
           />
         )}
         {activeNav === "projects" && (

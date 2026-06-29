@@ -5,7 +5,6 @@
 
 import React, {
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
   useCallback,
@@ -1353,7 +1352,7 @@ export default function FreelancerDashboard() {
 
             {/* MESSAGES */}
             {activeNav === "messages" && user && (
-              <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm" style={{ height: "calc(100vh - 22rem)" }}>
+              <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
                 <div className="grid md:grid-cols-3 h-full">
                   <div className="border-r border-gray-100 overflow-y-auto bg-gray-50/40">
                     <ChatConversationList

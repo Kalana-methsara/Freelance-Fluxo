@@ -1,7 +1,4 @@
-// ============================================================
-// components/ui/Logo.tsx
-// Brand wordmark — used in Navbar, Footer, auth pages.
-// ============================================================
+import { cn } from "@/lib/utils";
 
 interface LogoProps {
   size?: "sm" | "md" | "lg";
@@ -16,9 +13,9 @@ export default function Logo({ size = "md", className = "" }: LogoProps) {
   }[size];
 
   return (
-    <span className={`${cls} font-bold tracking-tight ${className}`}>
-      <span className="text-emerald-600">freelance</span>
-      <span className="text-gray-900">fluxo</span>
+    <span className={cn(cls, "font-bold tracking-tight", className)}>
+      <span className="text-primary">freelance</span>
+      <span className="text-foreground">fluxo</span>
     </span>
   );
 }
