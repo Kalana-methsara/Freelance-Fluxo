@@ -1,20 +1,14 @@
-// =============================================================
-// src/components/Avatar.tsx
-// =============================================================
-// One avatar component for the whole app. Renders a profile photo
-// if present, otherwise initials on a deterministic color.
-//
-// Replaces near-identical inline JSX previously duplicated in:
-//   ChatConversationList.tsx, ChatRoom.tsx, WorkspacePage.tsx,
-//   CategoryPage.tsx, FreelancerDetailPage.tsx
-//
-// Usage:
-//   <Avatar person={user} size="md" online={isOnline} />
-// =============================================================
+// ============================================================
+// components/ui/Avatar.tsx
+// Renders a profile photo (if available) or initials on a
+// deterministic colour. Replaces near-identical avatar JSX
+// in: ChatConversationList, ChatRoom, WorkspacePage,
+//     CategoryPage, FreelancerDetailPage, SearchPage,
+//     ClientDashboard, FreelancerDashboard.
+// ============================================================
 
 import { memo } from "react";
-import { avatarColorFor } from "../utils/avatar";
-import { getInitials } from "../utils/auth";
+import { avatarColorFor } from "../utils/tokens";
 
 export interface AvatarPerson {
   _id: string;
@@ -23,37 +17,42 @@ export interface AvatarPerson {
   profileImage?: string;
 }
 
-export type AvatarSize = "xs" | "sm" | "md" | "lg";
+export type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
 
 interface AvatarProps {
   person: AvatarPerson;
   size?: AvatarSize;
-  /** Pass true/false to show an online status dot. Omit to hide it entirely. */
-  online?: boolean;
+  online?: boolean;   // undefined → no indicator; true/false → show dot
   className?: string;
 }
 
-const SIZE_CLASSES: Record<AvatarSize, string> = {
-  xs: "w-7 h-7 text-[10px]",
-  sm: "w-8 h-8 text-xs",
+const SIZE: Record<AvatarSize, string> = {
+  xs: "w-7  h-7  text-[10px]",
+  sm: "w-8  h-8  text-xs",
   md: "w-10 h-10 text-sm",
-  lg: "w-14 h-14 text-base",
+  lg: "w-12 h-12 text-base",
+  xl: "w-16 h-16 text-lg",
 };
 
-const DOT_CLASSES: Record<AvatarSize, string> = {
-  xs: "w-2 h-2 -bottom-px -right-px",
+const DOT: Record<AvatarSize, string> = {
+  xs: "w-2   h-2   -bottom-px -right-px",
   sm: "w-2.5 h-2.5 bottom-0 right-0",
-  md: "w-3 h-3 bottom-0 right-0",
+  md: "w-3   h-3   bottom-0 right-0",
   lg: "w-3.5 h-3.5 bottom-0 right-0",
+  xl: "w-4   h-4   bottom-0 right-0",
 };
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return (parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "").toUpperCase();
+}
 
 const Avatar = memo(({ person, size = "md", online, className = "" }: AvatarProps) => {
   const name = `${person.firstName ?? ""} ${person.lastName ?? ""}`.trim();
-
   return (
     <div className={`relative shrink-0 ${className}`}>
       <div
-        className={`${SIZE_CLASSES[size]} rounded-full flex items-center justify-center font-bold text-white overflow-hidden ring-2 ring-white`}
+        className={`${SIZE[size]} rounded-full flex items-center justify-center font-semibold text-white overflow-hidden ring-2 ring-white select-none`}
         style={{ background: avatarColorFor(person._id) }}
         title={name}
       >
@@ -65,7 +64,7 @@ const Avatar = memo(({ person, size = "md", online, className = "" }: AvatarProp
       </div>
       {online !== undefined && (
         <span
-          className={`absolute rounded-full border-2 border-white ${DOT_CLASSES[size]} ${
+          className={`absolute rounded-full border-2 border-white ${DOT[size]} ${
             online ? "bg-emerald-500" : "bg-gray-300"
           }`}
         />

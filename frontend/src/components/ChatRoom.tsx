@@ -65,7 +65,7 @@ const getMessageSenderId = (message: Message): string => {
 
 export default function ChatRoom({ conversationId, currentUserId, conversation, otherUser }: {
   conversationId: string;
-  currentUserId: string;
+  currentUserId?: string;
   conversation?: ConversationLike;
   otherUser?: { _id: string; firstName: string; lastName: string; profileImage?: string };
 }) {
