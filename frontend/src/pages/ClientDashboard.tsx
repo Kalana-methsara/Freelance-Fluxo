@@ -33,6 +33,19 @@ interface User {
   lastName: string;
   companyName?: string;
   email: string;
+  bio?: string;
+  profileImage?: string;
+  website?: string;
+  industry?: string;
+  rating?: number;
+  reviewCount?: number;
+  location?: {
+    address?: string;
+    city?: string;
+    province?: string;
+    country?: string;
+    coordinates?: { lat: number; lng: number };
+  };
 }
 
 interface Project {
@@ -111,6 +124,7 @@ const NAV_ITEMS = [
   { label: "Applicants", id: "applicants" },
   { label: "Invoices",   id: "invoices"   },
   { label: "Messages",   id: "messages"   },
+  { label: "Profile",    id: "profile"    },
 ] as const;
 
 type NavId = (typeof NAV_ITEMS)[number]["id"];
@@ -149,6 +163,7 @@ const Icons = {
   Messages:   () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>,
   Message:    () => <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>,
   Logout:     () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+  Profile:    () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/></svg>,
   Trash:      () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>,
   Plus:       () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M12 5v14M5 12h14"/></svg>,
   Menu:       () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M3 12h18M3 6h18M3 18h18"/></svg>,
@@ -166,6 +181,7 @@ const NAV_ICON_MAP: Record<NavId, React.ElementType> = {
   applicants: Icons.Applicants,
   invoices:   Icons.Invoices,
   messages:   Icons.Messages,
+  profile:    Icons.Profile,
 };
 
 // ================================================================
@@ -698,7 +714,237 @@ const MessagesTab = memo(({ userId, selectedConvId, selectedParticipant, onSelec
 ));
 
 // ================================================================
-// 8. MAIN COMPONENT
+// 8. CLIENT PROFILE EDITOR MODAL
+// ================================================================
+
+const ClientProfileEditor = memo(({ user, onSave, onCancel }: {
+  user: User;
+  onSave: (fields: Partial<User>) => Promise<void>;
+  onCancel: () => void;
+}) => {
+  const [form, setForm] = useState({
+    firstName:   user.firstName  || "",
+    lastName:    user.lastName   || "",
+    companyName: user.companyName || "",
+    bio:         user.bio        || "",
+    website:     user.website    || "",
+    industry:    user.industry   || "",
+    city:        user.location?.city    || "",
+    country:     user.location?.country || "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState<string | null>(null);
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm(prev => ({ ...prev, [k]: e.target.value }));
+
+  const handleSave = async () => {
+    if (!form.firstName.trim() || !form.lastName.trim()) { setError("First name and last name are required."); return; }
+    setSaving(true); setError(null);
+    try {
+      await onSave({
+        firstName:   form.firstName.trim(),
+        lastName:    form.lastName.trim(),
+        companyName: form.companyName.trim() || undefined,
+        bio:         form.bio.trim()     || undefined,
+        website:     form.website.trim() || undefined,
+        industry:    form.industry.trim() || undefined,
+        location: (form.city.trim() || form.country.trim()) ? {
+          city:    form.city.trim()    || undefined,
+          country: form.country.trim() || undefined,
+        } : undefined,
+      });
+    } catch { setError("Failed to save. Please try again."); setSaving(false); }
+  };
+
+  const inputCls = "w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 bg-white";
+  const labelCls = "block text-xs font-semibold text-gray-700 mb-1.5";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 sticky top-0 bg-white z-10">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Edit Profile</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Update your client profile information</p>
+          </div>
+          <button onClick={onCancel} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div className="p-6 space-y-5">
+          {error && <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-xl">{error}</div>}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>First Name *</label>
+              <input value={form.firstName} onChange={set("firstName")} className={inputCls} placeholder="John"/>
+            </div>
+            <div>
+              <label className={labelCls}>Last Name *</label>
+              <input value={form.lastName} onChange={set("lastName")} className={inputCls} placeholder="Doe"/>
+            </div>
+          </div>
+
+          <div>
+            <label className={labelCls}>Company Name</label>
+            <input value={form.companyName} onChange={set("companyName")} className={inputCls} placeholder="Acme Corp (optional)"/>
+          </div>
+
+          <div>
+            <label className={labelCls}>Industry</label>
+            <select value={form.industry} onChange={set("industry")} className={inputCls}>
+              <option value="">Select industry</option>
+              {["Technology", "Healthcare", "Finance", "Education", "E-commerce", "Marketing", "Design", "Real Estate", "Media", "Other"].map(i => (
+                <option key={i} value={i}>{i}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className={labelCls}>Bio</label>
+            <textarea rows={4} value={form.bio} onChange={set("bio")}
+              placeholder="Tell freelancers a bit about yourself and the kind of work you typically hire for…"
+              className={`${inputCls} resize-none`}/>
+          </div>
+
+          <div>
+            <label className={labelCls}>Website</label>
+            <input value={form.website} onChange={set("website")} className={inputCls} placeholder="https://yourcompany.com"/>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>City</label>
+              <input value={form.city} onChange={set("city")} className={inputCls} placeholder="Colombo"/>
+            </div>
+            <div>
+              <label className={labelCls}>Country</label>
+              <input value={form.country} onChange={set("country")} className={inputCls} placeholder="Sri Lanka"/>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 pb-6 flex justify-end gap-3 sticky bottom-0 bg-white border-t border-gray-50 pt-4">
+          <button onClick={onCancel} className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 hover:bg-gray-50 transition">Cancel</button>
+          <button onClick={handleSave} disabled={saving}
+            className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition disabled:opacity-60 flex items-center gap-2">
+            {saving && <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>}
+            {saving ? "Saving…" : "Save Changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+// ================================================================
+// 9. PROFILE TAB
+// ================================================================
+
+const ProfileTab = memo(({ user, onEdit }: { user: User; onEdit: () => void }) => {
+  const name = user.companyName || `${user.firstName} ${user.lastName}`.trim();
+  const initials = getInitials(name);
+
+  return (
+    <div className="p-5 md:p-8 max-w-4xl mx-auto">
+      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+        {/* Header banner */}
+        <div className="h-24 bg-gradient-to-r from-emerald-600 to-teal-500 relative">
+          <div className="absolute inset-0 opacity-10"
+            style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px)", backgroundSize: "24px 24px" }}/>
+        </div>
+
+        <div className="px-6 pb-8">
+          {/* Avatar + Edit button */}
+          <div className="flex items-end justify-between -mt-12 mb-6">
+            <div className="relative">
+              <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-md overflow-hidden bg-white flex items-center justify-center">
+                {user.profileImage ? (
+                  <img src={user.profileImage} alt={name} className="w-full h-full object-cover"/>
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-emerald-500 to-emerald-800 flex items-center justify-center">
+                    <span className="text-2xl font-bold text-white">{initials}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-medium text-emerald-700">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"/>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"/>
+                </span>
+                Active Client
+              </span>
+              <button onClick={onEdit}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-500 text-xs font-medium rounded-full hover:bg-gray-50 hover:text-gray-900 hover:border-gray-300 transition">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                Edit Profile
+              </button>
+            </div>
+          </div>
+
+          {/* Name & company */}
+          <div className="mb-5">
+            <h1 className="text-2xl font-bold text-gray-900">{name}</h1>
+            {user.companyName && (
+              <p className="text-sm text-gray-500 mt-0.5">{user.firstName} {user.lastName}</p>
+            )}
+            {user.industry && (
+              <p className="text-xs font-medium text-emerald-600 mt-1">{user.industry}</p>
+            )}
+          </div>
+
+          {/* Bio */}
+          {user.bio && (
+            <p className="text-sm text-gray-500 leading-relaxed mb-6 max-w-2xl">{user.bio}</p>
+          )}
+
+          {/* Stats row */}
+          <div className="grid grid-cols-3 gap-3 mb-6 max-w-sm">
+            {[
+              { label: "Projects", value: String((0)) },
+              { label: "Rating",   value: (user.rating || 5.0).toFixed(1) },
+              { label: "Reviews",  value: String(user.reviewCount || 0) },
+            ].map(({ label, value }) => (
+              <div key={label} className="bg-gray-50 border border-gray-100 rounded-xl p-3 text-center">
+                <p className="text-lg font-bold text-gray-900">{value}</p>
+                <p className="text-[10px] uppercase tracking-wider text-gray-400 mt-0.5">{label}</p>
+              </div>
+            ))}
+          </div>
+
+          <hr className="border-gray-100 mb-5"/>
+
+          {/* Details */}
+          <div className="space-y-3 text-sm text-gray-500">
+            <div className="flex items-center gap-2.5">
+              <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/></svg>
+              <span>{user.email}</span>
+            </div>
+            {user.location?.city && user.location?.country && (
+              <div className="flex items-center gap-2.5">
+                <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
+                <span>{user.location.city}, {user.location.country}</span>
+              </div>
+            )}
+            {user.website && (
+              <div className="flex items-center gap-2.5">
+                <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-1.605.42-3.113 1.157-4.418"/></svg>
+                <a href={user.website} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">{user.website}</a>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+// ================================================================
+// 9. MAIN COMPONENT
 // ================================================================
 
 export default function ClientDashboard() {
@@ -717,6 +963,7 @@ export default function ClientDashboard() {
   const [activeContracts, setActiveContracts] = useState<any[]>([]);
   const [pendingOffers, setPendingOffers]    = useState<any[]>([]);
   const [contractsLoading, setContractsLoading] = useState(false);
+  const [editingProfile, setEditingProfile]  = useState(false);
 
   // Auth guard
   useEffect(() => {
@@ -751,6 +998,13 @@ export default function ClientDashboard() {
     dispatch(logout());
     navigate("/login");
   }, [dispatch, navigate]);
+
+  const handleSaveProfile = useCallback(async (updatedFields: Partial<User>) => {
+    await platformService.updateProfile(updatedFields);
+    setEditingProfile(false);
+    refetch();
+    toast.success("Profile updated.");
+  }, [refetch]);
 
   const handleMessageFreelancer = useCallback(async (freelancerId: string, jobId: string) => {
     try {
@@ -1023,7 +1277,19 @@ export default function ClientDashboard() {
             onSelectConversation={(id, conv) => { setSelectedConvId(id); setSelectedParticipant(conv); }}
           />
         )}
+        {activeNav === "profile" && user && (
+          <ProfileTab user={user} onEdit={() => setEditingProfile(true)} />
+        )}
       </main>
+
+      {/* ── CLIENT PROFILE EDITOR ─────────────────────────────── */}
+      {editingProfile && user && (
+        <ClientProfileEditor
+          user={user}
+          onSave={handleSaveProfile}
+          onCancel={() => setEditingProfile(false)}
+        />
+      )}
 
       {/* ── PROJECT DETAIL DRAWER ─────────────────────────────── */}
       <ProjectDetailDrawer

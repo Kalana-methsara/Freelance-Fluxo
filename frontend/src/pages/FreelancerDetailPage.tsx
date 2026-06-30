@@ -97,7 +97,7 @@ export default function FreelancerDetailPage() {
     setMessaging(true);
     try {
       const conv = await jobService.createConversation(freelancer._id);
-      navigate("/dashboard/client", {
+      navigate("/dashboard/client?tab=messages", {
         state: { openMessages: true, conversationId: conv._id, participant: conv.participant },
       });
     } catch {
