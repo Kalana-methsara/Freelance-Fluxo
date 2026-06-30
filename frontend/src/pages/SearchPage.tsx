@@ -136,8 +136,8 @@ export default function SearchPage() {
           coordinates: { lat: formData.lat, lng: formData.lng },
         },
       };
-      const res = await api.put("/users/profile", payload);
-      const updated = res.data?.user || res.data;
+      const res = await api.patch("/users/profile", payload);
+      const updated = res.data?.data || res.data;
       if (updated) {
         localStorage.setItem("user", JSON.stringify(updated));
         setCurrentUser(updated);

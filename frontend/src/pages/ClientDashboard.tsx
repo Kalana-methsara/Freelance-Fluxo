@@ -747,11 +747,12 @@ const ClientProfileEditor = memo(({ user, onSave, onCancel }: {
         lastName:    form.lastName.trim(),
         companyName: form.companyName.trim() || undefined,
         bio:         form.bio.trim()     || undefined,
-        website:     form.website.trim() || undefined,
-        industry:    form.industry.trim() || undefined,
         location: (form.city.trim() || form.country.trim()) ? {
-          city:    form.city.trim()    || undefined,
-          country: form.country.trim() || undefined,
+          address:     user.location?.address || "",
+          city:        form.city.trim()       || "",
+          province:    user.location?.province || "",
+          country:     form.country.trim()    || "Sri Lanka",
+          coordinates: user.location?.coordinates || { lat: 6.0329, lng: 80.217 },
         } : undefined,
       });
     } catch { setError("Failed to save. Please try again."); setSaving(false); }

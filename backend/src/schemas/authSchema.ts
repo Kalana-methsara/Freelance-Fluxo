@@ -19,10 +19,10 @@ const baseRegisterSchema = z.object({
             lat: z.number(),
             lng: z.number(),
         }).optional(),
-        address: z.string(),
-        city: z.string(),
-        province: z.string(),
-        country: z.string(),
+        address: z.string().optional(),
+        city: z.string().optional(),
+        province: z.string().optional(),
+        country: z.string().optional(),
     }).optional(),
 });
 
