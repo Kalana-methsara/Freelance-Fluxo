@@ -719,7 +719,7 @@ const MessagesTab = memo(({ userId, selectedConvId, selectedParticipant, onSelec
 
 const ClientProfileEditor = memo(({ user, onSave, onCancel }: {
   user: User;
-  onSave: (fields: Partial<User>) => Promise<void>;
+  onSave: (fields: Partial<User> & { profileImageFile?: File }) => Promise<void>;
   onCancel: () => void;
 }) => {
   const [form, setForm] = useState({
@@ -732,11 +732,31 @@ const ClientProfileEditor = memo(({ user, onSave, onCancel }: {
     city:        user.location?.city    || "",
     country:     user.location?.country || "",
   });
-  const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState<string | null>(null);
+  const [saving, setSaving]             = useState(false);
+  const [error, setError]               = useState<string | null>(null);
+  const [imageFile, setImageFile]       = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(user.profileImage || null);
+  const fileInputRef                    = useRef<HTMLInputElement>(null);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm(prev => ({ ...prev, [k]: e.target.value }));
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { setError("Photo must be under 5 MB."); return; }
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = ev => setImagePreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+    setError(null);
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const handleSave = async () => {
     if (!form.firstName.trim() || !form.lastName.trim()) { setError("First name and last name are required."); return; }
@@ -747,6 +767,8 @@ const ClientProfileEditor = memo(({ user, onSave, onCancel }: {
         lastName:    form.lastName.trim(),
         companyName: form.companyName.trim() || undefined,
         bio:         form.bio.trim()     || undefined,
+        website:     form.website.trim() || undefined,
+        industry:    form.industry       || undefined,
         location: (form.city.trim() || form.country.trim()) ? {
           address:     user.location?.address || "",
           city:        form.city.trim()       || "",
@@ -754,16 +776,20 @@ const ClientProfileEditor = memo(({ user, onSave, onCancel }: {
           country:     form.country.trim()    || "Sri Lanka",
           coordinates: user.location?.coordinates || { lat: 6.0329, lng: 80.217 },
         } : undefined,
+        ...(imageFile ? { profileImageFile: imageFile } : {}),
       });
     } catch { setError("Failed to save. Please try again."); setSaving(false); }
   };
 
   const inputCls = "w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 bg-white";
   const labelCls = "block text-xs font-semibold text-gray-700 mb-1.5";
+  const displayName = (form.firstName || user.firstName || "").charAt(0).toUpperCase() +
+                      (form.lastName  || user.lastName  || "").charAt(0).toUpperCase();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+        {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 sticky top-0 bg-white z-10">
           <div>
             <h2 className="text-base font-bold text-gray-900">Edit Profile</h2>
@@ -777,6 +803,66 @@ const ClientProfileEditor = memo(({ user, onSave, onCancel }: {
         <div className="p-6 space-y-5">
           {error && <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-xl">{error}</div>}
 
+          {/* ── Profile photo ── */}
+          <div>
+            <label className={labelCls}>Profile Photo</label>
+            <div className="flex items-center gap-4">
+              {/* Avatar preview */}
+              <div className="relative shrink-0">
+                <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-gray-100 shadow-sm bg-gray-50 flex items-center justify-center">
+                  {imagePreview ? (
+                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover"/>
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-emerald-500 to-emerald-800 flex items-center justify-center">
+                      <span className="text-xl font-bold text-white">{displayName}</span>
+                    </div>
+                  )}
+                </div>
+                {/* Camera icon overlay */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full flex items-center justify-center shadow-md transition"
+                  title="Change photo"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z"/>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Upload / remove buttons */}
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-4 py-2 border border-gray-200 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 hover:border-emerald-400 transition text-left"
+                >
+                  {imagePreview ? "Change photo" : "Upload photo"}
+                </button>
+                {imagePreview && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="px-4 py-2 border border-red-100 text-sm font-medium text-red-500 rounded-xl hover:bg-red-50 transition text-left"
+                  >
+                    Remove photo
+                  </button>
+                )}
+                <p className="text-[11px] text-gray-400 leading-tight">JPG, PNG or GIF · max 5 MB</p>
+              </div>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              onChange={handleImageChange}
+              className="hidden"
+            />
+          </div>
+
+          {/* ── Name ── */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>First Name *</label>
@@ -860,7 +946,7 @@ const ProfileTab = memo(({ user, onEdit }: { user: User; onEdit: () => void }) =
         <div className="px-6 pb-8">
           {/* Avatar + Edit button */}
           <div className="flex items-end justify-between -mt-12 mb-6">
-            <div className="relative">
+            <div className="relative group cursor-pointer" onClick={onEdit} title="Change profile photo">
               <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-md overflow-hidden bg-white flex items-center justify-center">
                 {user.profileImage ? (
                   <img src={user.profileImage} alt={name} className="w-full h-full object-cover"/>
@@ -869,6 +955,20 @@ const ProfileTab = memo(({ user, onEdit }: { user: User; onEdit: () => void }) =
                     <span className="text-2xl font-bold text-white">{initials}</span>
                   </div>
                 )}
+              </div>
+              {/* Camera overlay on hover */}
+              <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z"/>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z"/>
+                </svg>
+              </div>
+              {/* Small camera badge */}
+              <div className="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-md border-2 border-white">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z"/>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z"/>
+                </svg>
               </div>
             </div>
             <div className="flex items-center gap-3 mb-2">
@@ -1000,8 +1100,18 @@ export default function ClientDashboard() {
     navigate("/login");
   }, [dispatch, navigate]);
 
-  const handleSaveProfile = useCallback(async (updatedFields: Partial<User>) => {
-    await platformService.updateProfile(updatedFields);
+  const handleSaveProfile = useCallback(async (updatedFields: Partial<User> & { profileImageFile?: File }) => {
+    const { profileImageFile, ...fields } = updatedFields as any;
+    let profileImageUrl: string | undefined;
+
+    if (profileImageFile) {
+      const fd = new FormData();
+      fd.append("image", profileImageFile);
+      const uploadResult = await platformService.uploadProfileImage(fd);
+      profileImageUrl = uploadResult?.url ?? uploadResult?.data?.url;
+    }
+
+    await platformService.updateProfile(profileImageUrl ? { ...fields, profileImage: profileImageUrl } : fields);
     setEditingProfile(false);
     refetch();
     toast.success("Profile updated.");

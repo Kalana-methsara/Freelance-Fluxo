@@ -82,6 +82,13 @@ const platformService = {
     const res = await api.patch("/users/profile", updates);
     return res.data?.data ?? res.data;
   },
+
+  uploadProfileImage: async (formData: FormData) => {
+    const res = await api.post("/upload/upload-avatar", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data?.data ?? res.data;
+  },
 };
 
 export default platformService;
