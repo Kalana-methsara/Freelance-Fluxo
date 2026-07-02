@@ -21,6 +21,7 @@ const PaymentSettingsPage = lazy(() => import("../pages/PaymentSettingsPage"));
 
 // ⭐ 1. WorkspacePage එක මෙතනට Lazy-load කරන්න
 const WorkspacePage = lazy(() => import("../pages/WorkspacePage"));
+const ContractDetailsPage = lazy(() => import("../pages/ContractDetailsPage"));
 
 const Router = () => {
   return (
@@ -66,6 +67,14 @@ const Router = () => {
             element={
               <RequireAuth roles={["FREELANCER"]}>
                 <FreelancerDashboard />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/dashboard/freelancer/contracts/:id"
+            element={
+              <RequireAuth roles={["CLIENT", "FREELANCER"]}>
+                <ContractDetailsPage />
               </RequireAuth>
             }
           />

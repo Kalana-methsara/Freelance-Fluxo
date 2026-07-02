@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, createContext, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { BarChart, Bar, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useDispatch, useSelector } from "react-redux";
 import dashboardService, {
   type DashboardStats,
@@ -333,20 +334,81 @@ const StatCard = ({
 
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
 
-const OverviewTab = ({ data }: { data: DashboardStats | null }) => (
-  <div className="space-y-8">
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-      <StatCard label="Total Users" value={data?.totalUsers || 0} accent trend="+12% this month" />
-      <StatCard label="Total Jobs" value={data?.totalJobs || 0} sub="Active listings" />
-      <StatCard label="Open Reports" value={data?.openReports || 0} sub={data?.openReports ? "Requires attention" : "All clear"} />
-      <StatCard label="Flagged Jobs" value={data?.flaggedJobs || 0} sub="Under review" />
+const OverviewTab = ({ data }: { data: DashboardStats | null }) => {
+  const chartData = (data?.monthlyStats || []).map((item) => ({
+    month: item.month,
+    users: item.users || 0,
+    jobs: item.jobs || 0,
+  }));
+
+  const roleBreakdown = data?.roleBreakdown || [];
+  const statusBreakdown = data?.statusBreakdown || [];
+
+  return (
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <StatCard label="Total Users" value={data?.totalUsers || 0} accent trend="+12% this month" />
+        <StatCard label="Total Jobs" value={data?.totalJobs || 0} sub="Active listings" />
+        <StatCard label="Open Reports" value={data?.openReports || 0} sub={data?.openReports ? "Requires attention" : "All clear"} />
+        <StatCard label="Flagged Jobs" value={data?.flaggedJobs || 0} sub="Under review" />
+      </div>
+
+      <div className="grid xl:grid-cols-[1.2fr_0.8fr] gap-6">
+        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">Growth overview</h3>
+              <p className="text-xs text-gray-500">Users and jobs created over the last months</p>
+            </div>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#6b7280" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: "#6b7280" }} axisLine={false} tickLine={false} />
+                <Tooltip />
+                <Bar dataKey="users" fill="#14a800" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="jobs" fill="#0f766e" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl border border-gray-200 p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-4">Role mix</h3>
+            <div className="space-y-3">
+              {roleBreakdown.length ? roleBreakdown.map((item) => (
+                <div key={item.role} className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600 capitalize">{item.role}</span>
+                  <span className="font-semibold text-gray-900">{item.count}</span>
+                </div>
+              )) : <p className="text-sm text-gray-500">No role data yet.</p>}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-200 p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-4">Job status</h3>
+            <div className="space-y-3">
+              {statusBreakdown.length ? statusBreakdown.map((item) => (
+                <div key={item.status} className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600 capitalize">{item.status.replace(/_/g, " ")}</span>
+                  <span className="font-semibold text-gray-900">{item.count}</span>
+                </div>
+              )) : <p className="text-sm text-gray-500">No status data yet.</p>}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        <MiniList title="Recent Users" items={data?.recentUsers?.slice(0, 5)} type="user" />
+        <MiniList title="Recent Jobs" items={data?.recentJobs?.slice(0, 5)} type="job" />
+      </div>
     </div>
-    <div className="grid lg:grid-cols-2 gap-6">
-      <MiniList title="Recent Users" items={data?.recentUsers?.slice(0, 5)} type="user" />
-      <MiniList title="Recent Jobs" items={data?.recentJobs?.slice(0, 5)} type="job" />
-    </div>
-  </div>
-);
+  );
+};
 
 const MiniList = ({ title, items, type }: { title: string; items?: any[]; type: "user" | "job" }) => (
   <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">

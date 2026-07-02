@@ -39,8 +39,32 @@ const platformService = {
     return response.data.data;
   },
 
-  search: async (q?: string) => {
-    const response = await api.get("/platform/search", { params: { q } });
+  search: async (
+    q?: string,
+    filters?: {
+      type?: "all" | "freelancers" | "jobs";
+      skills?: string[];
+      minBudget?: string;
+      maxBudget?: string;
+      minRate?: string;
+      maxRate?: string;
+      ratingMin?: string;
+      location?: string;
+    }
+  ) => {
+    const response = await api.get("/platform/search", {
+      params: {
+        q,
+        type: filters?.type ?? "all",
+        skills: filters?.skills?.join(",") || undefined,
+        minBudget: filters?.minBudget || undefined,
+        maxBudget: filters?.maxBudget || undefined,
+        minRate: filters?.minRate || undefined,
+        maxRate: filters?.maxRate || undefined,
+        ratingMin: filters?.ratingMin || undefined,
+        location: filters?.location || undefined,
+      },
+    });
     return response.data.data;
   },
 
@@ -76,6 +100,11 @@ const platformService = {
 
   declineOffer: async (contractId: string) => {
     return platformService.respondToOffer(contractId, "decline");
+  },
+
+  getContractById: async (contractId: string) => {
+    const res = await api.get(`/contracts/${contractId}`);
+    return res.data?.data ?? res.data;
   },
  
   updateProfile: async (updates: Partial<Record<string, any>>) => {

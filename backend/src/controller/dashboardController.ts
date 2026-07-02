@@ -109,11 +109,20 @@ export const getAdminDashboard = asyncHandler(async (_req: Request, res: Respons
     ReportModel.find().sort({ createdAt: -1 }).limit(10),
   ]);
 
-  const [totalUsers, totalJobs, openReports, flaggedJobs] = await Promise.all([
+  const [totalUsers, totalJobs, openReports, flaggedJobs, roleBreakdown, statusBreakdown] = await Promise.all([
     UserModel.countDocuments(),
     JobModel.countDocuments(),
     ReportModel.countDocuments({ resolved: false }),
     JobModel.countDocuments({ status: "flagged" }),
+    UserModel.aggregate([
+      { $unwind: "$userRole" },
+      { $group: { _id: "$userRole", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ]),
+    JobModel.aggregate([
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ]),
   ]);
 
   const sixMonthsAgo = new Date();
@@ -154,6 +163,8 @@ export const getAdminDashboard = asyncHandler(async (_req: Request, res: Respons
       recentJobs: jobs,
       reports,
       monthlyStats,
+      roleBreakdown: roleBreakdown.map((item) => ({ role: item._id, count: item.count })),
+      statusBreakdown: statusBreakdown.map((item) => ({ status: item._id, count: item.count })),
     },
   });
 });

@@ -1,12 +1,13 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
-import cloudinary from "../config/cloudinary"; // 👈 ඔයාගේ cloudinary config එක මෙතනින් import කරන්න
+import cloudinary from "../config/cloudinary";
+import { authenticate } from "../middleware/authMiddleware";
 
 const router = Router();
 const storage = multer.memoryStorage(); // Image එක memory එකට ගන්නවා direct cloudinary යවන්න
 const upload = multer({ storage });
 
-router.post("/upload-avatar", upload.single("image"), async (req: Request, res: Response) => {
+router.post("/upload-avatar", authenticate, upload.single("image"), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "Please upload a file" });

@@ -32,6 +32,9 @@ export interface DashboardStats {
     resolved: boolean;
     createdAt: string;
   }>;
+  monthlyStats: Array<{ month: string; users: number; jobs: number }>;
+  roleBreakdown: Array<{ role: string; count: number }>;
+  statusBreakdown: Array<{ status: string; count: number }>;
 }
 
 // You can also export aliases for convenience

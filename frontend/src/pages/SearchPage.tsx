@@ -27,8 +27,44 @@ const SKILL_POOL: Record<string, string[]> = {
   "Marketing & Sales": ["SEO", "Digital Marketing", "Social Media Management", "Google Analytics", "Lead Generation"],
 };
 
+type SearchFilterState = {
+  type: "all" | "freelancers" | "jobs";
+  skills: string[];
+  minBudget: string;
+  maxBudget: string;
+  minRate: string;
+  maxRate: string;
+  ratingMin: string;
+  location: string;
+};
+
+const emptyFilters: SearchFilterState = {
+  type: "all",
+  skills: [],
+  minBudget: "",
+  maxBudget: "",
+  minRate: "",
+  maxRate: "",
+  ratingMin: "",
+  location: "",
+};
+
+const parseFiltersFromParams = (params: URLSearchParams): SearchFilterState => ({
+  type: (params.get("type") as SearchFilterState["type"] | null) || "all",
+  skills: (params.get("skills") || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean),
+  minBudget: params.get("minBudget") || "",
+  maxBudget: params.get("maxBudget") || "",
+  minRate: params.get("minRate") || "",
+  maxRate: params.get("maxRate") || "",
+  ratingMin: params.get("ratingMin") || "",
+  location: params.get("location") || "",
+});
+
 export default function SearchPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
   const navigate = useNavigate();
 
@@ -36,6 +72,8 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState(query);
   const [tab, setTab] = useState<"freelancers" | "jobs">("freelancers");
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<SearchFilterState>(emptyFilters);
 
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -53,6 +91,11 @@ export default function SearchPage() {
     lat: 6.0329, lng: 80.2170,
   });
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSearchInput(query);
+    setFilters(parseFiltersFromParams(searchParams));
+  }, [query, searchParams]);
 
   // Load stored user
   useEffect(() => {
@@ -87,15 +130,39 @@ export default function SearchPage() {
 
   useEffect(() => {
     setLoading(true);
-    platformService.search(query)
+    platformService.search(query || undefined, filters)
       .then(setData)
       .catch(() => setData({ freelancers: [], jobs: [] }))
       .finally(() => setLoading(false));
-  }, [query]);
+  }, [query, filters]);
 
   const handleSearch = useCallback(() => {
-    if (searchInput.trim()) navigate(`/search?q=${encodeURIComponent(searchInput.trim())}`);
-  }, [searchInput, navigate]);
+    const params = new URLSearchParams();
+    const trimmedQuery = searchInput.trim();
+    if (trimmedQuery) params.set("q", trimmedQuery);
+    if (filters.type !== "all") params.set("type", filters.type);
+    if (filters.skills.length) params.set("skills", filters.skills.join(","));
+    if (filters.minBudget) params.set("minBudget", filters.minBudget);
+    if (filters.maxBudget) params.set("maxBudget", filters.maxBudget);
+    if (filters.minRate) params.set("minRate", filters.minRate);
+    if (filters.maxRate) params.set("maxRate", filters.maxRate);
+    if (filters.ratingMin) params.set("ratingMin", filters.ratingMin);
+    if (filters.location) params.set("location", filters.location);
+    setSearchParams(params);
+  }, [filters, searchInput, setSearchParams]);
+
+  const handleClearFilters = useCallback(() => {
+    setFilters(emptyFilters);
+    setSearchInput(query);
+    setSearchParams(new URLSearchParams(query ? { q: query } : {}));
+  }, [query, setSearchParams]);
+
+  const toggleSkillFilter = (skill: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      skills: prev.skills.includes(skill) ? prev.skills.filter((item) => item !== skill) : [...prev.skills, skill],
+    }));
+  };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -197,6 +264,13 @@ export default function SearchPage() {
           </div>
 
           <div className="flex items-center gap-2 ml-auto shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowFilters((prev) => !prev)}
+              className="px-3 py-2 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 transition"
+            >
+              {showFilters ? "Hide filters" : "Filters"}
+            </button>
             {currentUser && (
               <button
                 onClick={() => setShowProfileModal(true)}
@@ -217,6 +291,128 @@ export default function SearchPage() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        {showFilters && (
+          <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900">Advanced filters</h2>
+                <p className="text-xs text-gray-500">Refine freelancers and jobs with multiple criteria.</p>
+              </div>
+              <button type="button" onClick={handleClearFilters} className="text-sm font-medium text-emerald-700 hover:underline">
+                Clear all
+              </button>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <label className="text-sm text-gray-600">
+                <span className="block mb-1">Search scope</span>
+                <select
+                  value={filters.type}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, type: e.target.value as SearchFilterState["type"] }))}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                >
+                  <option value="all">All</option>
+                  <option value="freelancers">Freelancers</option>
+                  <option value="jobs">Jobs</option>
+                </select>
+              </label>
+
+              <label className="text-sm text-gray-600">
+                <span className="block mb-1">Location</span>
+                <input
+                  value={filters.location}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, location: e.target.value }))}
+                  placeholder="City or country"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                />
+              </label>
+
+              <label className="text-sm text-gray-600">
+                <span className="block mb-1">Min budget</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={filters.minBudget}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, minBudget: e.target.value }))}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                />
+              </label>
+
+              <label className="text-sm text-gray-600">
+                <span className="block mb-1">Max budget</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={filters.maxBudget}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, maxBudget: e.target.value }))}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                />
+              </label>
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <label className="text-sm text-gray-600">
+                <span className="block mb-1">Min hourly rate</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={filters.minRate}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, minRate: e.target.value }))}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                />
+              </label>
+
+              <label className="text-sm text-gray-600">
+                <span className="block mb-1">Max hourly rate</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={filters.maxRate}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, maxRate: e.target.value }))}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                />
+              </label>
+
+              <label className="text-sm text-gray-600">
+                <span className="block mb-1">Minimum rating</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={filters.ratingMin}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, ratingMin: e.target.value }))}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Skills</p>
+              <div className="flex flex-wrap gap-2">
+                {Object.values(SKILL_POOL).flat().map((skill) => {
+                  const active = filters.skills.includes(skill);
+                  return (
+                    <button
+                      key={skill}
+                      type="button"
+                      onClick={() => toggleSkillFilter(skill)}
+                      className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${active ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                    >
+                      {skill}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end">
+              <button type="button" onClick={handleSearch} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition">
+                Apply filters
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Tab switcher */}
         <div className="flex items-center gap-1 bg-white border border-gray-100 rounded-2xl p-1 w-fit mb-8 shadow-sm">
           {(isGuest || isClient) && (

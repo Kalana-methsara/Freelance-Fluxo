@@ -182,3 +182,51 @@ export const respondToOffer = asyncHandler(async (req: Request, res: Response) =
         });
     }
 });
+
+// ── GET /contracts/:id ───────────────────────────────────────
+// Fetch a single contract by ID (accessible to client, freelancer, or involved party)
+export const getContractById = asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthRequest;
+    const userId = authReq.user?._id;
+    if (!userId) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+    try {
+        const targetUserId = typeof userId === "string" ? new Types.ObjectId(userId) : userId;
+        const contractId = typeof req.params.id === "string" ? new Types.ObjectId(req.params.id) : req.params.id;
+
+        const contract = await ContractModel.findById(contractId)
+            .populate({
+                path: "clientId",
+                model: UserModel,
+                select: "firstName lastName profileImage companyName email title"
+            })
+            .populate({
+                path: "freelancerId",
+                model: UserModel,
+                select: "firstName lastName profileImage title hourlyRate rating reviewCount email"
+            })
+            .populate("jobId", "title description budget status");
+
+        if (!contract) {
+            return res.status(404).json({ success: false, message: "Contract not found" });
+        }
+
+        // Verify that the requesting user is either the client or freelancer
+        const isClient = contract.clientId._id.toString() === targetUserId.toString();
+        const isFreelancer = contract.freelancerId._id.toString() === targetUserId.toString();
+
+        if (!isClient && !isFreelancer) {
+            return res.status(403).json({ success: false, message: "Forbidden: You can only view your own contracts" });
+        }
+
+        return res.status(200).json({ success: true, data: contract });
+
+    } catch (error: any) {
+        console.error("Error in getContractById:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            error: error.message
+        });
+    }
+});
