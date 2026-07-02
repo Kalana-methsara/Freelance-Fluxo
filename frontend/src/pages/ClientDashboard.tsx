@@ -1167,7 +1167,7 @@ export default function ClientDashboard() {
   }, [setActiveNav]);
 
   const user = data?.user;
-  const name = user?.companyName || `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "Client";
+  const name = `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "Client";
 
   if (loading) {
     return (
@@ -1224,9 +1224,13 @@ export default function ClientDashboard() {
               </Link>
               {/* User chip */}
               <div className="flex items-center gap-2.5 px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-100">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-800 text-white text-xs font-bold flex items-center justify-center">
-                  {getInitials(name)}
-                </div>
+                {user?.profileImage ? (
+                  <img src={user.profileImage} alt={name} className="w-8 h-8 rounded-full object-cover"/>
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-800 text-white text-xs font-bold flex items-center justify-center">
+                    {getInitials(name)}
+                  </div>
+                )}
                 <div className="hidden lg:block min-w-0">
                   <p className="text-xs font-semibold text-gray-800 truncate max-w-[120px]">{name}</p>
                   <p className="text-[10px] text-gray-400">Client</p>
