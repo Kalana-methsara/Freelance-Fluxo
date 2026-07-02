@@ -1,82 +1,54 @@
-import { memo, useState } from "react";
-import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
-import { avatarColorFor } from "@/utils/tokens";
+import { getInitials } from '@/utils/auth';
+import React from 'react';
+
+const AVATAR_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+
+function getColor(id: string) {
+  if (!id) return AVATAR_COLORS[0];
+  return AVATAR_COLORS[id.charCodeAt(id.length - 1) % AVATAR_COLORS.length];
+}
 
 export interface AvatarPerson {
-  _id: string;
-  firstName: string;
-  lastName: string;
+  _id?: string;
+  firstName?: string;
+  lastName?: string;
   profileImage?: string;
 }
 
-export type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
+export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 interface AvatarProps {
   person: AvatarPerson;
   size?: AvatarSize;
-  online?: boolean;
   className?: string;
+  online?: boolean;
 }
 
-const avatarSizeClasses: Record<AvatarSize, string> = {
-  xs: "h-6 w-6 text-[10px]",
-  sm: "h-8 w-8 text-xs",
-  md: "h-10 w-10 text-sm",
-  lg: "h-12 w-12 text-base",
-  xl: "h-16 w-16 text-lg",
-};
-
-const dotSizeClasses: Record<AvatarSize, string> = {
-  xs: "h-1.5 w-1.5 -bottom-px -right-px",
-  sm: "h-2 w-2 bottom-0 right-0",
-  md: "h-2.5 w-2.5 bottom-0 right-0",
-  lg: "h-3 w-3 bottom-0 right-0",
-  xl: "h-3.5 w-3.5 bottom-0 right-0",
-};
-
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  return (parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "").toUpperCase();
-}
-
-const Avatar = memo(({ person, size = "md", online, className }: AvatarProps) => {
-  const [loaded, setLoaded] = useState(false);
-  const name = `${person.firstName ?? ""} ${person.lastName ?? ""}`.trim();
+export const Avatar: React.FC<AvatarProps> = ({ person, size = 'md', className = '', online = false }) => {
+  const name = `${person.firstName || ''} ${person.lastName || ''}`.trim() || 'U';
   const initials = getInitials(name);
+  const color = getColor(person._id || name);
+  const dimension = {
+    xs: 'w-5 h-5 text-[9px]',
+    sm: 'w-6 h-6 text-[10px]',
+    md: 'w-8 h-8 text-xs',
+    lg: 'w-12 h-12 text-sm',
+    xl: 'w-16 h-16 text-base',
+  }[size];
 
   return (
-    <div className={cn("relative inline-flex shrink-0 overflow-hidden rounded-full", avatarSizeClasses[size], className)}>
-      {person.profileImage ? (
-        <>
-          {!loaded && <Skeleton className="h-full w-full" />}
-          <img
-            src={person.profileImage}
-            alt={initials}
-            className={`h-full w-full object-cover transition-opacity ${loaded ? "opacity-100" : "opacity-0"}`}
-            onLoad={() => setLoaded(true)}
-          />
-        </>
-      ) : (
-        <div
-          className="flex h-full w-full items-center justify-center font-semibold text-white"
-          style={{ background: avatarColorFor(person._id) }}
-        >
-          {initials}
-        </div>
+    <div className={`relative rounded-full overflow-hidden flex items-center justify-center font-bold text-white shrink-0 ${dimension} ${className}`} style={{ background: person.profileImage ? 'transparent' : color }}>
+      {online && (
+        <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500" />
       )}
-      {online !== undefined && (
-        <span
-          className={cn(
-            "absolute rounded-full border-2 border-white",
-            dotSizeClasses[size],
-            online ? "bg-emerald-500" : "bg-gray-300"
-          )}
-        />
+
+      {person.profileImage ? (
+        <img src={person.profileImage} alt={name} className="w-full h-full object-cover" />
+      ) : (
+        initials
       )}
     </div>
   );
-});
+};
 
-Avatar.displayName = "Avatar";
 export default Avatar;

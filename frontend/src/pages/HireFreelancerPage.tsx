@@ -26,7 +26,7 @@ interface HireFormData {
 // ── Helpers ────────────────────────────────────────────────
 const Logo = () => (
   <span className="font-serif text-xl tracking-tight text-gray-900">
-    freelance<em className="italic text-emerald-600">fluxo</em>
+    freelance<em className="italic text-teal-600">fluxo</em>
   </span>
 );
 
@@ -190,10 +190,10 @@ export default function HireFreelancerPage() {
   // ── Success Screen ──
   if (offerSent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-6">
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-10 max-w-md w-full text-center space-y-5">
-          <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto border-2 border-emerald-200">
-            <svg className="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fffe_0%,_#f7faf9_100%)] flex flex-col items-center justify-center p-6">
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100/60 p-10 max-w-md w-full text-center space-y-5">
+          <div className="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mx-auto border-2 border-teal-200">
+            <svg className="w-8 h-8 text-teal-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
             </svg>
           </div>
@@ -203,14 +203,14 @@ export default function HireFreelancerPage() {
               Your offer has been sent to <strong>{freelancerName}</strong>. They'll receive a notification and email to review and accept.
             </p>
           </div>
-          <div className="bg-emerald-50 rounded-xl p-4 text-left space-y-1.5 border border-emerald-100">
+          <div className="bg-teal-50 rounded-xl p-4 text-left space-y-1.5 border border-teal-100">
             <div className="flex justify-between text-xs text-gray-600">
               <span>Contract</span>
               <span className="font-semibold text-gray-800 truncate max-w-[180px]">{form.contractTitle}</span>
             </div>
             <div className="flex justify-between text-xs text-gray-600">
               <span>Escrowed Amount</span>
-              <span className="font-bold text-emerald-700">${escrowAmount.toFixed(2)}</span>
+              <span className="font-bold text-teal-700">${escrowAmount.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-xs text-gray-600">
               <span>Status</span>
@@ -220,7 +220,7 @@ export default function HireFreelancerPage() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => navigate("/dashboard/client")}
-              className="flex-1 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl hover:bg-emerald-700 transition shadow-sm"
+              className="flex-1 py-2.5 bg-teal-600 text-white text-sm font-semibold rounded-xl hover:bg-teal-700 transition shadow-sm"
             >
               Go to Dashboard
             </button>
@@ -237,10 +237,10 @@ export default function HireFreelancerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 font-sans">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fffe_0%,_#f7faf9_100%)] font-sans">
 
       {/* ── Header ── */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-sm border-b border-gray-100/60 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link to="/">
             <Logo />
@@ -279,7 +279,7 @@ export default function HireFreelancerPage() {
 
           {/* ── LEFT: Freelancer Card ── */}
           <div className="lg:col-span-1 order-2 lg:order-1">
-            <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm sticky top-24 space-y-4">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100/60 p-5 shadow-lg sticky top-24 space-y-4">
               {loadingFreelancer ? (
                 <div className="animate-pulse space-y-3">
                   <div className="w-14 h-14 bg-gray-200 rounded-xl" />
@@ -300,7 +300,7 @@ export default function HireFreelancerPage() {
                     </div>
                     <div>
                       <p className="font-bold text-gray-900 text-sm">{freelancerName}</p>
-                      <p className="text-xs text-emerald-600 font-medium">{freelancer.title || "Freelancer"}</p>
+                      <p className="text-xs text-teal-600 font-medium">{freelancer.title || "Freelancer"}</p>
                       <p className="text-xs text-gray-400 mt-0.5">${freelancer.hourlyRate || 0}/hr</p>
                     </div>
                   </div>
@@ -328,7 +328,7 @@ export default function HireFreelancerPage() {
 
               {/* Escrow Info Box */}
               {form.budgetType && (form.totalAmount > 0 || (form.hourlyRate > 0 && form.estimatedHours > 0)) && (
-                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 space-y-2">
+                <div className="bg-teal-50 border border-teal-100 rounded-xl p-4 space-y-2">
                   <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Escrow Estimate</p>
                   <div className="flex justify-between text-xs text-gray-600">
                     <span>Contract Amount</span>
@@ -342,9 +342,9 @@ export default function HireFreelancerPage() {
                     <span>Platform Fee (5%)</span>
                     <span>${(escrowAmount - (form.budgetType === "fixed" ? (form.milestones.length > 0 ? form.milestones[0].amount : form.totalAmount) : form.hourlyRate * form.estimatedHours)).toFixed(2)}</span>
                   </div>
-                  <div className="border-t border-emerald-200 pt-2 flex justify-between">
+                  <div className="border-t border-teal-200 pt-2 flex justify-between">
                     <span className="text-xs font-bold text-gray-700">Total to Escrow</span>
-                    <span className="text-sm font-bold text-emerald-700">${escrowAmount.toFixed(2)}</span>
+                    <span className="text-sm font-bold text-teal-700">${escrowAmount.toFixed(2)}</span>
                   </div>
                 </div>
               )}
@@ -353,12 +353,12 @@ export default function HireFreelancerPage() {
 
           {/* ── RIGHT: Hire Form ── */}
           <div className="lg:col-span-2 order-1 lg:order-2">
-            <form onSubmit={handleSubmitForm} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <form onSubmit={handleSubmitForm} className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100/60 shadow-lg overflow-hidden">
 
               {/* ── Section 1: Contract Basics ── */}
               <div className="p-6 border-b border-gray-100 space-y-4">
                 <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                  <span className="w-5 h-5 bg-emerald-600 text-white rounded-full flex items-center justify-center text-[11px] font-bold shrink-0">1</span>
+                  <span className="w-5 h-5 bg-teal-600 text-white rounded-full flex items-center justify-center text-[11px] font-bold shrink-0">1</span>
                   Contract Details
                 </h2>
 
@@ -370,7 +370,7 @@ export default function HireFreelancerPage() {
                     value={form.contractTitle}
                     onChange={e => setForm(prev => ({ ...prev, contractTitle: e.target.value }))}
                     placeholder="e.g. Build a React E-Commerce Dashboard"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10"
                   />
                 </div>
 
@@ -384,15 +384,15 @@ export default function HireFreelancerPage() {
                         onClick={() => setForm(prev => ({ ...prev, budgetType: type }))}
                         className={`p-3 rounded-xl border text-left transition ${
                           form.budgetType === type
-                            ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                            ? "border-teal-500 bg-teal-50 text-teal-700"
                             : "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100"
                         }`}
                       >
                         <div className="flex items-center gap-2 mb-0.5">
                           <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                            form.budgetType === type ? "border-emerald-600" : "border-gray-300"
+                            form.budgetType === type ? "border-teal-600" : "border-gray-300"
                           }`}>
-                            {form.budgetType === type && <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full" />}
+                            {form.budgetType === type && <div className="w-1.5 h-1.5 bg-teal-600 rounded-full" />}
                           </div>
                           <span className="text-xs font-bold capitalize">{type === "fixed" ? "Fixed Price" : "Hourly Rate"}</span>
                         </div>
@@ -417,7 +417,7 @@ export default function HireFreelancerPage() {
                           value={form.totalAmount || ""}
                           onChange={e => setForm(prev => ({ ...prev, totalAmount: Number(e.target.value) }))}
                           placeholder="0.00"
-                          className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
+                          className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-500"
                         />
                       </div>
                     </div>
@@ -431,7 +431,7 @@ export default function HireFreelancerPage() {
                         <button
                           type="button"
                           onClick={addMilestone}
-                          className="text-xs text-emerald-600 font-semibold hover:text-emerald-700 flex items-center gap-1"
+                          className="text-xs text-teal-600 font-semibold hover:text-teal-700 flex items-center gap-1"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -455,7 +455,7 @@ export default function HireFreelancerPage() {
                                 placeholder="Milestone title (e.g. Design Mockups)"
                                 value={m.title}
                                 onChange={e => updateMilestone(m.id, "title", e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500"
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-teal-500"
                               />
                               <div className="grid grid-cols-2 gap-2">
                                 <div className="relative">
@@ -466,14 +466,14 @@ export default function HireFreelancerPage() {
                                     placeholder="Amount"
                                     value={m.amount || ""}
                                     onChange={e => updateMilestone(m.id, "amount", Number(e.target.value))}
-                                    className="w-full pl-6 pr-2 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500"
+                                    className="w-full pl-6 pr-2 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-teal-500"
                                   />
                                 </div>
                                 <input
                                   type="date"
                                   value={m.dueDate}
                                   onChange={e => updateMilestone(m.id, "dueDate", e.target.value)}
-                                  className="w-full px-2.5 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500"
+                                  className="w-full px-2.5 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-teal-500"
                                 />
                               </div>
                             </div>
@@ -508,7 +508,7 @@ export default function HireFreelancerPage() {
                           value={form.hourlyRate || ""}
                           onChange={e => setForm(prev => ({ ...prev, hourlyRate: Number(e.target.value) }))}
                           placeholder="0"
-                          className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
+                          className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-500"
                         />
                       </div>
                     </div>
@@ -520,7 +520,7 @@ export default function HireFreelancerPage() {
                         value={form.estimatedHours || ""}
                         onChange={e => setForm(prev => ({ ...prev, estimatedHours: Number(e.target.value) }))}
                         placeholder="0"
-                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-500"
                       />
                     </div>
                   </div>
@@ -534,7 +534,7 @@ export default function HireFreelancerPage() {
                     value={form.deadline}
                     min={new Date().toISOString().split("T")[0]}
                     onChange={e => setForm(prev => ({ ...prev, deadline: e.target.value }))}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-500"
                   />
                 </div>
               </div>
@@ -542,7 +542,7 @@ export default function HireFreelancerPage() {
               {/* ── Section 2: Message ── */}
               <div className="p-6 space-y-3">
                 <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                  <span className="w-5 h-5 bg-emerald-600 text-white rounded-full flex items-center justify-center text-[11px] font-bold shrink-0">2</span>
+                  <span className="w-5 h-5 bg-teal-600 text-white rounded-full flex items-center justify-center text-[11px] font-bold shrink-0">2</span>
                   Message to Freelancer
                 </h2>
                 <textarea
@@ -551,7 +551,7 @@ export default function HireFreelancerPage() {
                   value={form.message}
                   onChange={e => setForm(prev => ({ ...prev, message: e.target.value }))}
                   placeholder="Describe the project requirements, goals, deliverables, and any specific instructions for the freelancer..."
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 resize-none leading-relaxed"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-500 resize-none leading-relaxed"
                 />
                 <p className="text-xs text-gray-400">A clear message increases acceptance rate.</p>
               </div>
@@ -559,7 +559,7 @@ export default function HireFreelancerPage() {
               {/* ── Action Buttons ── */}
               <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                  <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <svg className="w-4 h-4 text-teal-500 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
                   </svg>
                   Funds held securely in escrow until work is approved
@@ -567,7 +567,7 @@ export default function HireFreelancerPage() {
                 <button
                   type="submit"
                   disabled={!isFormValid()}
-                  className="px-6 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl hover:bg-emerald-700 shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                  className="px-6 py-2.5 bg-teal-600 text-white text-sm font-semibold rounded-xl hover:bg-teal-700 shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                 >
                   Review & Send Offer →
                 </button>
@@ -614,7 +614,7 @@ export default function HireFreelancerPage() {
                 </button>
                 <button
                   onClick={() => { setShowPaymentModal(false); navigate("/settings/payment"); }}
-                  className="flex-1 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl hover:bg-emerald-700 shadow-sm transition"
+                  className="flex-1 py-2.5 bg-teal-600 text-white text-sm font-semibold rounded-xl hover:bg-teal-700 shadow-sm transition"
                 >
                   Add Payment Method
                 </button>
@@ -669,7 +669,7 @@ export default function HireFreelancerPage() {
               </div>
 
               {/* Escrow Breakdown */}
-              <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 space-y-2">
+              <div className="bg-teal-50 border border-teal-100 rounded-xl p-4 space-y-2">
                 <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Escrow Breakdown</p>
                 <div className="flex justify-between text-xs text-gray-600">
                   <span>
@@ -687,9 +687,9 @@ export default function HireFreelancerPage() {
                   <span>Platform Fee (5%)</span>
                   <span>${(escrowAmount - (form.budgetType === "fixed" ? (form.milestones.length > 0 ? form.milestones[0].amount : form.totalAmount) : form.hourlyRate * form.estimatedHours)).toFixed(2)}</span>
                 </div>
-                <div className="border-t border-emerald-200 pt-2 flex justify-between">
+                <div className="border-t border-teal-200 pt-2 flex justify-between">
                   <span className="text-sm font-bold text-gray-800">Total Charged Now</span>
-                  <span className="text-base font-bold text-emerald-700">${escrowAmount.toFixed(2)}</span>
+                  <span className="text-base font-bold text-teal-700">${escrowAmount.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -708,7 +708,7 @@ export default function HireFreelancerPage() {
                 <button
                   onClick={handleConfirmOffer}
                   disabled={isSendingOffer}
-                  className="flex-1 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl hover:bg-emerald-700 shadow-sm transition disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 bg-teal-600 text-white text-sm font-semibold rounded-xl hover:bg-teal-700 shadow-sm transition disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isSendingOffer ? (
                     <>

@@ -91,11 +91,23 @@ export default function SearchPage() {
     lat: 6.0329, lng: 80.2170,
   });
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const profileModalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setSearchInput(query);
     setFilters(parseFiltersFromParams(searchParams));
   }, [query, searchParams]);
+
+  useEffect(() => {
+    if (!showProfileModal) return;
+    const previousOverflow = document.body.style.overflow;
+    const timer = window.setTimeout(() => profileModalRef.current?.focus(), 0);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.clearTimeout(timer);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [showProfileModal]);
 
   // Load stored user
   useEffect(() => {
@@ -240,16 +252,16 @@ export default function SearchPage() {
   const jobs = data?.jobs ?? [];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fffe_0%,_#f7faf9_100%)]">
       {/* ── Header ── */}
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-30 shadow-sm">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-100/60 sticky top-0 z-30 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
           <button onClick={() => navigate("/")} className="shrink-0">
             <Logo size="sm" />
           </button>
 
           {/* Search bar */}
-          <div className="flex-1 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 max-w-lg">
+          <div className="flex-1 flex items-center gap-2 bg-white/70 border border-gray-200/80 rounded-xl px-3 py-2 max-w-lg shadow-sm">
             <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
             </svg>
@@ -283,7 +295,7 @@ export default function SearchPage() {
             {!currentUser && (
               <>
                 <button onClick={() => navigate("/login")} className="text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-2">Log in</button>
-                <button onClick={() => navigate("/signup")} className="text-sm font-semibold bg-emerald-600 text-white px-4 py-2 rounded-xl hover:bg-emerald-700 transition">Sign up</button>
+                <button onClick={() => navigate("/signup")} className="text-sm font-semibold bg-teal-600 text-white px-4 py-2 rounded-xl hover:bg-teal-700 transition">Sign up</button>
               </>
             )}
           </div>
@@ -292,13 +304,13 @@ export default function SearchPage() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {showFilters && (
-          <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="mb-6 rounded-2xl border border-gray-100/60 bg-white/80 backdrop-blur-sm p-5 shadow-lg">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div>
                 <h2 className="text-sm font-semibold text-gray-900">Advanced filters</h2>
                 <p className="text-xs text-gray-500">Refine freelancers and jobs with multiple criteria.</p>
               </div>
-              <button type="button" onClick={handleClearFilters} className="text-sm font-medium text-emerald-700 hover:underline">
+              <button type="button" onClick={handleClearFilters} className="text-sm font-medium text-teal-700 hover:underline">
                 Clear all
               </button>
             </div>
@@ -309,7 +321,7 @@ export default function SearchPage() {
                 <select
                   value={filters.type}
                   onChange={(e) => setFilters((prev) => ({ ...prev, type: e.target.value as SearchFilterState["type"] }))}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none"
                 >
                   <option value="all">All</option>
                   <option value="freelancers">Freelancers</option>
@@ -396,7 +408,7 @@ export default function SearchPage() {
                       key={skill}
                       type="button"
                       onClick={() => toggleSkillFilter(skill)}
-                      className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${active ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                      className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${active ? "bg-teal-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
                     >
                       {skill}
                     </button>
@@ -406,7 +418,7 @@ export default function SearchPage() {
             </div>
 
             <div className="mt-5 flex justify-end">
-              <button type="button" onClick={handleSearch} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition">
+              <button type="button" onClick={handleSearch} className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 transition">
                 Apply filters
               </button>
             </div>
@@ -414,11 +426,11 @@ export default function SearchPage() {
         )}
 
         {/* Tab switcher */}
-        <div className="flex items-center gap-1 bg-white border border-gray-100 rounded-2xl p-1 w-fit mb-8 shadow-sm">
+        <div className="flex items-center gap-1 bg-white/80 backdrop-blur-sm border border-gray-100/60 rounded-2xl p-1 w-fit mb-8 shadow-sm">
           {(isGuest || isClient) && (
             <button
               onClick={() => setTab("freelancers")}
-              className={`px-4 py-2 text-sm font-semibold rounded-xl transition ${tab === "freelancers" ? "bg-emerald-600 text-white" : "text-gray-600 hover:text-gray-900"}`}
+              className={`px-4 py-2 text-sm font-semibold rounded-xl transition ${tab === "freelancers" ? "bg-teal-600 text-white shadow-sm" : "text-gray-600 hover:text-gray-900"}`}
             >
               Freelancers {freelancers.length > 0 && <span className="ml-1 text-xs opacity-70">({freelancers.length})</span>}
             </button>
@@ -426,7 +438,7 @@ export default function SearchPage() {
           {(isGuest || isFreelancer) && (
             <button
               onClick={() => setTab("jobs")}
-              className={`px-4 py-2 text-sm font-semibold rounded-xl transition ${tab === "jobs" ? "bg-emerald-600 text-white" : "text-gray-600 hover:text-gray-900"}`}
+              className={`px-4 py-2 text-sm font-semibold rounded-xl transition ${tab === "jobs" ? "bg-teal-600 text-white shadow-sm" : "text-gray-600 hover:text-gray-900"}`}
             >
               Jobs {jobs.length > 0 && <span className="ml-1 text-xs opacity-70">({jobs.length})</span>}
             </button>
@@ -443,12 +455,12 @@ export default function SearchPage() {
                 <button
                   key={fl._id}
                   onClick={() => setSelectedFreelancer(fl)}
-                  className="bg-white border border-gray-100 rounded-2xl p-5 text-left hover:border-emerald-300 hover:shadow-md transition group shadow-sm"
+                  className="bg-white/90 border border-gray-100/80 rounded-2xl p-5 text-left hover:border-teal-300 hover:shadow-lg transition-all group shadow-sm"
                 >
                   <div className="flex items-start gap-3 mb-3">
                     <Avatar person={{ _id: fl._id, firstName: fl.firstName, lastName: fl.lastName, profileImage: fl.profileImage }} size="lg" />
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-gray-900 group-hover:text-emerald-700 transition truncate">{fl.firstName} {fl.lastName}</p>
+                      <p className="text-sm font-bold text-gray-900 group-hover:text-teal-700 transition truncate">{fl.firstName} {fl.lastName}</p>
                       <p className="text-xs text-gray-500 truncate">{fl.title || "Freelancer"}</p>
                       <p className="text-xs text-amber-400 mt-0.5">{"★".repeat(Math.round(fl.rating || 5))} <span className="text-gray-400">({fl.reviewCount || 0})</span></p>
                     </div>
@@ -476,11 +488,11 @@ export default function SearchPage() {
                 <div
                   key={job._id}
                   onClick={() => setSelectedJobDetail(job)}
-                  className="bg-white border border-gray-100 rounded-2xl p-5 hover:border-emerald-300 hover:shadow-md transition cursor-pointer shadow-sm group"
+                  className="bg-white/90 border border-gray-100/80 rounded-2xl p-5 hover:border-teal-300 hover:shadow-lg transition-all cursor-pointer shadow-sm group"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-gray-900 group-hover:text-emerald-700 transition">{job.title}</h3>
+                      <h3 className="text-sm font-bold text-gray-900 group-hover:text-teal-700 transition">{job.title}</h3>
                       <p className="text-xs text-gray-500 mt-1 line-clamp-2">{job.description}</p>
                     </div>
                     <StatusBadge status={job.status} />
@@ -490,7 +502,7 @@ export default function SearchPage() {
                     {job.skills?.length > 0 && (
                       <div className="flex gap-1.5">
                         {job.skills.slice(0, 3).map((s: string) => (
-                          <span key={s} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[11px] rounded-md font-medium">{s}</span>
+                          <span key={s} className="px-2 py-0.5 bg-teal-50 text-teal-700 text-[11px] rounded-md font-medium">{s}</span>
                         ))}
                       </div>
                     )}
@@ -510,7 +522,7 @@ export default function SearchPage() {
             <div>
               <h2 className="text-lg font-bold text-gray-900">{selectedFreelancer.firstName} {selectedFreelancer.lastName}</h2>
               <p className="text-sm text-gray-500">{selectedFreelancer.title}</p>
-              <p className="text-sm font-bold text-emerald-700 mt-1">${selectedFreelancer.hourlyRate}/hr</p>
+              <p className="text-sm font-bold text-teal-700 mt-1">${selectedFreelancer.hourlyRate}/hr</p>
             </div>
           </div>
           {selectedFreelancer.bio && <p className="text-sm text-gray-600 mb-4 leading-relaxed">{selectedFreelancer.bio}</p>}
@@ -524,7 +536,7 @@ export default function SearchPage() {
           <div className="flex gap-2">
             {isClient && (
               <button onClick={() => { navigate(`/hire/${selectedFreelancer._id}`); setSelectedFreelancer(null); }}
-                className="flex-1 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl hover:bg-emerald-700 transition">
+                className="flex-1 py-2.5 bg-teal-600 text-white text-sm font-semibold rounded-xl hover:bg-teal-700 transition">
                 Hire {selectedFreelancer.firstName}
               </button>
             )}
@@ -557,20 +569,20 @@ export default function SearchPage() {
           {selectedJobDetail.skills?.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-5">
               {selectedJobDetail.skills.map((s: string) => (
-                <span key={s} className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs rounded-lg font-medium">{s}</span>
+                <span key={s} className="px-2.5 py-1 bg-teal-50 text-teal-700 text-xs rounded-lg font-medium">{s}</span>
               ))}
             </div>
           )}
           {isFreelancer && (
             <button
               onClick={() => { handleApply(selectedJobDetail._id); setSelectedJobDetail(null); }}
-              className="w-full py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl hover:bg-emerald-700 transition"
+              className="w-full py-2.5 bg-teal-600 text-white text-sm font-semibold rounded-xl hover:bg-teal-700 transition"
             >
               Apply now
             </button>
           )}
           {!currentUser && (
-            <button onClick={() => navigate("/login")} className="w-full py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl hover:bg-emerald-700 transition">
+            <button onClick={() => navigate("/login")} className="w-full py-2.5 bg-teal-600 text-white text-sm font-semibold rounded-xl hover:bg-teal-700 transition">
               Log in to apply
             </button>
           )}
@@ -580,7 +592,7 @@ export default function SearchPage() {
       {/* ── Profile Edit Modal ── */}
       {showProfileModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div ref={profileModalRef} tabIndex={-1} className="bg-white/95 backdrop-blur-sm rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl outline-none">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="text-base font-bold text-gray-900">Edit Profile</h2>
               <button onClick={() => setShowProfileModal(false)} className="text-gray-400 hover:text-gray-700 p-1">
@@ -590,14 +602,14 @@ export default function SearchPage() {
             <form onSubmit={handleSaveProfile} className="p-6 space-y-4">
               {/* Avatar upload */}
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full overflow-hidden bg-emerald-100 flex items-center justify-center shrink-0">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-teal-100 flex items-center justify-center shrink-0">
                   {formData.profileImage
                     ? <img src={formData.profileImage} alt="Avatar" className="w-full h-full object-cover" />
-                    : <span className="text-emerald-700 font-bold text-lg">{(formData.firstName[0] ?? "") + (formData.lastName[0] ?? "")}</span>
+                    : <span className="text-teal-700 font-bold text-lg">{(formData.firstName[0] ?? "") + (formData.lastName[0] ?? "")}</span>
                   }
                 </div>
                 <div>
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="text-sm font-medium text-emerald-700 hover:underline">
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="text-sm font-medium text-teal-700 hover:underline">
                     {isUploadingImage ? "Uploading…" : "Change photo"}
                   </button>
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
@@ -611,7 +623,7 @@ export default function SearchPage() {
                     <input
                       value={(formData as any)[k]}
                       onChange={(e) => setFormData({ ...formData, [k]: e.target.value })}
-                      className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
+                      className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-teal-500"
                     />
                   </label>
                 ))}
@@ -621,8 +633,8 @@ export default function SearchPage() {
                 <label key={k} className="block">
                   <span className="text-xs font-medium text-gray-600">{l}</span>
                   {k === "bio"
-                    ? <textarea rows={3} value={(formData as any)[k]} onChange={(e) => setFormData({ ...formData, [k]: e.target.value })} className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 resize-none" />
-                    : <input value={(formData as any)[k]} onChange={(e) => setFormData({ ...formData, [k]: e.target.value })} className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500" />
+                    ? <textarea rows={3} value={(formData as any)[k]} onChange={(e) => setFormData({ ...formData, [k]: e.target.value })} className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-teal-500 resize-none" />
+                    : <input value={(formData as any)[k]} onChange={(e) => setFormData({ ...formData, [k]: e.target.value })} className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-teal-500" />
                   }
                 </label>
               ))}
@@ -630,7 +642,7 @@ export default function SearchPage() {
               {isFreelancer && (
                 <label className="block">
                   <span className="text-xs font-medium text-gray-600">Hourly Rate ($/hr)</span>
-                  <input type="number" value={formData.hourlyRate} onChange={(e) => setFormData({ ...formData, hourlyRate: Number(e.target.value) })} className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500" />
+                  <input type="number" value={formData.hourlyRate} onChange={(e) => setFormData({ ...formData, hourlyRate: Number(e.target.value) })} className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-teal-500" />
                 </label>
               )}
 
@@ -649,7 +661,7 @@ export default function SearchPage() {
                             onClick={() => toggleSkill(s)}
                             className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
                               selectedSkills.includes(s)
-                                ? "bg-emerald-600 text-white"
+                                ? "bg-teal-600 text-white"
                                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                             }`}
                           >
@@ -671,7 +683,7 @@ export default function SearchPage() {
                         }
                       }}
                       placeholder="Add custom skill…"
-                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500"
+                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-teal-500"
                     />
                   </div>
                 </div>
@@ -680,7 +692,7 @@ export default function SearchPage() {
               <button
                 type="submit"
                 disabled={isUpdatingProfile}
-                className="w-full py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl hover:bg-emerald-700 disabled:opacity-60 transition mt-2"
+                className="w-full py-2.5 bg-teal-600 text-white text-sm font-semibold rounded-xl hover:bg-teal-700 disabled:opacity-60 transition mt-2"
               >
                 {isUpdatingProfile ? "Saving…" : "Save changes"}
               </button>
@@ -695,9 +707,21 @@ export default function SearchPage() {
 // ── Shared slide-up popover used for freelancer / job detail ──
 
 function Popover({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    const timer = window.setTimeout(() => modalRef.current?.focus(), 0);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.clearTimeout(timer);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl p-6 max-h-[85vh] overflow-y-auto relative">
+      <div ref={modalRef} tabIndex={-1} role="dialog" aria-modal="true" className="bg-white/95 backdrop-blur-sm w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl p-6 max-h-[85vh] overflow-y-auto relative outline-none">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>

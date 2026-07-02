@@ -32,7 +32,7 @@ function getAvatarColor(seed: string) {
 function getStatusColor(status: string) {
   const colors: Record<string, { bg: string; text: string; icon: string }> = {
     pending: { bg: "bg-amber-50", text: "text-amber-700", icon: "⏳" },
-    accepted: { bg: "bg-emerald-50", text: "text-emerald-700", icon: "✓" },
+    accepted: { bg: "bg-teal-50", text: "text-teal-700", icon: "✓" },
     declined: { bg: "bg-red-50", text: "text-red-700", icon: "✕" },
     completed: { bg: "bg-blue-50", text: "text-blue-700", icon: "★" },
     cancelled: { bg: "bg-gray-50", text: "text-gray-700", icon: "∅" },
@@ -118,9 +118,9 @@ export default function ContractDetailsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,_#f8fffe_0%,_#f7faf9_100%)]">
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-gray-100/60 bg-white/80 px-6 py-5 shadow-lg backdrop-blur-sm">
+          <div className="w-8 h-8 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-500 text-sm">Loading contract details…</p>
         </div>
       </div>
@@ -129,8 +129,8 @@ export default function ContractDetailsPage() {
 
   if (error || !contract) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 gap-4">
-        <div className="text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[radial-gradient(circle_at_top,_#f8fffe_0%,_#f7faf9_100%)] gap-4">
+        <div className="rounded-2xl border border-gray-100/60 bg-white/80 px-8 py-8 text-center shadow-lg backdrop-blur-sm">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-2" />
           <p className="text-gray-600 font-medium">
             {error || "Contract not found"}
@@ -138,7 +138,7 @@ export default function ContractDetailsPage() {
         </div>
         <Link
           to="/dashboard/client"
-          className="text-emerald-700 hover:underline text-sm font-medium"
+          className="text-teal-700 hover:underline text-sm font-medium"
         >
           Back to dashboard
         </Link>
@@ -176,13 +176,13 @@ export default function ContractDetailsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fffe_0%,_#f7faf9_100%)]">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sticky top-0 z-10">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-100/60 px-4 sm:px-6 py-4 sticky top-0 z-10 shadow-sm">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-emerald-700 transition"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-teal-700 transition"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -196,14 +196,14 @@ export default function ContractDetailsPage() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Contract Title & Overview */}
         <div className="grid grid-cols-1 gap-6 mb-8">
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100/60 p-6 sm:p-8 shadow-lg">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               {contract.contractTitle}
             </h1>
             {contract.jobId && (
               <p className="text-sm text-gray-500">
                 Related to job:{" "}
-                <span className="font-medium text-emerald-700">
+                <span className="font-medium text-teal-700">
                   {contract.jobId.title}
                 </span>
               </p>
@@ -241,7 +241,7 @@ export default function ContractDetailsPage() {
                 {clientName}
               </h3>
               {client.companyName && (
-                <p className="text-center text-xs text-emerald-600 font-medium mb-3">
+                <p className="text-center text-xs text-teal-600 font-medium mb-3">
                   {client.companyName}
                 </p>
               )}
@@ -278,7 +278,7 @@ export default function ContractDetailsPage() {
                 {freelancerName}
               </h3>
               {freelancer.title && (
-                <p className="text-center text-xs text-emerald-600 font-medium mb-3">
+                <p className="text-center text-xs text-teal-600 font-medium mb-3">
                   {freelancer.title}
                 </p>
               )}
@@ -313,7 +313,7 @@ export default function ContractDetailsPage() {
               {/* Budget Card */}
               <div className="bg-white border border-gray-200 rounded-2xl p-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <DollarSign className="h-5 w-5 text-emerald-600" />
+                  <DollarSign className="h-5 w-5 text-teal-600" />
                   <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
                     Budget
                   </p>
@@ -335,7 +335,7 @@ export default function ContractDetailsPage() {
               {/* Deadline Card */}
               <div className="bg-white border border-gray-200 rounded-2xl p-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="h-5 w-5 text-emerald-600" />
+                  <Calendar className="h-5 w-5 text-teal-600" />
                   <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
                     Deadline
                   </p>
@@ -361,9 +361,9 @@ export default function ContractDetailsPage() {
             {contract.milestones && contract.milestones.length > 0 && (
               <div className="bg-white border border-gray-200 rounded-2xl p-6">
                 <div className="flex items-center gap-2 mb-6">
-                  <Zap className="h-5 w-5 text-emerald-600" />
+                  <Zap className="h-5 w-5 text-teal-600" />
                   <h2 className="text-sm font-bold text-gray-900">Milestones</h2>
-                  <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg">
+                  <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-lg">
                     {contract.milestones.length}
                   </span>
                 </div>
@@ -374,11 +374,11 @@ export default function ContractDetailsPage() {
                     return (
                       <div
                         key={idx}
-                        className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-emerald-200 transition"
+                        className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-teal-200 transition"
                       >
                         <div className="flex-shrink-0">
                           {isCompleted ? (
-                            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                            <CheckCircle2 className="h-5 w-5 text-teal-600" />
                           ) : (
                             <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
                           )}
@@ -425,7 +425,7 @@ export default function ContractDetailsPage() {
                 Quick Actions
               </p>
               <div className="flex flex-col gap-3">
-                <button className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-medium text-sm transition">
+                <button className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-teal-50 text-teal-700 hover:bg-teal-100 rounded-xl font-medium text-sm transition">
                   <MessageSquare className="h-4 w-4" />
                   Message {contract.clientId._id === freelancer._id ? "Freelancer" : "Client"}
                 </button>

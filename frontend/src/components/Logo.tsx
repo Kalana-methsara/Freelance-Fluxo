@@ -1,21 +1,12 @@
-import { cn } from "@/lib/utils";
+import React from 'react';
 
-interface LogoProps {
-  size?: "sm" | "md" | "lg";
-  className?: string;
-}
-
-export default function Logo({ size = "md", className = "" }: LogoProps) {
-  const cls = {
-    sm: "text-lg",
-    md: "text-xl",
-    lg: "text-2xl sm:text-3xl",
-  }[size];
-
+export const Logo: React.FC<{ size?: 'sm' | 'md' }> = ({ size = 'md' }) => {
+  const textSize = size === 'sm' ? 'text-lg' : 'text-2xl sm:text-3xl';
   return (
-    <span className={cn(cls, "font-bold tracking-tight", className)}>
-      <span className="text-primary">freelance</span>
-      <span className="text-foreground">fluxo</span>
+    <span className={`${textSize} font-serif tracking-tight text-gray-900`}>
+      freelance<span className="italic text-emerald-600">fluxo</span>
     </span>
   );
-}
+};
+
+export default Logo;

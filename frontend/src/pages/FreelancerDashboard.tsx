@@ -134,17 +134,17 @@ const HOW_IT_WORKS = [
 ];
 
 const POPULAR_TAGS = ["Web Design", "React Developer", "UI/UX Design", "Node.js", "WordPress"];
-const AVATAR_COLORS = ["#7c3aed", "#0891b2", "#d97706", "#dc2626", "#059669", "#c026d3"];
+const AVATAR_COLORS = ["#0ea5a4", "#34d399", "#2dd4bf", "#60a5fa", "#7c3aed", "#16a34a"];
 
 const STATUS_STYLES: Record<string, string> = {
-  in_progress:  "bg-blue-50 text-blue-700 border border-blue-100",
+  in_progress:  "bg-teal-50 text-teal-700 border border-teal-100",
   under_review: "bg-amber-50 text-amber-700 border border-amber-100",
-  completed:    "bg-emerald-50 text-emerald-700 border border-emerald-100",
+  completed:    "bg-teal-50 text-teal-700 border border-teal-100",
   pending:      "bg-gray-100 text-gray-600 border border-gray-200",
-  shortlisted:  "bg-emerald-50 text-emerald-700 border border-emerald-100",
+  shortlisted:  "bg-teal-50 text-teal-700 border border-teal-100",
   rejected:     "bg-red-50 text-red-600 border border-red-100",
-  open:         "bg-blue-50 text-blue-700 border border-blue-100",
-  hired:        "bg-emerald-50 text-emerald-700 border border-emerald-100",
+  open:         "bg-teal-50 text-teal-700 border border-teal-100",
+  hired:        "bg-teal-50 text-teal-700 border border-teal-100",
 };
 
 // ============================================================
@@ -169,7 +169,7 @@ function useActiveNav(): [NavId, (id: NavId) => void] {
 
 const Logo = memo(() => (
   <span className="font-serif text-xl tracking-tight text-gray-900">
-    freelance<em className="italic text-emerald-600">fluxo</em>
+    freelance<em className="italic text-teal-600">fluxo</em>
   </span>
 ));
 
@@ -226,8 +226,8 @@ function EarningsChart({ data }: { data: { month: string; amount: number }[] }) 
         <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="colorEarnings" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-              <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+              <stop offset="5%" stopColor="#0ea5a4" stopOpacity={0.2}/>
+              <stop offset="95%" stopColor="#0ea5a4" stopOpacity={0}/>
             </linearGradient>
           </defs>
           <XAxis dataKey="month" stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false}/>
@@ -235,7 +235,7 @@ function EarningsChart({ data }: { data: { month: string; amount: number }[] }) 
           <CartesianGrid vertical={false} stroke="#e5e7eb" strokeDasharray="3 3"/>
           <Tooltip contentStyle={{ background: "#fff", borderRadius: "12px", borderColor: "#e5e7eb", fontSize: 12 }}
             formatter={(v: any) => [`$${v ?? 0}`, "Earnings"]}/>
-          <Area type="monotone" dataKey="amount" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorEarnings)"/>
+          <Area type="monotone" dataKey="amount" stroke="#0ea5a4" strokeWidth={2} fillOpacity={1} fill="url(#colorEarnings)"/>
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -249,9 +249,9 @@ function EarningsChart({ data }: { data: { month: string; amount: number }[] }) 
 const BrowseJobCard = memo(({ job, onApply }: { job: Job; onApply: (job: Job) => void }) => {
   const daysLeft = Math.max(0, Math.ceil((new Date(job.deadline).getTime() - Date.now()) / 86400000));
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col gap-4 hover:shadow-md hover:border-emerald-200 transition-all group shadow-sm">
+    <div className="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col gap-4 hover:shadow-md hover:border-teal-200 transition-all group shadow-sm">
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-gray-900 group-hover:text-emerald-700 transition line-clamp-2">{job.title}</h3>
+        <h3 className="text-sm font-semibold text-gray-900 group-hover:text-teal-700 transition line-clamp-2">{job.title}</h3>
         <StatusBadge status={job.status} size="sm"/>
       </div>
       {job.description && <p className="text-xs text-gray-500 leading-relaxed line-clamp-3">{job.description}</p>}
@@ -272,7 +272,7 @@ const BrowseJobCard = memo(({ job, onApply }: { job: Job; onApply: (job: Job) =>
           <span>{daysLeft}d left</span>
         </div>
         <button onClick={() => onApply(job)}
-          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition">
+          className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg transition">
           Apply
         </button>
       </div>
@@ -301,7 +301,7 @@ const ActiveJobCard = memo(({ job, onMessage, onSubmit }: {
       {job.status === "in_progress" && (
         <div className="flex gap-2 pt-2 border-t border-gray-50">
           <button onClick={() => onSubmit(job._id)}
-            className="flex-1 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-lg hover:bg-emerald-100 transition">
+            className="flex-1 py-1.5 bg-teal-50 text-teal-700 text-xs font-semibold rounded-lg hover:bg-teal-100 transition">
             Submit work
           </button>
           <button onClick={() => onMessage(job.clientId._id, job._id)}
@@ -359,20 +359,20 @@ const ApplyModal = memo(({ job, onClose, onSubmit }: ApplyModalProps) => {
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1.5">Your Bid ($)</label>
             <input type="number" min={1} value={bid} onChange={(e) => setBid(Number(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"/>
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10"/>
             <p className="text-[10px] text-gray-400 mt-1">Client budget: ${job.budget}</p>
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1.5">Cover Letter</label>
             <textarea rows={5} value={coverLetter} onChange={(e) => setCoverLetter(e.target.value)}
               placeholder="Introduce yourself and explain why you're the best fit for this project…"
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 resize-none"/>
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 resize-none"/>
           </div>
         </div>
         <div className="px-6 pb-6 flex justify-end gap-3">
           <button onClick={onClose} className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 hover:bg-gray-50 transition">Cancel</button>
           <button onClick={handleSubmit} disabled={loading}
-            className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition disabled:opacity-60">
+            className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-semibold transition disabled:opacity-60">
             {loading ? "Submitting…" : "Submit Proposal"}
           </button>
         </div>
@@ -421,17 +421,17 @@ function WorkSubmissionModal({ jobId, onClose, onSuccess, onError }: {
             <label className="block text-xs font-semibold text-gray-700 mb-1.5">Description</label>
             <textarea rows={4} required value={description} onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe what you've completed…"
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 resize-none"/>
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-500 resize-none"/>
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1.5">Attach File</label>
             <input type="file" required onChange={(e) => setFile(e.target.files?.[0] || null)}
-              className="block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"/>
+              className="block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"/>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
             <button type="submit" disabled={submitting}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">
+              className="px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-semibold hover:bg-teal-700 disabled:opacity-50">
               {submitting ? "Uploading…" : "Submit"}
             </button>
           </div>
