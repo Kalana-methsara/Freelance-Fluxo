@@ -59,7 +59,7 @@ export const getClientDashboard = asyncHandler(async (req: Request, res: Respons
   const [user, projects, applications] = await Promise.all([
     UserModel.findById(userId).select("-password"),
     JobModel.find({ clientId: userId })
-      .populate("freelancerId", "firstName lastName title rating")
+      .populate("freelancerId", "firstName lastName title rating profileImage")
       .sort({ createdAt: -1 }),
     ApplicationModel.find({})
       .populate({
@@ -67,7 +67,7 @@ export const getClientDashboard = asyncHandler(async (req: Request, res: Respons
         match: { clientId: userId },
         select: "title clientId",
       })
-      .populate("freelancerId", "firstName lastName title rating reviewCount")
+      .populate("freelancerId", "firstName lastName title rating reviewCount profileImage")
       .sort({ createdAt: -1 }),
   ]);
 

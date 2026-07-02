@@ -112,6 +112,7 @@ interface FreelancerPreview {
   reviewCount?: number;
   hourlyRate?: number;
   skills?: string[];
+  profileImage?: string;
 }
 
 // ================================================================
@@ -466,8 +467,14 @@ const OverviewTab = memo(({ data, freelancers, navigate, onSelectNav, onViewProj
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {freelancers.slice(0, 4).map((fl, i) => (
               <button key={fl._id} onClick={() => navigate(`/freelancers/${fl._id}`)} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm text-left hover:border-emerald-400 hover:shadow-md transition-all group">
-                <div className="w-11 h-11 rounded-full flex items-center justify-center text-xs font-bold text-white mb-3 shadow-sm" style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
-                  {getInitials(`${fl.firstName} ${fl.lastName}`)}
+                <div className="w-11 h-11 rounded-full overflow-hidden mb-3 flex items-center justify-center shadow-sm">
+                  {fl.profileImage ? (
+                    <img src={fl.profileImage} alt={`${fl.firstName} ${fl.lastName}`} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-white" style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
+                      {getInitials(`${fl.firstName} ${fl.lastName}`)}
+                    </div>
+                  )}
                 </div>
                 <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-emerald-700 transition">{fl.firstName} {fl.lastName}</p>
                 <p className="text-xs text-gray-400 mb-2 truncate">{fl.title || "Freelancer"}</p>
