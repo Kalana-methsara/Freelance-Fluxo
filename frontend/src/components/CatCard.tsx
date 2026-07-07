@@ -19,7 +19,6 @@ function CatCard({ card }: CatCardProps) {
           alt=""
           className="w-full h-full object-cover"
         />
-        {/* dark gradient overlay for readability */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-transparent" />
         <span className="font-light absolute top-[12px] left-[12px] md:top-[15px] md:left-[15px] text-xs md:text-sm z-10">
           {card.desc}

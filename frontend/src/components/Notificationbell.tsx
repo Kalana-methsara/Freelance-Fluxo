@@ -1,13 +1,3 @@
-// =============================================================
-// src/components/NotificationBell.tsx
-// =============================================================
-// Drop into the Navbar for both client and freelancer layouts.
-// Shows unread count, a dropdown history, and a live toast the
-// moment a "you've been hired" (or any other) notification arrives
-// over the socket — this is the piece that makes the hire flow feel
-// instant instead of "refresh to see if anything happened."
-// =============================================================
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";

@@ -11,7 +11,7 @@ import {
     updateUserProfile,
     updateMyProfile,
     updateUserRole,
-    deleteUser,                         // ✅ super admin delete user
+    deleteUser,                         
 } from "../controller/userController";
 import {
     getAdminDashboard,
@@ -35,13 +35,11 @@ import { UserRole } from "../enums/userRole";
 const router = Router();
 const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
 
-// ======================== Public Routes ========================
 router.post("/register/freelancer", validate(registerSchema), registerFreelancer);
 router.post("/register/client", validate(registerSchema), registerClient);
 router.post("/login", validate(loginSchema), loginUser);
 router.post("/refresh", refreshToken);
 
-// ======================== OAuth Routes ========================
 router.get("/google", (req, res, next) => {
   const role = req.query.role || "client";
   passport.authenticate("google", { 
@@ -75,18 +73,15 @@ router.get("/github/callback", passport.authenticate("github", { failureRedirect
   }
 );
 
-// ======================== Protected Routes ========================
 router.get("/me", authenticate, getMyDetails);
 router.patch("/users/profile", authenticate, validate(updateProfileSchema), updateMyProfile);
 router.patch("/users/:id/profile", authenticate, validate(updateProfileSchema), updateUserProfile);
 
-// ======================== Admin-Only Routes ========================
 router.get("/", authenticate, requireRole([UserRole.ADMIN]), getUsers);
 router.post("/register/admin", authenticate, requireRole([UserRole.ADMIN]), validate(registerAdminSchema), registerAdmin);
 router.patch("/users/:id/approval", authenticate, requireRole([UserRole.ADMIN]), updateUserApproval);
 router.patch("/users/:id/role", authenticate, requireRole([UserRole.ADMIN]), updateUserRole);
 
-// ─── Admin Dashboard & Management ──────────────────────────────
 router.get(
     "/dashboard/admin",
     authenticate,
@@ -145,7 +140,6 @@ router.get(
 
 router.post("/reports", authenticate, createReport);
 
-// ─── Super Admin only ──────────────────────────────────────────
 router.delete(
     "/users/:userId",
     authenticate,
@@ -153,7 +147,6 @@ router.delete(
     deleteUser
 );
 
-// ======================== Development Helper ========================
 if (process.env.NODE_ENV !== "production") {
 router.get('/dev/token', async (req, res) => {
   try {

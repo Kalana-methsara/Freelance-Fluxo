@@ -1,4 +1,4 @@
-// src/services/jobService.ts
+
 import api from "./api";
 
 
@@ -13,7 +13,7 @@ export interface CreateJobPayload {
 }
 
 const jobService = {
-  // ==================== JOBS ====================
+  
   getJobs: async (params?: { q?: string; category?: string; status?: string }) => {
     const response = await api.get("/jobs", { params });
     return response.data.data;
@@ -34,13 +34,13 @@ const jobService = {
     return response.data.data;
   },
 
-  // ==================== APPLICATIONS / PROPOSALS ====================
+  
   applyToJob: async (jobId: string, bid: number, coverLetter?: string) => {
     const response = await api.post(`/jobs/${jobId}/apply`, { bid, coverLetter });
     return response.data.data;
   },
 
-  // Backwards-compatible alias used in some pages/components
+  
   submitProposal: async (jobId: string, payload: { bid: number; coverLetter?: string }) => {
     const response = await api.post(`/jobs/${jobId}/apply`, { bid: payload.bid, coverLetter: payload.coverLetter });
     return response.data.data;
@@ -81,7 +81,7 @@ const jobService = {
     return response.data.data;
   },
 
-  // ==================== WORK SUBMISSION ====================
+  
   submitWork: async (jobId: string, formData: FormData) => {
     const response = await api.post(`/jobs/${jobId}/submissions`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
@@ -89,7 +89,7 @@ const jobService = {
     return response.data.data;
   },
 
-  // ==================== MESSAGING / CONVERSATIONS ====================
+  
   getConversations: async () => {
     const response = await api.get("/conversations");
     return response.data.data;
@@ -110,7 +110,7 @@ const jobService = {
     return response.data;
   },
 
-  // ==================== FREELANCER PROFILE ====================
+  
   updateFreelancerProfile: async (userId: string, updates: any) => {
     const response = await api.patch(`/auth/users/${userId}/profile`, updates);
     return response.data.data;

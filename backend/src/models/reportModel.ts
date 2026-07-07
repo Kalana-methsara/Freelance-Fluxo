@@ -16,8 +16,8 @@ export interface IReport extends Document {
   resolved: boolean;
   resolvedAt?: Date;
   resolvedBy?: Types.ObjectId;
-  createdAt: Date;   // ✅ added (from timestamps)
-  updatedAt: Date;   // ✅ added (from timestamps)
+  createdAt: Date;   
+  updatedAt: Date;   
 }
 
 const reportSchema = new Schema<IReport>(

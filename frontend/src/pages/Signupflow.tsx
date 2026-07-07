@@ -13,7 +13,7 @@ import {
   extractErrorMessage,
 } from "../components/AuthShared";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+
 
 type Role = "client" | "freelancer" | null;
 
@@ -27,7 +27,7 @@ interface FormState {
   agreeTerms: boolean;
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+
 
 const INITIAL_FORM: FormState = {
   firstName: "",
@@ -54,7 +54,7 @@ const ROLES = [
   },
 ];
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+
 
 interface RoleCardProps {
   icon: string;
@@ -107,7 +107,7 @@ function StepDots({ step }: { step: 1 | 2 }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+
 
 export default function SignupFlow() {
   const navigate = useNavigate();
@@ -165,7 +165,7 @@ export default function SignupFlow() {
   const passwordMismatch = form.confirmPassword.length > 0 && form.password !== form.confirmPassword;
   const isClient = role === "client";
 
-  // ── Step 1 ────────────────────────────────────────────────────────────────
+  
 
   if (step === 1) {
     return (
@@ -206,7 +206,7 @@ export default function SignupFlow() {
     );
   }
 
-  // ── Step 2 ────────────────────────────────────────────────────────────────
+  
 
   return (
     <AuthCard>
@@ -243,7 +243,6 @@ export default function SignupFlow() {
       {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
 
       <form className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
-        {/* Name */}
         <div className="grid grid-cols-2 gap-3">
           {(
             [
@@ -269,7 +268,6 @@ export default function SignupFlow() {
           ))}
         </div>
 
-        {/* Email */}
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
             {isClient ? "Work email" : "Email address"}
@@ -287,7 +285,6 @@ export default function SignupFlow() {
           />
         </div>
 
-        {/* Passwords */}
         <PasswordInput
           id="password"
           name="password"
@@ -318,7 +315,6 @@ export default function SignupFlow() {
           )}
         </div>
 
-        {/* Checkboxes */}
         <div className="flex flex-col gap-3">
           <label className="flex items-start gap-2.5 text-xs text-gray-600 cursor-pointer">
             <input

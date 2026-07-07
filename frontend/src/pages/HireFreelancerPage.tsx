@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import platformService from "../services/platformService";
 
-// ── Types ──────────────────────────────────────────────────
+
 type BudgetType = "fixed" | "hourly";
 
 interface Milestone {
@@ -23,14 +23,14 @@ interface HireFormData {
   milestones: Milestone[];
 }
 
-// ── Helpers ────────────────────────────────────────────────
+
 const Logo = () => (
   <span className="font-serif text-xl tracking-tight text-gray-900">
     freelance<em className="italic text-teal-600">fluxo</em>
   </span>
 );
 
-const PLATFORM_FEE_RATE = 0.05; // 5%
+const PLATFORM_FEE_RATE = 0.05; 
 
 function calcEscrow(form: HireFormData): number {
   if (form.budgetType === "fixed") {
@@ -47,24 +47,24 @@ function newMilestone(): Milestone {
   return { id: crypto.randomUUID(), title: "", amount: 0, dueDate: "" };
 }
 
-// ── Main Component ─────────────────────────────────────────
+
 export default function HireFreelancerPage() {
   const { freelancerId } = useParams<{ freelancerId: string }>();
   const [searchParams] = useSearchParams();
   const jobId = searchParams.get("jobId");
   const navigate = useNavigate();
 
-  // ── State ──
-  // `currentUser` is intentionally unused directly; localStorage used for auth checks elsewhere
-  // keep setter available for future use
+  
+  
+  
   const [, setCurrentUser] = useState<any>(null);
   const [freelancer, setFreelancer] = useState<any>(null);
   const [loadingFreelancer, setLoadingFreelancer] = useState(true);
 
-  // Payment check modal
+  
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  // Escrow confirmation modal
+  
   const [showEscrowModal, setShowEscrowModal] = useState(false);
   const [isSendingOffer, setIsSendingOffer] = useState(false);
   const [offerSent, setOfferSent] = useState(false);
@@ -80,7 +80,7 @@ export default function HireFreelancerPage() {
     milestones: [],
   });
 
-  // ── Load user from localStorage ──
+  
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem("user");
@@ -88,7 +88,7 @@ export default function HireFreelancerPage() {
         const parsed = JSON.parse(storedUser);
         setCurrentUser(parsed);
 
-        // ── Check payment method ──
+        
         const hasPayment = !!(parsed.paymentMethod?.cardLast4 || parsed.paymentMethod?.walletBalance > 0);
         if (!hasPayment) {
           setShowPaymentModal(true);
@@ -101,7 +101,7 @@ export default function HireFreelancerPage() {
     }
   }, [navigate]);
 
-  // ── Load freelancer profile ──
+  
   useEffect(() => {
     if (!freelancerId) return;
     setLoadingFreelancer(true);
@@ -109,7 +109,7 @@ export default function HireFreelancerPage() {
       .getFreelancerById(freelancerId)
       .then((data: any) => {
         setFreelancer(data);
-        // Auto-fill contract title if freelancer has a title
+        
         if (data?.title) {
           setForm(prev => ({
             ...prev,
@@ -122,7 +122,7 @@ export default function HireFreelancerPage() {
       .finally(() => setLoadingFreelancer(false));
   }, [freelancerId]);
 
-  // ── Milestone helpers ──
+  
   const addMilestone = () => setForm(prev => ({ ...prev, milestones: [...prev.milestones, newMilestone()] }));
   const removeMilestone = (id: string) =>
     setForm(prev => ({ ...prev, milestones: prev.milestones.filter(m => m.id !== id) }));
@@ -132,7 +132,7 @@ export default function HireFreelancerPage() {
       milestones: prev.milestones.map(m => (m.id === id ? { ...m, [field]: value } : m)),
     }));
 
-  // ── Validation ──
+  
   const isFormValid = useCallback((): boolean => {
     if (!form.contractTitle.trim()) return false;
     if (!form.deadline) return false;
@@ -146,14 +146,14 @@ export default function HireFreelancerPage() {
     return form.hourlyRate > 0 && form.estimatedHours > 0;
   }, [form]);
 
-  // ── Submit → open escrow modal ──
+  
   const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid()) return;
     setShowEscrowModal(true);
   };
 
-  // ── Confirm → send offer ──
+  
   const handleConfirmOffer = async () => {
     setIsSendingOffer(true);
     try {
@@ -187,7 +187,7 @@ export default function HireFreelancerPage() {
     ? `${freelancer.firstName} ${freelancer.lastName}`
     : "Freelancer";
 
-  // ── Success Screen ──
+  
   if (offerSent) {
     return (
       <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fffe_0%,_#f7faf9_100%)] flex flex-col items-center justify-center p-6">

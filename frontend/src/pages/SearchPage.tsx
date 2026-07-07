@@ -1,13 +1,3 @@
-// ============================================================
-// pages/SearchPage.tsx — REFACTORED
-// Changes vs original:
-//   • StatusBadge → shared component/ui/StatusBadge
-//   • Avatar → shared component/ui/Avatar (no more avatarColor helper duplicate)
-//   • EmptyState → shared component
-//   • PageLoader → shared component
-//   • avatarColor logic → tokens.ts
-//   • All data-fetching unchanged; UI presentational layer cleaned up
-// ============================================================
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -109,7 +99,7 @@ export default function SearchPage() {
     };
   }, [showProfileModal]);
 
-  // Load stored user
+  
   useEffect(() => {
     try {
       const stored = localStorage.getItem("user");
@@ -253,14 +243,12 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fffe_0%,_#f7faf9_100%)]">
-      {/* ── Header ── */}
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-100/60 sticky top-0 z-30 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
           <button onClick={() => navigate("/")} className="shrink-0">
             <Logo size="sm" />
           </button>
 
-          {/* Search bar */}
           <div className="flex-1 flex items-center gap-2 bg-white/70 border border-gray-200/80 rounded-xl px-3 py-2 max-w-lg shadow-sm">
             <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
@@ -425,7 +413,6 @@ export default function SearchPage() {
           </div>
         )}
 
-        {/* Tab switcher */}
         <div className="flex items-center gap-1 bg-white/80 backdrop-blur-sm border border-gray-100/60 rounded-2xl p-1 w-fit mb-8 shadow-sm">
           {(isGuest || isClient) && (
             <button
@@ -445,7 +432,6 @@ export default function SearchPage() {
           )}
         </div>
 
-        {/* Results */}
         {tab === "freelancers" && (
           freelancers.length === 0 ? (
             <EmptyState title="No freelancers found" description={`We couldn't find freelancers matching "${query}". Try a different search.`} />
@@ -514,7 +500,6 @@ export default function SearchPage() {
         )}
       </main>
 
-      {/* ── Freelancer detail popover ── */}
       {selectedFreelancer && (
         <Popover onClose={() => setSelectedFreelancer(null)}>
           <div className="flex items-start gap-4 mb-5">
@@ -548,7 +533,6 @@ export default function SearchPage() {
         </Popover>
       )}
 
-      {/* ── Job detail popover ── */}
       {selectedJobDetail && (
         <Popover onClose={() => setSelectedJobDetail(null)}>
           <div className="flex items-start justify-between gap-3 mb-4">
@@ -589,7 +573,6 @@ export default function SearchPage() {
         </Popover>
       )}
 
-      {/* ── Profile Edit Modal ── */}
       {showProfileModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div ref={profileModalRef} tabIndex={-1} className="bg-white/95 backdrop-blur-sm rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl outline-none">
@@ -646,7 +629,6 @@ export default function SearchPage() {
                 </label>
               )}
 
-              {/* Skills */}
               {isFreelancer && (
                 <div>
                   <span className="text-xs font-medium text-gray-600 block mb-2">Skills</span>
@@ -704,7 +686,7 @@ export default function SearchPage() {
   );
 }
 
-// ── Shared slide-up popover used for freelancer / job detail ──
+
 
 function Popover({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   const modalRef = useRef<HTMLDivElement>(null);

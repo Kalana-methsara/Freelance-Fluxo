@@ -1,6 +1,3 @@
-// ================================================================
-// ClientDashboard.tsx – Merged: Doc2 structure + Doc1 features + Top Nav
-// ================================================================
 
 import React, {
   useEffect,

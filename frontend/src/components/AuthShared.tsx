@@ -1,4 +1,4 @@
-// Shared sub-components used by both LoginPage and SignupFlow.
+
 
 import { Link } from "react-router-dom";
 
@@ -199,7 +199,7 @@ export function extractErrorMessage(error: unknown): string {
 }
 
 export function resolveToken(userData: Record<string, unknown>): string | undefined {
-  // Handles both `accessToken` (standard) and `token` (legacy backend shape).
+  
   return (userData.accessToken ?? userData.token) as string | undefined;
 }
 

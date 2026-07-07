@@ -1,18 +1,3 @@
-// =============================================================
-// src/components/ChatConversationList.tsx
-// =============================================================
-// Sidebar list for the Workspace page. Same data source as before
-// (jobService.getConversations / chatService realtime events), with
-// three additions:
-//   1. Shared Avatar / AvatarGroup instead of duplicated avatar JSX.
-//   2. A job-status pill per row when the conversation is tied to a
-//      job (see the Conversation.job field — backend contract for
-//      this is documented in ARCHITECTURE.md, ChatController section).
-//   3. Listens for chatService.onConversationCreated so a brand-new
-//      thread — created the instant a client hits "Hire" — appears
-//      at the top of the list with no refresh needed.
-// =============================================================
-
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatDistance } from 'date-fns';
 import jobService from '../services/jobService';
@@ -77,14 +62,14 @@ export default function ChatConversationList({ onSelectConversation, selectedId,
     chatService.onNewMessage(refreshConversations);
     chatService.onMessagesRead(refreshConversations);
 
-    // A hire just happened somewhere else in the app: drop the brand new
-    // thread straight into the list instead of waiting for a refresh.
+    
+    
     const handleConversationCreated = (conversation: Conversation) => {
       setConversations((prev) => (prev.some((c) => c._id === conversation._id) ? prev : [conversation, ...prev]));
     };
     chatService.onConversationCreated(handleConversationCreated);
 
-    // Job status changed (e.g. milestone submitted -> under_review).
+    
     const handleConversationUpdated = (payload: { conversationId: string; job?: ConversationJob }) => {
       if (!payload.job) return;
       setConversations((prev) =>
@@ -118,7 +103,7 @@ export default function ChatConversationList({ onSelectConversation, selectedId,
       const jobTitle = conv.job?.title?.toLowerCase() || '';
       return names.includes(q) || jobTitle.includes(q) || (conv.title || '').toLowerCase().includes(q);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [conversations, query, currentUserId]);
 
   if (loading) {

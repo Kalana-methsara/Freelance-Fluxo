@@ -83,7 +83,7 @@ const platformService = {
     return res.data?.data ?? [];
   },
 
-  // ── 💡 NEW: Fetch Pending Offers For Freelancer ──
+  
   getPendingOffers: async () => {
     const res = await api.get("/contracts/pending-offers");
     return res.data?.data ?? [];

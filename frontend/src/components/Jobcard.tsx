@@ -1,15 +1,3 @@
-// =============================================================
-// src/components/jobs/JobCard.tsx
-// =============================================================
-// Universal job card used across Search, FreelancerDashboard,
-// ClientDashboard, and JobsPage.
-//
-// Variants:
-//   "browse"   – freelancer browsing open jobs  → shows Apply button
-//   "active"   – freelancer's active job        → shows Message / Submit
-//   "posted"   – client's posted job            → shows proposal count
-//   "compact"  – small inline list row
-// =============================================================
 
 import { memo } from "react";
 import StatusBadge from "./Statusbadge";

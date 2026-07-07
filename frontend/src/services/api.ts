@@ -113,7 +113,6 @@ api.interceptors.request.use((config) => {
   const requestUrl = config.url || "";
   const isPublic = PUBLIC_ENDPOINTS.some((url) => requestUrl.includes(url));
 
-  // FIX 1: Use config.headers.set() instead of spreading
   if (token && !isPublic && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -133,7 +132,6 @@ api.interceptors.response.use(
         const { data } = await api.post("/auth/refresh", { refreshToken });
         localStorage.setItem(STORAGE_KEYS.accessToken, data.accessToken);
         
-        // FIX 2: Use originalRequest.headers.set() instead of spreading
         if (originalRequest.headers) {
           originalRequest.headers.set('Authorization', `Bearer ${data.accessToken}`);
         }

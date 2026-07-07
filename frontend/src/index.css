@@ -8,7 +8,7 @@
   animation: fadeInUp 0.25s ease-out forwards;
 }
 
-/* Smooth scrollbar */
+
 ::-webkit-scrollbar {
   width: 6px;
 }

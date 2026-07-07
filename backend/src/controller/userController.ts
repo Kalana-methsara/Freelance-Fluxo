@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import mongoose from "mongoose";                      // ← add this
+import mongoose from "mongoose";                      
 import { UserModel } from "../models/userModel";
-import { JobModel } from "../models/jobModel";        // ← add this
-import { ReportModel } from "../models/reportModel";  // ← add this
+import { JobModel } from "../models/jobModel";        
+import { ReportModel } from "../models/reportModel";  
 import bcrypt from "bcryptjs";
 import { signAccessToken, signRefreshToken } from "../utils/generateToken";
 import { UserRole } from "../enums/userRole";
@@ -42,7 +42,7 @@ const createUserWithTokens = async (
     return { user, accessToken, refreshToken };
 };
 
-// 1. Register Freelancer (Public)
+
 export const registerFreelancer = asyncHandler(async (req: Request, res: Response) => {
     const { firstName, lastName, email, password, profileImage, bio, skills, title, hourlyRate, companyName, location } = req.body;
 
@@ -59,7 +59,7 @@ export const registerFreelancer = asyncHandler(async (req: Request, res: Respons
     res.status(201).json({ message: "Registration successful", data: result });
 });
 
-// 2. Register Client (Public)
+
 export const registerClient = asyncHandler(async (req: Request, res: Response) => {
     const { firstName, lastName, email, password, profileImage, bio, skills, title, hourlyRate, companyName, location } = req.body;
 
@@ -76,7 +76,7 @@ export const registerClient = asyncHandler(async (req: Request, res: Response) =
     res.status(201).json({ message: "Registration successful", data: result });
 });
 
-// 3. Login User
+
 export const loginUser = asyncHandler(async (req: Request, res: Response) => {
 
     const { email, password } = req.body;
@@ -92,7 +92,7 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
     res.status(200).json({ message: "Login successful", data: { user, accessToken, refreshToken } });
 });
 
-// 4. Get My Details
+
 export const getMyDetails = asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const user = await UserModel.findById(authReq.user?._id);
@@ -100,7 +100,7 @@ export const getMyDetails = asyncHandler(async (req: Request, res: Response) => 
     res.status(200).json({ success: true, data: user });
 });
 
-// 5. Register Admin (By Admin only)
+
 export const registerAdmin = asyncHandler(async (req: Request, res: Response) => {
     const { firstName, lastName, email, password } = req.body;
 
@@ -117,20 +117,20 @@ export const registerAdmin = asyncHandler(async (req: Request, res: Response) =>
     res.status(201).json({ message: "Admin created successfully", data: user });
 });
 
-// 6. Get All Users
+
 export const getUsers = asyncHandler(async (req: Request, res: Response) => {
     const users = await UserModel.find({}).select("-password");
     res.status(200).json({ success: true, data: users });
 });
 
-// 7. Get user by ID (admin)
+
 export const getUserById = asyncHandler(async (req: Request, res: Response) => {
     const user = await UserModel.findById(req.params.id).select("-password");
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
     res.status(200).json({ success: true, data: user });
 });
 
-// 8. Refresh access token
+
 export const refreshToken = asyncHandler(async (req: Request, res: Response) => {
     const { refreshToken: token } = req.body;
     if (!token) {
@@ -151,7 +151,7 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
     }
 });
 
-// 8. Update user approval status (admin)
+
 export const updateUserApproval = asyncHandler(async (req: Request, res: Response) => {
     const { status } = req.body;
     if (!Object.values(ApprovalStatus).includes(status)) {
@@ -191,7 +191,7 @@ const buildProfileUpdatePayload = (body: any) => {
     return updates;
 };
 
-// 9. Update user profile (self or admin)
+
 export const updateUserProfile = asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const requesterId = authReq.user?._id?.toString();
@@ -214,7 +214,7 @@ export const updateUserProfile = asyncHandler(async (req: Request, res: Response
     res.status(200).json({ success: true, data: user });
 });
 
-// 10. Update own profile (authenticated user)
+
 export const updateMyProfile = asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const targetId = authReq.user?._id?.toString();
@@ -235,7 +235,7 @@ export const updateMyProfile = asyncHandler(async (req: Request, res: Response) 
     res.status(200).json({ success: true, data: user });
 });
 
-// 11. Update user role (admin)
+
 export const updateUserRole = asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const { role, action = "add" } = req.body as { role: UserRole; action?: "add" | "remove" };
@@ -305,17 +305,17 @@ export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
-        // Prevent self-deletion
+        
         const authReq = req as AuthRequest;
         if (userId === authReq.user?._id?.toString()) {
             await session.abortTransaction();
             return res.status(400).json({ success: false, message: "Cannot delete your own account" });
         }
 
-        // Delete related data (jobs, reports, proposals if any)
+        
         await JobModel.deleteMany({ clientId: userId }).session(session);
         await ReportModel.deleteMany({ reportedBy: userId }).session(session);
-        // Add ProposalModel.deleteMany({ userId }) if you have proposals
+        
 
         await user.deleteOne({ session });
         await session.commitTransaction();

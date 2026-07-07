@@ -5,7 +5,7 @@ import { ApprovalStatus } from "../enums/approvalStatus";
 const userRoleEnum = z.enum(Object.values(UserRole) as [UserRole, ...UserRole[]]);
 const approvalStatusEnum = z.enum(Object.values(ApprovalStatus) as [ApprovalStatus, ...ApprovalStatus[]]);
 
-// ✅ Base schema — reusable
+
 const baseRegisterSchema = z.object({
     firstName: z.string().min(2),
     lastName: z.string().min(2),
@@ -26,12 +26,12 @@ const baseRegisterSchema = z.object({
     }).optional(),
 });
 
-// ✅ Public register (freelancer / client)
+
 export const registerSchema = z.object({
     body: baseRegisterSchema,
 });
 
-// ✅ Admin register (by admin only)
+
 export const registerAdminSchema = z.object({
     body: baseRegisterSchema.extend({
         userRole: z.array(userRoleEnum).default([UserRole.ADMIN]).optional(),

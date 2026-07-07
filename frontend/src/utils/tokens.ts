@@ -1,25 +1,20 @@
-// ============================================================
-// Design Token System — FreelanceFluxo
-// Single source of truth for colors, spacing, and style maps.
-// Import from here instead of scattering raw Tailwind strings.
-// ============================================================
 
 export const BRAND = {
-  primary: "emerald",        // main CTA / active states
+  primary: "emerald",        
   primaryHex: "#059669",
-  dark: "#001e00",           // CTA banner, dark sections
+  dark: "#001e00",           
   accent: "#10b981",
 } as const;
 
-// Deterministic avatar background for a given string ID
+
 const AVATAR_PALETTE = [
-  "#059669", // emerald
-  "#7c3aed", // violet
-  "#dc2626", // red
-  "#d97706", // amber
-  "#0891b2", // cyan
-  "#db2777", // pink
-  "#2563eb", // blue
+  "#059669", 
+  "#7c3aed", 
+  "#dc2626", 
+  "#d97706", 
+  "#0891b2", 
+  "#db2777", 
+  "#2563eb", 
 ];
 export function avatarColorFor(id: string): string {
   if (!id) return AVATAR_PALETTE[0];
@@ -27,7 +22,7 @@ export function avatarColorFor(id: string): string {
   return AVATAR_PALETTE[code % AVATAR_PALETTE.length];
 }
 
-// ── Status pill style map ──────────────────────────────────
+
 export const STATUS_STYLES: Record<string, string> = {
   open:          "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
   active:        "bg-blue-50   text-blue-700    ring-blue-600/20",
@@ -46,7 +41,7 @@ export function getStatusStyle(status: string): string {
   return STATUS_STYLES[status?.toLowerCase()] ?? "bg-gray-100 text-gray-500 ring-gray-400/20";
 }
 
-// ── Deadline helpers ───────────────────────────────────────
+
 export function formatDeadline(dateStr: string): string {
   try {
     const d = new Date(dateStr);

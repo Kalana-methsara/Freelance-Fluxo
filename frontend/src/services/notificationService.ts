@@ -1,14 +1,3 @@
-// =============================================================
-// src/services/notificationService.ts
-// =============================================================
-// REST history + live push for the notification bell. Uses the
-// same shared socket as chatService (see socketClient.ts) rather
-// than opening a second connection.
-//
-// Assumes an `api` axios instance exported the same way your other
-// services (jobService, authService, platformService) already do —
-// swap the import below to match wherever that lives in your repo.
-// =============================================================
 
 import { getSocket } from "./socketClient";
 import api from "./api";

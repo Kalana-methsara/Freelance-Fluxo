@@ -1,22 +1,3 @@
-// =============================================================
-// src/services/chatService.ts
-// =============================================================
-// Same public API as before (connect/disconnect/joinConversation/
-// sendMessage/...), now routed through the single shared socket in
-// socketClient.ts instead of holding its own socket instance.
-//
-// Two new event pairs added to close the gaps in the hire→notify→
-// chat flow:
-//   onConversationCreated / offConversationCreated
-//     -> fired when a hire action spins up a new ChatRoom on the
-//        backend. Both the client and the freelancer get this, so
-//        the new thread can pop into the sidebar immediately
-//        instead of waiting for a page refresh.
-//   onConversationUpdated / offConversationUpdated
-//     -> fired whenever the *job* behind a conversation changes
-//        status (hired -> in_progress -> under_review -> completed)
-//        so the job-status marker inside the chat updates live.
-// =============================================================
 
 import { connectSocket, disconnectSocket, getSocket } from "./socketClient";
 

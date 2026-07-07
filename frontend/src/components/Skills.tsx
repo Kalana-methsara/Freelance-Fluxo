@@ -53,7 +53,7 @@ const techs = [
   { name: 'RabbitMQ',    icon: <SiRabbitmq    />, color: '#FF6600' },
 ];
 
-// Duplicate for seamless infinite loop
+
 const doubled = [...techs, ...techs];
 
 const TechStack = () => {
@@ -64,19 +64,19 @@ const TechStack = () => {
   const lastTimestampRef = useRef<number>(0);
   const [isHovered, setIsHovered] = useState(false);
   
-  // Speed in pixels per second (consistent across all devices)
+  
   const SCROLL_SPEED = 100;
 
-  // Update halfWidth on resize
+  
   const updateDimensions = useCallback(() => {
     const track = trackRef.current;
     if (!track) return;
     
-    // Get current scrollWidth (total width of all elements)
+    
     const scrollWidth = track.scrollWidth;
     halfWidthRef.current = scrollWidth / 2;
     
-    // Ensure position stays within bounds after resize
+    
     if (positionRef.current >= halfWidthRef.current) {
       positionRef.current = positionRef.current % halfWidthRef.current;
       track.style.transform = `translateX(-${positionRef.current}px)`;
@@ -87,41 +87,41 @@ const TechStack = () => {
     const track = trackRef.current;
     if (!track) return;
 
-    // Initialize dimensions
+    
     updateDimensions();
 
-    // Resize observer for responsive adjustments
+    
     const resizeObserver = new ResizeObserver(() => {
       updateDimensions();
     });
     resizeObserver.observe(track);
 
-    // Animation loop with delta time for consistent speed
+    
     const animate = (timestamp: number) => {
       if (!trackRef.current) return;
       
-      // Initialize last timestamp on first frame
+      
       if (lastTimestampRef.current === 0) {
         lastTimestampRef.current = timestamp;
         animationRef.current = requestAnimationFrame(animate);
         return;
       }
       
-      // Calculate delta time in seconds (capped to 16ms to avoid large jumps)
+      
       let delta = Math.min(0.033, (timestamp - lastTimestampRef.current) / 1000);
       lastTimestampRef.current = timestamp;
       
-      // Only update if not hovered and delta is valid
+      
       if (!isHovered && delta > 0 && delta < 0.1) {
-        // Move position based on scroll speed and delta time
+        
         positionRef.current += SCROLL_SPEED * delta;
         
-        // Seamless reset: when we've scrolled half the total width, subtract halfWidth
+        
         if (halfWidthRef.current > 0 && positionRef.current >= halfWidthRef.current) {
           positionRef.current -= halfWidthRef.current;
         }
         
-        // Apply transform
+        
         trackRef.current.style.transform = `translateX(-${positionRef.current}px)`;
       }
       
@@ -130,7 +130,7 @@ const TechStack = () => {
     
     animationRef.current = requestAnimationFrame(animate);
     
-    // Cleanup
+    
     return () => {
       cancelAnimationFrame(animationRef.current);
       resizeObserver.disconnect();

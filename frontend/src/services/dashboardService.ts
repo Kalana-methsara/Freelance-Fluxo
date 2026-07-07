@@ -1,8 +1,8 @@
-// services/dashboardService.ts
+
 import api from "./api";
 
-// ─── Types for better TypeScript support ──────────────────────────────
-// services/dashboardService.ts
+
+
 export interface DashboardStats {
   totalUsers: number;
   totalJobs: number;
@@ -14,7 +14,7 @@ export interface DashboardStats {
     lastName: string;
     email: string;
     userRole: string[];
-    approvalStatus: string;   // ← string, not union
+    approvalStatus: string;   
     createdAt: string;
   }>;
   recentJobs: Array<{
@@ -37,7 +37,7 @@ export interface DashboardStats {
   statusBreakdown: Array<{ status: string; count: number }>;
 }
 
-// You can also export aliases for convenience
+
 export type User = DashboardStats['recentUsers'][0];
 export type Job = DashboardStats['recentJobs'][0];
 export type Report = DashboardStats['reports'][0];
@@ -69,7 +69,7 @@ export interface ReportListResponse {
 }
 
 const dashboardService = {
-  // ─── Existing methods (preserved) ──────────────────────────────────
+  
   getFreelancerDashboard: async () => {
     const response = await api.get("/dashboard/freelancer");
     return response.data.data;
@@ -94,7 +94,7 @@ const dashboardService = {
   getMessages: (conversationId: string) => api.get(`/conversations/${conversationId}/messages`),
   createConversation: (participantId: string, jobId?: string) => api.post('/conversations', { participantId, jobId }),
 
-  // ─── NEW: Admin Job Management ─────────────────────────────────────
+  
   getAllJobs: async (params?: { page?: number; limit?: number; status?: string }): Promise<JobListResponse> => {
     const response = await api.get("/admin/jobs", { params });
     return response.data;
@@ -110,7 +110,7 @@ const dashboardService = {
     return response.data;
   },
 
-  // ─── NEW: Admin Report Management ──────────────────────────────────
+  
   getAllReports: async (params?: { resolved?: boolean; page?: number; limit?: number }): Promise<ReportListResponse> => {
     const response = await api.get("/admin/reports", { params });
     return response.data;

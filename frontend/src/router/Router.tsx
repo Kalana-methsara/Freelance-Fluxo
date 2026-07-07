@@ -2,7 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import { RequireAuth } from "../components/RequireAuth";
 
-// Route-based code-splitting: lazy-load larger pages
+
 const FreelancerPlatform = lazy(() => import("../pages/FreelancerPlatform"));
 const Signupflow = lazy(() => import("../pages/Signupflow"));
 const LoginPage = lazy(() => import("../pages/LoginPage"));
@@ -19,7 +19,7 @@ const JobsPage = lazy(() => import("../pages/JobsPage"));
 const HireFreelancerPage = lazy(() => import("../pages/HireFreelancerPage"));
 const PaymentSettingsPage = lazy(() => import("../pages/PaymentSettingsPage"));
 
-// ⭐ 1. WorkspacePage එක මෙතනට Lazy-load කරන්න
+
 const WorkspacePage = lazy(() => import("../pages/WorkspacePage"));
 const ContractDetailsPage = lazy(() => import("../pages/ContractDetailsPage"));
 
@@ -52,7 +52,6 @@ const Router = () => {
             }
           />
 
-          {/* ⭐ 2. මෙතනට /workspace රවුට් එක ඇතුළත් කළා (Client & Freelancer දෙන්නටම පුළුවන්) */}
           <Route
             path="/workspace"
             element={

@@ -25,8 +25,8 @@ export interface IUser extends Document {
         province: string;
         country: string;
     };
-    createdAt: Date;   // ✅ added
-    updatedAt: Date;   // ✅ added
+    createdAt: Date;   
+    updatedAt: Date;   
 }
 
 const userSchema = new Schema<IUser>({

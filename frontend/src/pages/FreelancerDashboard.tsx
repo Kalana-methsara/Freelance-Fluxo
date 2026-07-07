@@ -1,7 +1,3 @@
-// ============================================================
-// FreelancerDashboard.tsx – Refactored: Top Nav + Clean Tab Layout
-// All original logic preserved. Matches ClientDashboard pattern.
-// ============================================================
 
 import React, {
   useEffect,

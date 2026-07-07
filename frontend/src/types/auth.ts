@@ -7,7 +7,7 @@ export const UserRole = {
 
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
-// types/auth.ts
+
 export interface AuthUser {
   _id?: string;
   email: string;

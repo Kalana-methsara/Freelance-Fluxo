@@ -17,7 +17,7 @@ export default function PaymentSettingsPage() {
     walletBalance: 0,
   });
 
-  // LocalStorage එකෙන් දැනට ඉන්න යූසර්ගේ payment විස්තර ලෝඩ් කිරීම
+  
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -31,7 +31,7 @@ export default function PaymentSettingsPage() {
     }
   }, []);
 
-  // Mock function: අලුත් කාඩ් එකක් ඇඩ් කරලා local storage අප්ඩේට් කිරීම
+  
   const handleAddMockCard = () => {
     const updatedMethod = {
       cardLast4: "4242",
@@ -50,7 +50,7 @@ export default function PaymentSettingsPage() {
     setPaymentData(updatedMethod);
     alert("Mock Visa Card (•••• 4242) added successfully!");
     
-    // 💡 වෙනස 1: කාඩ් එක ඇඩ් කරපු ගමන් ක්ලයන්ට්ව කෙලින්ම Client Dashboard එකට රීඩිරෙක්ට් කිරීම
+    
     navigate("/dashboard/client");
   };
 
@@ -124,7 +124,7 @@ export default function PaymentSettingsPage() {
 
               <div className="p-6">
                 {paymentData.cardLast4 ? (
-                  /* Card Component View */
+                 
                   <div className="max-w-sm bg-gradient-to-r from-gray-800 to-gray-950 text-white rounded-xl p-5 shadow-md relative overflow-hidden">
                     <div className="absolute right-4 bottom-4 opacity-10 text-5xl font-bold italic">
                       {paymentData.brand}
@@ -159,7 +159,7 @@ export default function PaymentSettingsPage() {
                     </div>
                   </div>
                 ) : (
-                  /* Empty State */
+                 
                   <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
                     <svg className="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />

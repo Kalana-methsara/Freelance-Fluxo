@@ -1,4 +1,3 @@
-// routes/authRoutes.ts
 import { Router } from "express";
 import {
     loginUser,
@@ -12,7 +11,7 @@ import {
     updateUserApproval,
     updateUserProfile,
     updateUserRole,
-    deleteUser,                         // ✅ super admin delete user
+    deleteUser,                        
 } from "../controller/userController";
 import {
     getAdminDashboard,
@@ -36,13 +35,11 @@ import { UserRole } from "../enums/userRole";
 const router = Router();
 const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
 
-// ======================== Public Routes ========================
 router.post("/register/freelancer", validate(registerSchema), registerFreelancer);
 router.post("/register/client", validate(registerSchema), registerClient);
 router.post("/login", validate(loginSchema), loginUser);
 router.post("/refresh", refreshToken);
 
-// ======================== OAuth Routes ========================
 router.get("/google", (req, res, next) => {
   const role = req.query.role || "client";
   passport.authenticate("google", { 

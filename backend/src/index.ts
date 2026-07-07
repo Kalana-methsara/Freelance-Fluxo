@@ -7,7 +7,7 @@ import jobRouter from "./routes/jobRouter";
 import platformRouter from "./routes/platformRouter";
 import dashboardRouter from "./routes/dashboardRouter";
 import conversationRouter from "./routes/conversationRouter";
-import uploadRoute from "./routes/uploadRoute"; // 👈 1. මෙතනින් uploadRoute එක import කරගත්තා
+import uploadRoute from "./routes/uploadRoute"; 
 import mongoDB from "./config/db";
 import { errorHandler } from "./middleware/errorMiddleware";
 import passport from 'passport';
@@ -61,7 +61,6 @@ app.use(errorHandler);
 const start = async () => {
   await mongoDB();
 
-  // Create HTTP server and attach Socket.IO
   const server = createServer(app);
   const io = new SocketIOServer(server, {
     cors: {
@@ -71,7 +70,6 @@ const start = async () => {
     },
   });
 
-  // expose io to controllers via app.locals
   (app as any).locals.io = io;
 
   const onlineUsers = new Map<string, Set<string>>();

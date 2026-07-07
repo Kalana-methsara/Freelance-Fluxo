@@ -1,13 +1,13 @@
 import { Schema, model, Types, Document } from "mongoose";
 
-// --- ENUMS ---
+
 export enum ContractStatus {
-  PENDING   = "pending",    // Offer sent, freelancer hasn't responded
-  ACCEPTED  = "accepted",   // Freelancer accepted, work in progress
-  DECLINED  = "declined",   // Freelancer declined
-  COMPLETED = "completed",  // Client approved the work
-  CANCELLED = "cancelled",  // Cancelled before acceptance
-  DISPUTED  = "disputed",   // Under dispute
+  PENDING   = "pending",    
+  ACCEPTED  = "accepted",   
+  DECLINED  = "declined",   
+  COMPLETED = "completed",  
+  CANCELLED = "cancelled",  
+  DISPUTED  = "disputed",   
 }
 
 export enum BudgetType {
@@ -15,7 +15,7 @@ export enum BudgetType {
   HOURLY = "hourly",
 }
 
-// --- INTERFACES ---
+
 export interface IMilestone {
   title: string;
   amount: number;
@@ -38,11 +38,11 @@ export interface IContract extends Document {
   escrowAmount: number;
   escrowFunded: boolean;
   status: ContractStatus;
-  createdAt: Date; // Timestamps automatically managed by Mongoose
+  createdAt: Date; 
   updatedAt: Date;
 }
 
-// --- SCHEMAS ---
+
 const MilestoneSchema = new Schema<IMilestone>({
   title:   { type: String, required: true },
   amount:  { type: Number, required: true },
@@ -68,9 +68,9 @@ const ContractSchema = new Schema<IContract>(
     status:         { type: String, enum: Object.values(ContractStatus), default: ContractStatus.PENDING },
   },
   { 
-    timestamps: true // This auto-generates createdAt and updatedAt
+    timestamps: true 
   }
 );
 
-// --- MODEL EXPORT ---
+
 export const ContractModel = model<IContract>("contract", ContractSchema);

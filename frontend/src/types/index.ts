@@ -1,14 +1,14 @@
-// Updated to match your MongoDB schema and Express controller
+
 export interface Customer {
-  _id: string;      // MongoDB uses _id
+  _id: string;      
   name: string;
   email: string;
   phone: string;
   address: string;
 }
 
-// Updated PaginatedResponse to match your controller's structure:
-// { data: [], pagination: { totalData, totalPages, currentPage, limit } }
+
+
 export interface PaginatedResponse<T> {
   success: boolean;
   data: T[];

@@ -7,7 +7,6 @@ import { UserModel } from "../models/userModel";
 import { UserRole } from "../enums/userRole";
 import { ApprovalStatus } from "../enums/approvalStatus";
 
-// Request එකෙන් state එක කියවාගෙන සුදුසු UserRole එක ලබාදෙන Helper Function එකක්
 const getDynamicRole = (req: any): UserRole => {
   try {
     if (req.query && req.query.state) {
@@ -19,19 +18,17 @@ const getDynamicRole = (req: any): UserRole => {
   } catch (e) {
     console.error("Error parsing OAuth state:", e);
   }
-  return UserRole.CLIENT; // Default fallback role
+  return UserRole.CLIENT; 
 };
 
-// =========================================================================
-// GOOGLE STRATEGY
-// =========================================================================
+
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       callbackURL: "/api/v1/auth/google/callback",
-      passReqToCallback: true, // 👈 Request එක callback එකට ලබාගැනීමට
+      passReqToCallback: true, 
     },
     async (req, accessToken, refreshToken, profile, done) => {
       try {
@@ -42,7 +39,7 @@ passport.use(
 
         let user = await UserModel.findOne({ email });
 
-        // නව පරිශීලකයෙක් නම් පමණක් Sign up සිදුකරයි
+        
         if (!user) {
           const dynamicRole = getDynamicRole(req);
 
@@ -52,7 +49,7 @@ passport.use(
             email: email,
             password: Math.random().toString(36).slice(-8), 
             profileImage: profile.photos?.[0].value,
-            userRole: [dynamicRole], // 👈 තෝරාගත් Role එක ඇතුළත් වේ
+            userRole: [dynamicRole],
             approvalStatus: ApprovalStatus.APPROVED,
           });
         }
@@ -64,9 +61,7 @@ passport.use(
   )
 );
 
-// =========================================================================
-// GITHUB STRATEGY
-// =========================================================================
+
 passport.use(
   new GitHubStrategy(
     {
@@ -74,7 +69,7 @@ passport.use(
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
       callbackURL: "/api/v1/auth/github/callback",
       scope: ["user:email"],
-      passReqToCallback: true, // 👈 Request එක callback එකට ලබාගැනීමට
+      passReqToCallback: true, 
     },
     async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
       try {
@@ -103,9 +98,7 @@ passport.use(
   )
 );
 
-// =========================================================================
-// APPLE STRATEGY
-// =========================================================================
+
 passport.use(
   new AppleStrategy(
     {
@@ -115,7 +108,7 @@ passport.use(
       privateKeyLocation: process.env.APPLE_PRIVATE_KEY_PATH!, 
       callbackURL: "/api/v1/auth/apple/callback",
       scope: ["name", "email"],
-      passReqToCallback: true, // 👈 Request එක callback එකට ලබාගැනීමට
+      passReqToCallback: true,
     },
     async (req: any, accessToken: string, refreshToken: string, idToken: string, profile: any, done: any) => {
       try {
@@ -134,7 +127,7 @@ passport.use(
             lastName: profile?.name?.lastName || "User",
             email: email,
             password: Math.random().toString(36).slice(-8),
-            userRole: [dynamicRole], // 👈 තෝරාගත් Role එක ඇතුළත් වේ
+            userRole: [dynamicRole], 
             approvalStatus: ApprovalStatus.APPROVED,
           });
         }

@@ -8,8 +8,8 @@ import { UserRole } from "../enums/userRole";
 
 const PLATFORM_FEE_RATE = 0.05;
 
-// ── POST /contracts/hire ─────────────────────────────────────
-// Client sends a hire offer to a freelancer
+
+
 export const sendHireOffer = asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const clientId = authReq.user?._id;
@@ -37,7 +37,7 @@ export const sendHireOffer = asyncHandler(async (req: Request, res: Response) =>
         return res.status(400).json({ success: false, message: "Invalid budget type." });
     }
 
-    // String එකක් ලෙස පැමිණියහොත් ආරක්ෂිතව ObjectId බවට පත් කිරීම
+    
     const targetClientId = typeof clientId === "string" ? new Types.ObjectId(clientId) : clientId;
     const targetFreelancerId = typeof freelancerId === "string" ? new Types.ObjectId(freelancerId) : freelancerId;
 
@@ -54,7 +54,7 @@ export const sendHireOffer = asyncHandler(async (req: Request, res: Response) =>
         message,
         milestones,
         escrowAmount,
-        escrowFunded: true, // Client card link කරලා ආපු නිසා true කරනවා
+        escrowFunded: true, 
         status: ContractStatus.PENDING,
     });
 
@@ -62,8 +62,8 @@ export const sendHireOffer = asyncHandler(async (req: Request, res: Response) =>
     return res.status(201).json({ success: true, data: newContract });
 });
 
-// ── 💡 NEW: GET /contracts/pending-offers ──────────────────────
-// Fetches pending offers for the logged-in Freelancer
+
+
 export const getPendingOffers = asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const freelancerId = authReq.user?._id;
@@ -73,15 +73,15 @@ export const getPendingOffers = asyncHandler(async (req: Request, res: Response)
     }
 
     try {
-        // freelancerId එක ආරක්ෂිතව Mongoose ObjectId එකක් බවට පරිවර්තනය කිරීම
+        
         const targetId = typeof freelancerId === "string" ? new Types.ObjectId(freelancerId) : freelancerId;
 
-        // ලොග් වෙලා ඉන්න Freelancer ට ආපු Pending Offers විතරක් ගන්නවා
+        
         const contracts = await ContractModel.find({
             freelancerId: targetId,
             status: ContractStatus.PENDING,
         })
-        // Vercel එකේදී populate Crash වීම වැළැක්වීමට UserModel එක සෘජුවම model ලෙස ලබාදීම
+        
         .populate({
             path: "clientId",
             model: UserModel,
@@ -101,7 +101,7 @@ export const getPendingOffers = asyncHandler(async (req: Request, res: Response)
     }
 });
 
-// ── GET /contracts ───────────────────────────────────────────
+
 export const getMyContracts = asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const userId = authReq.user?._id;
@@ -126,7 +126,7 @@ export const getMyContracts = asyncHandler(async (req: Request, res: Response) =
             model: UserModel,
             select: "firstName lastName profileImage title hourlyRate"
         })
-        .populate("jobId", "title") // JobModel එක සැමවිටම කලින් Register වන නිසා සෘජුවම භාවිතා කළ හැක
+        .populate("jobId", "title") 
         .sort({ createdAt: -1 });
 
         return res.status(200).json({ success: true, data: contracts });
@@ -141,15 +141,15 @@ export const getMyContracts = asyncHandler(async (req: Request, res: Response) =
     }
 });
 
-// ── PATCH /contracts/:id/respond ────────────────────────────
-// Freelancer accepts or declines the offer
+
+
 export const respondToOffer = asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
 
     const freelancerId = authReq.user?._id;
     if (!freelancerId) return res.status(401).json({ success: false, message: "Unauthorized" });
 
-    const { action } = authReq.body; // "accept" | "decline"
+    const { action } = authReq.body; 
     if (!["accept", "decline"].includes(action)) {
         return res.status(400).json({ success: false, message: "Action must be 'accept' or 'decline'." });
     }
@@ -183,8 +183,8 @@ export const respondToOffer = asyncHandler(async (req: Request, res: Response) =
     }
 });
 
-// ── GET /contracts/:id ───────────────────────────────────────
-// Fetch a single contract by ID (accessible to client, freelancer, or involved party)
+
+
 export const getContractById = asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const userId = authReq.user?._id;
@@ -211,7 +211,7 @@ export const getContractById = asyncHandler(async (req: Request, res: Response) 
             return res.status(404).json({ success: false, message: "Contract not found" });
         }
 
-        // Verify that the requesting user is either the client or freelancer
+        
         const isClient = contract.clientId._id.toString() === targetUserId.toString();
         const isFreelancer = contract.freelancerId._id.toString() === targetUserId.toString();
 
